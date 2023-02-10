@@ -1,6 +1,8 @@
 devel/
 logs/
+log/
 build/
+install/
 bin/
 lib/
 msg_gen/
@@ -37,10 +39,6 @@ srv/_*.py
 *.pyc
 qtcreator-*
 *.user
-
-/planning/cfg
-/planning/docs
-/planning/src
 
 *~
 
