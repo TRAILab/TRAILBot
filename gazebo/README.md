@@ -14,9 +14,9 @@ sudo apt install ros-foxy-navigation2 ros-foxy-nav2-bringup
 ```
 
 ## Building and sourcing
-From the TRAILBot directory, run in a terminal
+Assumes a structure "... /{work directory}/src/TRAILbot/". From the TRAILBot directory, run in a terminal  
 ```bash
-build.sh
+./build.sh
 source ../../install/setup.bash
 ```
 
