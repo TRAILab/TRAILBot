@@ -1,0 +1,3 @@
+[console_scripts]
+cam = cam_publisher.camPublisher:main
+
