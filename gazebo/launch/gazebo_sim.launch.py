@@ -18,7 +18,7 @@ def generate_launch_description():
 
     # Robot state publisher node
     rsp_launch_path = os.path.join(get_package_share_directory(package_name),'launch','rsp.launch.py')
-    rsp_builder = IncludeLaunchDescription(PythonLaunchDescriptionSource([rsp_launch_path]),
+    rsp_node = IncludeLaunchDescription(PythonLaunchDescriptionSource([rsp_launch_path]),
                                         launch_arguments={'use_sim_time': 'true'}.items())
 
     world_file = os.path.join(get_package_share_directory(package_name),'worlds','clearpath_playpen.world')
@@ -29,6 +29,7 @@ def generate_launch_description():
                 cmd=['gzserver',
                     '-s', 'libgazebo_ros_init.so',
                     '-s', 'libgazebo_ros_factory.so',
+                    '--verbose',
                     world_file],
                 output='screen')
 
@@ -77,13 +78,16 @@ def generate_launch_description():
 
     # Generate launch description
     ld = LaunchDescription()
-    ld.add_action(rsp_builder)
+    ld.add_action(rsp_node)
     ld.add_action(joy_node)
     ld.add_action(twist_mux)
     ld.add_action(gzserver)
     ld.add_action(gzclient)
     ld.add_action(spawn_entity)
-    ld.add_action(delayed_spawn)
+    ld.add_action(joint_broad)
+    ld.add_action(diff_drive)
+    
+    # ld.add_action(delayed_spawn)
 
     return ld
 

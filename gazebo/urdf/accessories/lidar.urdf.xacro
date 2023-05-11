@@ -38,9 +38,9 @@
 
       <sensor name="laser" type="ray">
         <pose> 0 0 0 0 0 0 </pose>
-        <visualize>false</visualize>
-        <!-- <update_rate>10</update_rate> -->
-        <update_rate>0.5</update_rate>
+        <visualize>true</visualize>
+        <update_rate>2</update_rate>
+        <!-- <update_rate>0.5</update_rate> -->
         <ray>
           <scan>
             <horizontal>
