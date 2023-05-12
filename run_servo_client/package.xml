@@ -1,15 +1,14 @@
 <?xml version="1.0"?>
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
-  <name>voice_assistant_pkg</name>
+  <name>run_servo_client</name>
   <version>0.0.0</version>
-  <description>Chats with user and handles voice commands</description>
-  <maintainer email="barzanisar93@gmail.com">Barza Nisar</maintainer>
+  <description>Client to runservo service</description>
+  <maintainer email="barzanisar93@gmail.com">barza</maintainer>
   <license>Apache License 2.0</license>
 
   <depend>rclpy</depend>
-  <depend>trailbot_interfaces</depend>
-  <exec_depend>std_msgs</exec_depend>
+  <depend>servo_interfaces</depend>
 
   <test_depend>ament_copyright</test_depend>
   <test_depend>ament_flake8</test_depend>

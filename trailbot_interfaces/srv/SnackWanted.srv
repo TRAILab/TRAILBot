@@ -1,0 +1,6 @@
+# Call this service to request snacks
+
+string snack # requested snack e.g. "chips"
+---
+bool success   # indicate successful if snacks are dispensed
+string message # error message if any

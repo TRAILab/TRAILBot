@@ -30,6 +30,7 @@ ros2 interface show servo_interfaces/srv/RunServo
 1. Contents of `voice_assistant.py`: Voice assistant code is borrowed from [here](https://github.com/JarodMica/ChatGPT-and-Whiper-with-TTS/blob/main/voice_assistant.py) and "RunServoClient" class' code is adapted from [ros2 tutorial](https://docs.ros.org/en/humble/Tutorials/Beginner-Client-Libraries/Writing-A-Simple-Py-Service-And-Client.html#write-the-client-node)
 2. Create ros2 package
 ```bash
+source /opt/ros/humble/setup.bash 
 cd ~/ros2_ws/src
 ros2 pkg create --build-type ament_python voice_assistant_pkg --dependencies rclpy servo_interfaces
 # Add voice_assistant.py in ros2_ws/src/voice_assistant_pkg/voice_assistant_pkg/ folder
@@ -171,3 +172,9 @@ colcon build --packages-select servo_interfaces voice_assistant_pkg
 4. If ambient noise is too high, it won’t pick up your voice. You can tune the “r.energy_threshold” according to the ambient noise. If it is noisy around you, set it to a high value. If it is quiet, set it to a low value. It’s value ranges from 50-5000. It will only pick up your voice if its signal’s amplitude exceeds this threshold.
 5. Use my openai key provided in the script. It is paid to use by Steve. They will charge us based on the number of words (also called tokens) present in our input sentence to chatgpt and the number of words it replies with. The pricing is $0.002 / 1K tokens for gpt 3.5 turbo we are using.
 6. To end conversation with chatgpt, say the word 'Bye'.
+
+
+# ros2 service type /snack_wanted
+# ros2 interface show trailbot_interfaces/srv/SnackWanted
+#ros2 service call /snack_wanted trailbot_interfaces/srv/SnackWanted "{snack: 'chips'}"
+ros2 topic pub --once /state std_msgs/msg/String "{data: "Query"}"

@@ -1,6 +1,6 @@
 from setuptools import setup
 
-package_name = 'voice_assistant_pkg'
+package_name = 'snack_wanted_srv_pkg'
 
 setup(
     name=package_name,
@@ -13,14 +13,14 @@ setup(
     ],
     install_requires=['setuptools'],
     zip_safe=True,
-    maintainer='Barza Nisar',
+    maintainer='barza',
     maintainer_email='barzanisar93@gmail.com',
-    description='Chats with user and handles voice commands',
-    license='Apache License 2.0',
+    description='Temporary service node for snack_wanted srv',
+    license='TODO: License declaration',
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'chatbot = voice_assistant_pkg.voice_assistant:main'
+            'snack_wanted_service = snack_wanted_srv_pkg.snack_wanted_srv:main'
         ],
     },
 )

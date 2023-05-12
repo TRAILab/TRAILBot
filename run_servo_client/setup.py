@@ -1,6 +1,6 @@
 from setuptools import setup
 
-package_name = 'voice_assistant_pkg'
+package_name = 'run_servo_client'
 
 setup(
     name=package_name,
@@ -13,14 +13,14 @@ setup(
     ],
     install_requires=['setuptools'],
     zip_safe=True,
-    maintainer='Barza Nisar',
+    maintainer='barza',
     maintainer_email='barzanisar93@gmail.com',
-    description='Chats with user and handles voice commands',
+    description='Client to runservo service',
     license='Apache License 2.0',
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'chatbot = voice_assistant_pkg.voice_assistant:main'
+            'run_servo_client = run_servo_client.run_servo_client:main'
         ],
     },
 )
