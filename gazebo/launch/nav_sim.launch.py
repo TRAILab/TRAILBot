@@ -29,39 +29,42 @@ def generate_launch_description():
         arguments=['-d', rviz_config_path],
         output='screen')
 
-    # Slam node
-    slam_launch_path = os.path.join(get_package_share_directory('slam_toolbox'),'launch','online_async_launch.py')
-    slam_config_path = os.path.join(get_package_share_directory(package_name),'config','mapper_params_online_async.yaml')
-    slam_node = IncludeLaunchDescription(PythonLaunchDescriptionSource([slam_launch_path]),
-                                        launch_arguments={'params_file': slam_config_path}.items())
+    namespace = ''
+    use_namespace = 'false'
+    slam = 'True'
+    map_yaml_file = os.path.join(get_package_share_directory(package_name),'maps','turtlebot3_world.xml')
+    use_sim_time = 'true'
+    params_file = os.path.join(get_package_share_directory(package_name),'config','nav2_params.yaml')
+    autostart = 'true'
+    use_composition = 'True'
+    use_respawn = 'False'
+    bringup_path = os.path.join(get_package_share_directory(package_name),'launch','bringup_launch.py')
+    bringup_cmd = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(bringup_path),
+        launch_arguments={'namespace': namespace,
+                          'use_namespace': use_namespace,
+                          'slam': slam,
+                          'map': map_yaml_file,
+                          'use_sim_time': use_sim_time,
+                          'params_file': params_file,
+                          'autostart': autostart,
+                          'use_composition': use_composition,
+                          'use_respawn': use_respawn}.items())
 
-    # Nav node
-    nav_launch_path = os.path.join(get_package_share_directory(package_name),'launch','navigation_launch.py')
-    nav_params_path = os.path.join(get_package_share_directory(package_name),'config','nav2_params.yaml')
-    tree_params_path = os.path.join(get_package_share_directory(package_name),'config','navigate_w_replanning_and_recovery.xml')
-    nav_node = IncludeLaunchDescription(PythonLaunchDescriptionSource([nav_launch_path]),
-                                        launch_arguments={'namespace': '',
-                                                        'use_sim_time': 'true',
-                                                        'autostart': 'true',
-                                                        'params_file': nav_params_path,
-                                                        'default_bt_xml_filename': tree_params_path,
-                                                        'use_lifecycle_mgr': 'false',
-                                                        'map_subscribe_transient_local': 'true'}.items())
+    # delayed_spawn = TimerAction(period=15.0,
+    #                 actions=[rviz_node, slam_node])
 
-    delayed_spawn = TimerAction(period=15.0,
-                    actions=[rviz_node, slam_node])
-
-    delayed_spawn2 = TimerAction(period=20.0,
-                    actions=[nav_node])
+    # delayed_spawn2 = TimerAction(period=20.0,
+    #                 actions=[nav_node])
 
     # Generate launch description
     ld = LaunchDescription()
     ld.add_action(gazebo_builder)
     ld.add_action(rviz_node)
-    ld.add_action(slam_node)
+    # ld.add_action(slam_node)
     # ld.add_action(delayed_spawn)
     # ld.add_action(delayed_spawn2)
-    ld.add_action(nav_node)
+    ld.add_action(bringup_cmd)
 
     return ld
 
