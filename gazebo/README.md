@@ -11,6 +11,8 @@ Install slam_toolbox and nav2
 ```bash
 sudo apt install ros-foxy-slam-toolbox
 sudo apt install ros-foxy-navigation2 ros-foxy-nav2-bringup
+sudo apt-get install ros-foxy-turtlebot3*
+
 ```
 
 ## Building and sourcing

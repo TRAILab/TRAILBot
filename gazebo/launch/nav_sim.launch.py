@@ -61,7 +61,6 @@ def generate_launch_description():
     ld.add_action(slam_node)
     # ld.add_action(delayed_spawn)
     # ld.add_action(delayed_spawn2)
-    # ld.add_action(slam_node)
     ld.add_action(nav_node)
 
     return ld
