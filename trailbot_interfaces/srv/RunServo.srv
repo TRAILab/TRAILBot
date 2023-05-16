@@ -1,0 +1,6 @@
+# Call this service to operate servos
+
+int32 servo # which servo to run e.g. 1,2,3,4
+---
+bool success   # indicate successful run
+string message # which sero has been operated/error message
