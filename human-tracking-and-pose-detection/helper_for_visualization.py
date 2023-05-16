@@ -1,3 +1,5 @@
+#####FOR VISUALIZATION ONLY. WILL NOT GO INTO TRAILBOT
+
 # Import matplotlib libraries
 import matplotlib.pyplot as plt
 from matplotlib.collections import LineCollection

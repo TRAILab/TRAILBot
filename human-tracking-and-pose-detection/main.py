@@ -12,7 +12,18 @@ from IPython.display import HTML, display
 import my_helpers 
 from helper_for_visualization import *
 import pickle, subprocess,time, os,sys, math
-print("downloading...")
+
+import time
+def fps_timer(func):
+    def wrapper(*args, **kwargs):
+        prev_time = time.time()
+        result = func(*args, **kwargs)
+        cur_time = time.time()
+        if cur_time - prev_time > (0.0000001):
+            fps = 1.0 / (cur_time - prev_time)
+            print('FPS: {:.2f}'.format(fps))
+        return result
+    return wrapper
 
 model_name = "movenet_lightning_f16" + "tflite"
 
