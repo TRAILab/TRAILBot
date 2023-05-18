@@ -89,7 +89,6 @@ pip install PyAudio
 pip install elevenlabs
 pip install elevenlabslib
 pip install pydub
-sudo apt-get install libav-tools
 sudo apt-get install ffmpeg
 
 ```
@@ -111,10 +110,9 @@ colcon build --packages-select trailbot_interfaces voice_assistant_pkg
 ```
 
 ## 1.4. Export API keys
-Add the following lines to your bashrc
 ```bash
-export OPENAI_API_KEY="<secret api key, ask Barza>"
-export ELEVENLABS_API_KEY="<secret api key, ask Barza>"
+echo 'export OPENAI_API_KEY="<secret api key, ask Barza>"' >> ~/.bashrc
+echo 'export ELEVENLABS_API_KEY="<secret api key, (free per email account and for one month, just sign up at elevenlabs)>"' >> ~/.bashrc
 ```
 
 ## 1.5. Run packages
