@@ -20,7 +20,7 @@
 
    sudo docker pull microros/micro_ros_static_library_builder:humble
 
-   sudo docker run -it --rm -v $(pwd):/project --env MICROROS_LIBRARY_FOLDER=extras microros/micro_ros_static_library_builder:humble
+   sudo docker run -it --rm -v $(pwd):/project --env MICROROS_LIBRARY_FOLDER=extras microros/micro_ros_static_library_builder:humble -p cortex_m3
 
    ```
 5. If build was successful, you should be able to find `trailbot_interfaces/RunServo.srv` in ` ~/Arduino/libraries/micro_ros_arduino-2.0.5-humble/available_ros2_types` 
