@@ -9,11 +9,9 @@ import cv2
 import imageio
 from IPython.display import HTML, display
 
-import my_helpers 
 from helper_for_visualization import *
 import pickle, subprocess,time, os,sys, math
 
-import time
 def fps_timer(func):
     def wrapper(*args, **kwargs):
         prev_time = time.time()
@@ -25,7 +23,7 @@ def fps_timer(func):
         return result
     return wrapper
 
-model_name = "movenet_lightning_f16" + "tflite"
+model_name = "movenet_multipose"#"movenet_lightning_f16" + "tflite"#
 
 if "tflite" in model_name:
   if "movenet_lightning_f16" in model_name:
@@ -69,8 +67,21 @@ if "tflite" in model_name:
     interpreter.invoke()
     # Get the model prediction.
     keypoints_with_scores = interpreter.get_tensor(output_details[0]['index'])
-    return keypoints_with_scores
+    return keypoints_with_scores[0][0]
+elif "movenet_multipose" in model_name:
+  module = hub.load("https://tfhub.dev/google/movenet/multipose/lightning/1")
+  input_size = 256
+  def movenet(input_image):
+    model = module.signatures['serving_default']
 
+    input_image = tf.cast(input_image, dtype=tf.int32)    # SavedModel format expects tensor type of int32.
+    outputs = model(input_image)
+    # Output is a [1, 6, 56] tensor.
+    keypoints_with_scores = outputs['output_0'].numpy()
+    threshold =0.3
+    count_of_people = np.sum(keypoints_with_scores[0,:,-1]>threshold)
+    print("count_of_people",count_of_people)
+    return keypoints_with_scores[:,:,:51].reshape((6,17,3))[0]
 else:
   if "movenet_lightning" in model_name:
     if downloadModel:  
@@ -78,9 +89,6 @@ else:
     input_size = 192
   elif "movenet_thunder" in model_name:
     module = hub.load("https://tfhub.dev/google/movenet/singlepose/thunder/4")
-    input_size = 256
-  elif "movenet_multipose" in model_name:
-    module = hub.load("https://tfhub.dev/google/movenet/multipose/lightning/1")
     input_size = 256
   else:
     raise ValueError("Unsupported model name: %s" % model_name)
@@ -99,26 +107,21 @@ else:
     """
     model = module.signatures['serving_default']
 
-
-    # SavedModel format expects tensor type of int32.
-    input_image = tf.cast(input_image, dtype=tf.int32)
-    # Run model inference.
+    input_image = tf.cast(input_image, dtype=tf.int32)    # SavedModel format expects tensor type of int32.
     outputs = model(input_image)
     # Output is a [1, 1, 17, 3] tensor.
     keypoints_with_scores = outputs['output_0'].numpy()
-    return keypoints_with_scores
+    return keypoints_with_scores[0][0]
 
 
-def isTherePerson(keypoints_with_scores,score_threshold=0.3):
-  points = keypoints_with_scores[0][0]
+def isTherePerson(points,score_threshold=0.3):
   visible_joints = np.sum(points[:,2]>score_threshold)
   return visible_joints>=3
 
-def isPersonFacingCamera(keypoints_with_scores,score_threshold=0.3):
+def isPersonFacingCamera(points,score_threshold=0.3):
   LEFT_EYE=1
   NOSE = 0
   RIGHT_EYE=2
-  points = keypoints_with_scores[0][0]
   visible_joints_face = np.sum(points[:5,2]>score_threshold)
   return visible_joints_face>=3 and points[LEFT_EYE][1]>points[NOSE][1]>points[RIGHT_EYE][1]
 
@@ -128,18 +131,16 @@ def get_angles(x, y=0, fov=90, image_width = 1,image_height = 1):
     # y_angle = math.degrees(math.atan(((image_height / 2) - y) / (image_height / 2) * math.tan(math.radians(fov / 2))))
     return x_angle #, y_angle
 
-def getHeadingAngle(keypoints_with_scores,score_threshold=0.3):
+def getHeadingAngle(points,score_threshold=0.3):
   offset=0
   scaling=1 
-  points=keypoints_with_scores[0][0]
   visible_points = points[points[:,2] > score_threshold]
   # sum up the x coordinate of the selected points
   x_mean = np.mean(visible_points[:, 1])
   return offset + scaling *get_angles(x_mean, None)
 
-def keypoints_with_scores_to_img(keypoints_with_scores, nth_point_to_highlight=-1,score_threshold=0.2):
+def keypoints_with_scores_to_img(points, nth_point_to_highlight=-1,score_threshold=0.2):
   img_size = 128
-  points = keypoints_with_scores[0][0]
   img = np.zeros((img_size, img_size, 3), dtype=np.uint8)
   # scaled_points = (points * img_size).astype(np.int32)
   for i, (y,x, certainty_score) in enumerate(points):
@@ -153,8 +154,7 @@ def keypoints_with_scores_to_img(keypoints_with_scores, nth_point_to_highlight=-
     cv2.circle(img, coordinate, 1, color, -1)
   return img
 
-# import winsound
-@my_helpers.fps_timer
+@fps_timer
 def process_frame(image):
   input_image = tf.expand_dims(image, axis=0)
   input_image = tf.image.resize_with_pad(input_image, input_size, input_size)
@@ -166,6 +166,7 @@ def process_frame(image):
   log += f'is there person:{isTherePerson(keypoints_with_scores)}'+'\n'
   if isPersonFacingCamera(keypoints_with_scores):
     log+=("Person is facing laptop!")+'\n'
+    # import winsound
     # winsound.Beep(2500, 100)  
   else:
     log+=("Person NOT facing")+'\n'
@@ -180,11 +181,8 @@ def process_frame(image):
   print(log)
   return keypoints_with_scores_to_img(keypoints_with_scores,nth_point_to_highlight)
 
-# Open the webcam stream.
-cap = cv2.VideoCapture(0)
-
-# Define the output window.
-cv2.namedWindow('MoveNet', cv2.WINDOW_NORMAL)
+cap = cv2.VideoCapture(0)# Open the webcam stream.
+cv2.namedWindow('MoveNet', cv2.WINDOW_NORMAL)# Define the output window.
 
 # Process each frame of the webcam stream.
 while True:
@@ -199,10 +197,6 @@ while True:
     cap.release()
     cv2.destroyAllWindows()
     break
-
-
-
-
 
 
 # def load_image(image_path):
@@ -230,7 +224,7 @@ while True:
 #   plt.show()
 #   return output_overlay
 
-# # coords=(run_inference(load_image("sample_images/1person_fullbody.jpg")))
+# coords=(run_inference(load_image("sample_images/7people_nofeet.jpg")))
 # if runTestImg:
 #   image_dir = "sample_images/"
 #   import os
