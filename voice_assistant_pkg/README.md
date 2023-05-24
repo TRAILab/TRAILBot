@@ -75,22 +75,10 @@ executable = /usr/bin/env python3
 source ~/ros2_ws/src/colcon_venv/venv/bin/activate
 
 # Install required packages
-pip install openai
-pip install SpeechRecognition
-
-# for pyttsx3
-pip install pyttsx3
 sudo apt install espeak
 sudo apt-get update -y
-sudo apt-get install -y portaudio19-dev
-pip install PyAudio
-
-# for elevenlabs
-pip install elevenlabs
-pip install elevenlabslib
-pip install pydub
-sudo apt-get install ffmpeg
-
+sudo apt-get install -y portaudio19-dev ffmpeg
+pip install -r requirements.txt
 ```
 
 
