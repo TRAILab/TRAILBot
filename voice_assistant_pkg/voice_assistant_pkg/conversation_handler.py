@@ -4,7 +4,7 @@ import json
 
 class ConversationHandler:
     def __init__(self, messages, save_foldername):
-        """AI is creating summary for __init__
+        """ Class to save conversations
 
         Args:
             messages (list of dicts): conversation 
