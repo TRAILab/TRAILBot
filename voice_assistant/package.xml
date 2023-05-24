@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
-  <name>voice_assistant_pkg</name>
+  <name>voice_assistant</name>
   <version>0.0.0</version>
   <description>Chats with user and handles voice commands</description>
   <maintainer email="barzanisar93@gmail.com">Barza Nisar</maintainer>

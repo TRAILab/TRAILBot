@@ -1,6 +1,6 @@
 from setuptools import setup
 
-package_name = 'voice_assistant_pkg'
+package_name = 'voice_assistant'
 
 setup(
     name=package_name,
@@ -20,8 +20,8 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'chatbot = voice_assistant_pkg.voice_assistant:main',
-            'snack_wanted_service = voice_assistant_pkg.snack_wanted_service:main'
+            'chatbot = voice_assistant.voice_assistant:main',
+            'snack_wanted_service = voice_assistant.snack_wanted_service:main'
         ],
     },
 )

@@ -1,4 +1,4 @@
-<!---# 1. How I created the packages **"trailbot_interfaces"** and **"voice_assistant_pkg"**
+<!---# 1. How I created the packages **"trailbot_interfaces"** and **"voice_assistant"**
 
 The instructions in this section are only for bookkeeping how I created the packages. Follow section [2](#2-how-to-build-and-run-the-packages) to build and run packages.
 ## 1.1. Create **"trailbot_interfaces"** package to host RunServo.srv
@@ -26,15 +26,15 @@ ros2 interface show trailbot_interfaces/srv/RunServo
 ```
 
 
-## 1.2. Create voice_assistant_pkg package
+## 1.2. Create voice_assistant package
 
 1. Contents of `voice_assistant.py`: Voice assistant code is borrowed from [here](https://github.com/JarodMica/ChatGPT-and-Whiper-with-TTS/blob/main/voice_assistant.py) and "RunServoClient" class' code is adapted from [ros2 tutorial](https://docs.ros.org/en/humble/Tutorials/Beginner-Client-Libraries/Writing-A-Simple-Py-Service-And-Client.html#write-the-client-node)
 2. Create ros2 package
 ```bash
 source /opt/ros/humble/setup.bash 
 cd ~/ros2_ws/src
-ros2 pkg create --build-type ament_python voice_assistant_pkg --dependencies rclpy trailbot_interfaces
-# Add voice_assistant.py in ros2_ws/src/voice_assistant_pkg/voice_assistant_pkg/ folder
+ros2 pkg create --build-type ament_python voice_assistant --dependencies rclpy trailbot_interfaces
+# Add voice_assistant.py in ros2_ws/src/voice_assistant/voice_assistant/ folder
 # Follow ros2 tutorial to change package.xml and setup.py
 ```
 -->
@@ -58,7 +58,7 @@ touch ./venv/COLCON_IGNORE
 
 ```
 
-In `setup.cfg` in `voice_assistant_pkg` package, add the following lines if they do not exist:
+In `setup.cfg` in `voice_assistant` package, add the following lines if they do not exist:
 ```
 [build_scripts]
 executable = /usr/bin/env python3
@@ -93,7 +93,7 @@ source src/colcon_venv/venv/bin/activate
 source /opt/ros/humble/setup.bash 
 
 # Build packages
-colcon build --packages-select trailbot_interfaces voice_assistant_pkg
+colcon build --packages-select trailbot_interfaces voice_assistant
 
 ```
 
@@ -121,10 +121,10 @@ echo 'export ELEVENLABS_API_KEY="<secret api key, (free per email account and fo
    # Run snack_wanted_service node 
    # Note: Since behaviour planner is not complete, I created a temporary `snack_wanted_service node` that responds to `snack_wanted` requests from the chatbot. This allows us to test the chatbot's logic without running behaviour planner. In the final stage, we will replace this step with running the behviour planner node.
 
-   ros2 run voice_assistant_pkg snack_wanted_service
+   ros2 run voice_assistant snack_wanted_service
 
    # Run voice_assistant_node in a new terminal after sourcing ros2
-    ros2 run voice_assistant_pkg chatbot --ros-args --params-file ~/ros2_ws/src/TRAILBot/voice_assistant_pkg/config/params.yaml
+    ros2 run voice_assistant chatbot --ros-args --params-file ~/ros2_ws/src/TRAILBot/voice_assistant/config/params.yaml
    ```
 2. Chatbot starts interacting with the user if the robot's state changes to 'Query'. Without behaviour planner running, you can manually change robot's state to 'Query' to test/activate chatbot.
    ```bash
