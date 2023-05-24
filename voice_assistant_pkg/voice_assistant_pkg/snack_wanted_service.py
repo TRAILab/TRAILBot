@@ -14,14 +14,16 @@ class SnackWantedService(Node):
 
     def __init__(self):
         super().__init__('snack_wanted_service_node')
-        self.srv = self.create_service(SnackWanted, 'snack_wanted', self.snack_wanted_callback)
+        self.srv = self.create_service(
+            SnackWanted, 'snack_wanted', self.snack_wanted_callback)
 
     def snack_wanted_callback(self, request, response):
 
         response.success = True
         response.message = f'{request.snack} dispensed successfully!'
         self.get_logger().info(f'Incoming request\nsnack: {request.snack}')
-        self.get_logger().info(f'Response sent request\n {response.success}, {response.message}')
+        self.get_logger().info(
+            f'Response sent request\n {response.success}, {response.message}')
 
         return response
 

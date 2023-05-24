@@ -25,58 +25,69 @@ class VoiceAssistant(Node):
         super().__init__('voice_assistant_node')
 
         # Declare params
-        self.declare_parameter('snack_options', ['chips', 'chocolates', 'candies', 'nuts'])
+        self.declare_parameter(
+            'snack_options', ['chips', 'chocolates', 'candies', 'nuts'])
         self.declare_parameter('available_snacks_quantity', [5, 5, 5, 5])
-        self.declare_parameter('exit_cmd_options', ['bye', 'bubye', 'adios', 'ciao', 'thanks', 'thank you'])
+        self.declare_parameter('exit_cmd_options', [
+                               'bye', 'bubye', 'adios', 'ciao', 'thanks', 'thank you'])
         self.declare_parameter('speech_recognizer.mic_device_index', 12)
         self.declare_parameter('speech_recognizer.energy_threshold', 200)
         self.declare_parameter('speech_recognizer.timeout', 4)
         self.declare_parameter('speech_recognizer.phrase_time_limit', 4)
-        self.declare_parameter('speech_recognizer.use_whisper', True) # if True, the node uses openai transcriber otherwise it uses google transcriber.
-        self.declare_parameter('text_to_speech_engine', 'elevenlabs') # options: pyttsx3, elevenlabs
+        # if True, the node uses openai transcriber otherwise it uses google transcriber.
+        self.declare_parameter('speech_recognizer.use_whisper', True)
+        # options: pyttsx3, elevenlabs
+        self.declare_parameter('text_to_speech_engine', 'elevenlabs')
 
         # Get params
-        self.exit_cmd_options=self.get_parameter('exit_cmd_options').value
+        self.exit_cmd_options = self.get_parameter('exit_cmd_options').value
 
-        # Print params 
-        use_whisper=self.get_parameter('speech_recognizer.use_whisper').value
-        snack_options=self.get_parameter('snack_options').value
-        available_snacks_quantity=self.get_parameter('available_snacks_quantity').value
+        # Print params
+        use_whisper = self.get_parameter('speech_recognizer.use_whisper').value
+        snack_options = self.get_parameter('snack_options').value
+        available_snacks_quantity = self.get_parameter(
+            'available_snacks_quantity').value
         self.get_logger().info(f'use_whisper: {use_whisper}, exit_cmd_options: {self.exit_cmd_options}, \
                                available_snacks: {snack_options}, available_snacks_quantity: {available_snacks_quantity}')
-        
 
         # openAI set-up
         personality = "You are a helpful assistant."
         openai.api_key = os.environ.get('OPENAI_API_KEY')
-        self.messages  = [{"role": "system", "content": f"{personality}"}]
+        self.messages = [{"role": "system", "content": f"{personality}"}]
 
         # Text to Speech Generator set-up
-        text_to_speech_engine = self.get_parameter('text_to_speech_engine').value
+        text_to_speech_engine = self.get_parameter(
+            'text_to_speech_engine').value
         if text_to_speech_engine == 'pyttsx3':
             self.tts_engine = Pyttsx3Engine()
         elif text_to_speech_engine == 'elevenlabs':
             self.tts_engine = ElevenLabsEngine()
         else:
             raise NotImplementedError
-        
+
         # Speech Recognizer set-up
-        # Note: You can list microphones with this command and set the device_index 
+        # Note: You can list microphones with this command and set the device_index
         # to the index of your favourite microphone from the list
         print('Available mics:')
         print(SpeechRecognizer.list_mics())
-        self.get_logger().info('Mic index in use: %s' % str(self.get_parameter('speech_recognizer.mic_device_index').value))
-        self.get_logger().info('speech_recognizer.energy_threshold: %s' % str(self.get_parameter('speech_recognizer.energy_threshold').value))
-        self.speech_recognizer = SpeechRecognizer(mic_index=self.get_parameter('speech_recognizer.mic_device_index').value, 
-                                                  energy_threshold=self.get_parameter('speech_recognizer.energy_threshold').value,
-                                                  use_whisper=self.get_parameter('speech_recognizer.use_whisper').value,
-                                                  timeout=self.get_parameter('speech_recognizer.timeout').value,
-                                                  phrase_time_limit=self.get_parameter('speech_recognizer.phrase_time_limit').value,
+        self.get_logger().info('Mic index in use: %s' % str(
+            self.get_parameter('speech_recognizer.mic_device_index').value))
+        self.get_logger().info('speech_recognizer.energy_threshold: %s' %
+                               str(self.get_parameter('speech_recognizer.energy_threshold').value))
+        self.speech_recognizer = SpeechRecognizer(mic_index=self.get_parameter('speech_recognizer.mic_device_index').value,
+                                                  energy_threshold=self.get_parameter(
+                                                      'speech_recognizer.energy_threshold').value,
+                                                  use_whisper=self.get_parameter(
+                                                      'speech_recognizer.use_whisper').value,
+                                                  timeout=self.get_parameter(
+                                                      'speech_recognizer.timeout').value,
+                                                  phrase_time_limit=self.get_parameter(
+                                                      'speech_recognizer.phrase_time_limit').value,
                                                   dynamic_energy_threshold=False)
-        
-        
+
         # Set-up conversation_handler to save conversations
-        self.conversation_handler = ConversationHandler(self.messages, save_foldername='conversations')
+        self.conversation_handler = ConversationHandler(
+            self.messages, save_foldername='conversations')
 
         # Set up SnackWanted Service client
         # Initialize snack_wanted client and request
@@ -84,9 +95,9 @@ class VoiceAssistant(Node):
         while not self.cli.wait_for_service(timeout_sec=1.0):
             self.get_logger().info('snack_wanted service not available, waiting again...')
         self.snack_wanted_request = SnackWanted.Request()
-        self.end_chat = False # if user has said bye (or one of the self.exit_cmd_options)
-        self.in_query_state = False # True if robot's state is 'Query', False otherwise
-
+        # if user has said bye (or one of the self.exit_cmd_options)
+        self.end_chat = False
+        self.in_query_state = False  # True if robot's state is 'Query', False otherwise
 
         # Subscriber: to detect the state of the robot
         self.subscription = self.create_subscription(
@@ -99,9 +110,8 @@ class VoiceAssistant(Node):
         # Publisher: to let behaviour planner know that the user has ended the chat
         self.publisher_ = self.create_publisher(Bool, 'chat_ended', 1)
         timer_period = 0.5  # seconds
-        self.timer = self.create_timer(timer_period, self.publisher_timer_callback)
-
-
+        self.timer = self.create_timer(
+            timer_period, self.publisher_timer_callback)
 
     def publisher_timer_callback(self):
         msg = Bool()
@@ -110,7 +120,7 @@ class VoiceAssistant(Node):
 
     def listener_callback(self, msg):
         # Activate chatbot if in 'Query' state
-        if msg.data == 'Query': 
+        if msg.data == 'Query':
             self.in_query_state = True
             self.end_chat = False
             self.get_logger().info('State changed to: "%s"' % msg.data)
@@ -122,9 +132,9 @@ class VoiceAssistant(Node):
         snack_options = self.get_parameter('snack_options').value
         snack_quantity = self.get_parameter('available_snacks_quantity').value
 
-        available_snack_options = [snack_options[i] for i, quantity in enumerate(snack_quantity) if quantity > 0]
+        available_snack_options = [
+            snack_options[i] for i, quantity in enumerate(snack_quantity) if quantity > 0]
         return available_snack_options
-
 
     def get_available_snacks_str(self):
         available_snack_options = self.get_available_snacks()
@@ -133,8 +143,6 @@ class VoiceAssistant(Node):
         print('Available snacks: ', available_snack_options_str)
         return available_snack_options_str
 
-
-                
     def send_request(self, snack_wanted):
         """
         Sends request to snack_wanted service 
@@ -152,13 +160,14 @@ class VoiceAssistant(Node):
         self.future = self.cli.call_async(self.snack_wanted_request)
         rclpy.spin_until_future_complete(self, self.future)
         return self.future.result()
-    
+
     def request_snacks(self, snack_wanted):
         self.speak(f'Alrighty, {snack_wanted} coming right up!')
 
         # Send SnackWanted request to behaviour planner
         response = self.send_request(snack_wanted)
-        self.get_logger().info(f'Response of snack_wanted service request: {response.success}, {response.message}')
+        self.get_logger().info(
+            f'Response of snack_wanted service request: {response.success}, {response.message}')
 
         if response.success:
             self.speak(f'Please pick up your {snack_wanted} from my side!')
@@ -168,8 +177,7 @@ class VoiceAssistant(Node):
             # and if snack is finished, it should set response.success = False and response.message = 'Snack not available'
             self.speak(f'Sorry, {snack_wanted} is not available.')
             self.speak(f'We will restock {snack_wanted} soon.')
-            
-    
+
     def speak(self, msg_list):
         """ Text to speech generation
 
@@ -197,9 +205,9 @@ class VoiceAssistant(Node):
             if word in user_input:
                 self.get_logger().info('Word found: "%s"' % word)
                 return True, word
-        
+
         return False, None
-    
+
     def say_bye(self):
         self.speak(f'Nice chatting with you. Have a nice day!')
         self.end_chat = True
@@ -213,36 +221,36 @@ class VoiceAssistant(Node):
     def find_snack_in_input(self, user_input):
         # Find the requested snack in user_input
         snack_options = self.get_parameter('snack_options').value
-        want_snacks, snack_wanted = self.look_for_keywords(user_input, snack_options)
+        want_snacks, snack_wanted = self.look_for_keywords(
+            user_input, snack_options)
         return want_snacks, snack_wanted
-        
+
     def chat_with_user(self, user_input):
-        self.messages.append({"role" : "user", "content" : user_input})
+        self.messages.append({"role": "user", "content": user_input})
 
         # Print available openai models with:
         # print(openai.Model.list())
         completion = openai.ChatCompletion.create(
-                model= "gpt-3.5-turbo",
-                messages=self.messages,
-                temperature=0.8
-            )      
+            model="gpt-3.5-turbo",
+            messages=self.messages,
+            temperature=0.8
+        )
 
         response = completion.choices[0].message.content
         self.messages.append({"role": "assistant", "content": response})
         print(f"\n{response}\n")
         self.conversation_handler.save_inprogress(self.messages)
-        
+
         self.speak(f'{response}')
-            
-    
+
     def process_user_input(self, user_input):
         # Keep chatting until user goes silent
         while user_input is not None:
-            
+
             if self.find_bye(user_input):
                 self.say_bye()
                 break
-            
+
             want_snacks, snack_wanted = self.find_snack_in_input(user_input)
 
             if want_snacks:
@@ -251,14 +259,13 @@ class VoiceAssistant(Node):
                 self.speak(f'Would you like anything else?')
             else:
                 self.chat_with_user(user_input)
-            
+
             # Get user prompt
             user_input = self.speech_recognizer.get_input()
-        
+
         # If user_input is None i.e user is silent, say bye
         if user_input is None:
             self.say_bye()
-        
 
     def run(self):
         if self.in_query_state:
@@ -266,8 +273,8 @@ class VoiceAssistant(Node):
             # Introduce upon reaching the human
             available_snacks = self.get_available_snacks_str()
             intro = ['Hi! Would you like to have snacks?',
-                    f'I have {available_snacks}. What would you like?',
-                    'Or, you can ask me anything.'] 
+                     f'I have {available_snacks}. What would you like?',
+                     'Or, you can ask me anything.']
             self.speak(intro)
 
             # Get user prompt
@@ -288,17 +295,12 @@ def main(args=None):
     while rclpy.ok():
         rclpy.spin_once(voice_assistant_node)
         # Allow time for message to be published on /chat_ended topic and state to be changed
-        # time.sleep(1) 
+        # time.sleep(1)
         voice_assistant_node.run()
-       
+
     voice_assistant_node.destroy_node()
     rclpy.shutdown()
 
 
 if __name__ == '__main__':
     main()
-    
-
-
-
-
