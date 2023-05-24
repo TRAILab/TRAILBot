@@ -245,7 +245,7 @@ class VoiceAssistant(Node):
 
     def process_user_input(self, user_input):
         # Keep chatting until user goes silent
-        while user_input is not None:
+        while rclpy.ok() and user_input is not None:
 
             if self.find_bye(user_input):
                 self.say_bye()
