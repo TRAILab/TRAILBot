@@ -4,7 +4,6 @@ This package will have contain custom Trailbot services and msgs.
 ## Make include src 
 ```bash
 cd ~/ros2_ws/src/TRAILBot/trailbot_interfaces
-mkdir include src msg
 ```
 
 Add custom msg definitions in msg folder and edit package.xml and CMakeLists.txt accordingly
