@@ -38,7 +38,7 @@
       <!-- <sensor type="ray" name="${name}-VLP16"> -->
       <sensor name="laser" type="ray">
         <pose>0 0 0 0 0 0</pose>
-        <visualize>true</visualize>
+        <visualize>false</visualize>      <!-- change to true for visual-->
         <update_rate>2</update_rate>
         <ray>
           <scan>
@@ -77,7 +77,7 @@
         </plugin> -->
         <plugin name="laser_controller" filename="libgazebo_ros_ray_sensor.so">
           <ros>
-            <argument>~/out:=scan</argument>
+            <argument>~/out:=points2</argument>
           </ros>
           <output_type>sensor_msgs/PointCloud2</output_type>
           <frame_name>laser_frame</frame_name>
