@@ -7,28 +7,6 @@ import matplotlib.patches as patches
 
 import numpy as np
 
-
-# Dictionary that maps from joint names to keypoint indices.
-KEYPOINT_DICT = {
-    'nose': 0,
-    'left_eye': 1,
-    'right_eye': 2,
-    'left_ear': 3,
-    'right_ear': 4,
-    'left_shoulder': 5,
-    'right_shoulder': 6,
-    'left_elbow': 7,
-    'right_elbow': 8,
-    'left_wrist': 9,
-    'right_wrist': 10,
-    'left_hip': 11,
-    'right_hip': 12,
-    'left_knee': 13,
-    'right_knee': 14,
-    'left_ankle': 15,
-    'right_ankle': 16
-}
-
 # Maps bones to a matplotlib color name.
 KEYPOINT_EDGE_INDS_TO_COLOR = {
     (0, 1): 'm',
@@ -176,19 +154,3 @@ def draw_prediction_on_image(
         image_from_plot, dsize=(output_image_width, output_image_height),
          interpolation=cv2.INTER_CUBIC)
   return image_from_plot
-
-def to_gif(images, fps):
-  """Converts image sequence (4D numpy array) to gif."""
-  imageio.mimsave('./animation.gif', images, fps=fps)
-  return embed.embed_file('./animation.gif')
-
-def progress(value, max=100):
-  return HTML("""
-      <progress
-          value='{value}'
-          max='{max}',
-          style='width: 100%'
-      >
-          {value}
-      </progress>
-  """.format(value=value, max=max))
