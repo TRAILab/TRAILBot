@@ -20,7 +20,7 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'chatbot = voice_assistant.voice_assistant:main',
+            'voice_assistant_node = voice_assistant.voice_assistant_node:main',
             'snack_wanted_service = voice_assistant.snack_wanted_service:main'
         ],
     },
