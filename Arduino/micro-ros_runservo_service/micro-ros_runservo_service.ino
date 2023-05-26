@@ -6,6 +6,7 @@
 #include <rclc/executor.h>
 #include <micro_ros_utilities/string_utilities.h>
 #include <Servo.h>
+#include <string>
 
 Servo servo1, servo2, servo3, servo4;
 
@@ -24,6 +25,17 @@ trailbot_interfaces__srv__RunServo_Request req;
 #define RCCHECK(fn) { rcl_ret_t temp_rc = fn; if((temp_rc != RCL_RET_OK)){while(1){};}}
 #define RCSOFTCHECK(fn) { rcl_ret_t temp_rc = fn; if((temp_rc != RCL_RET_OK)){}}
 
+void operate_servo(Servo& servo, trailbot_interfaces__srv__RunServo_Response * res_in, const char * servo_name, const int32_t & time_us_1=2000, const int32_t & time_us_2=1500){
+  servo.writeMicroseconds(time_us_1);
+  delay(950);
+  servo.writeMicroseconds(time_us_2);
+  delay(950);
+  res_in->success = true;
+  char msg_str[30] = "Operation succeeded: ";
+  strcat(msg_str, servo_name);
+  res_in->message = micro_ros_string_utilities_set(res_in->message, msg_str);      
+}
+
 void service_callback(const void * req, void * res){
   trailbot_interfaces__srv__RunServo_Request * req_in = (trailbot_interfaces__srv__RunServo_Request *) req;
   trailbot_interfaces__srv__RunServo_Response * res_in = (trailbot_interfaces__srv__RunServo_Response *) res;
@@ -31,36 +43,16 @@ void service_callback(const void * req, void * res){
   int32_t servoId = req_in->servo;
   switch(servoId){
     case 1:
-      servo1.writeMicroseconds(2000);
-      delay(950);
-      servo1.writeMicroseconds(1500);
-      delay(950);
-      res_in->success = true;
-      res_in->message = micro_ros_string_utilities_set(res_in->message, "Servo1 operation succeeded");   
+      operate_servo(servo1, res_in, "Servo1");  
       break;
     case 2:
-      servo2.writeMicroseconds(2000);
-      delay(950);
-      servo2.writeMicroseconds(1500);
-      delay(950);
-      res_in->success = true;
-      res_in->message = micro_ros_string_utilities_set(res_in->message, "Servo2 operation succeeded");      
+      operate_servo(servo2, res_in, "Servo2");
       break;
     case 3:
-      servo3.writeMicroseconds(2000);
-      delay(950);
-      servo3.writeMicroseconds(1500);
-      delay(950);
-      res_in->success = true;    
-      res_in->message = micro_ros_string_utilities_set(res_in->message, "Servo3 operation succeeded");  
+      operate_servo(servo3, res_in, "Servo3");  
       break;
     case 4:
-      servo4.writeMicroseconds(2000);
-      delay(950);
-      servo4.writeMicroseconds(1500);
-      delay(950);
-      res_in->success = true;  
-      res_in->message = micro_ros_string_utilities_set(res_in->message, "Servo4 operation succeeded");    
+      operate_servo(servo4, res_in, "Servo4");
       break;
     default:
       res_in->success = false;      //light up LED
