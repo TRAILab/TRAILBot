@@ -13,12 +13,13 @@ This document assumes you have ROS2 and docker installed on your host machine/la
 ```bash
 # In a new terminal:
 cd ~/ros2_ws/src/TRAILBot/Arduino
+chmod +x *.sh
 ./setup_microros_agent.sh
 ```
 
 ## 1.3. Setting up MicroROS with Arduino Due
 
-1. First, it is necessary to have the Arduino IDE installed, with the Board Manager configured for use with the Arduino Due board. You can confirm this setup by referencing the [Arduino Due Quickstart Guide](https://docs.arduino.cc/hardware/due).
+1. First, it is necessary to have the Arduino IDE installed, with the Board Manager configured for use with the Arduino Due board. You can confirm this setup by referencing the [Arduino Due Quickstart Guide](https://docs.arduino.cc/hardware/due). Open Arduino IDE, go to the Boards Manager and install `Arduino SAM Boards (32 bits ARM cortex-M3)`.
 2. Run the following in a new terminal:
 
 ```bash

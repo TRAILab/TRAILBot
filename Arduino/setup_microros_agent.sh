@@ -1,8 +1,10 @@
 #!/bin/bash
-set -euxo pipefail
+set -e
+set -x
 
 #source the ROS 2 installation
-cd && source /opt/ros/$ROS_DISTRO/setup.bash
+cd 
+source /opt/ros/$ROS_DISTRO/setup.bash
 
 # Create a workspace and download the micro-ROS tools
 mkdir microros_ws

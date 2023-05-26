@@ -4,7 +4,6 @@
 Follow the instructions in [MicroRos_ArduinoDue_Setup_Guide](MicroRos_ArduinoDue_Setup_Guide.md) to install and setup microros with Arduino Due. This setup is needed only once.
 
 ## 1.2. Upload to Arduino
-<!-- Copy or Symlink `micro-ros_runservo_service` folder from `TRAILBot/Arduino/` to ` ~/Arduino/`.  -->
 Open Arduino ide,  compile and upload `micro-ros_runservo_service.ino` in Arduino Due.
 
 ## 1.3. Run micro-ros agent and test run_servo_service node

@@ -1,5 +1,6 @@
 #!/bin/bash
-set -euxo pipefail
+set -e
+set -x
 
 cd ~/microros_ws 
 source /opt/ros/humble/setup.bash

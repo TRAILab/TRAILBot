@@ -1,11 +1,12 @@
 #!/bin/bash
-set -euxo pipefail
+set -e
+set -x
 
 # Add micro_ros_arduino precompiled library 
 cd ~/Arduino/libraries
 wget https://github.com/micro-ROS/micro_ros_arduino/archive/refs/tags/v2.0.5-humble.zip
-unzip micro_ros_arduino*.zip
-rm micro_ros_arduino*.zip
+unzip v2.0.5-humble.zip
+rm v2.0.5-humble.zip
 
 # Add patch
 export ARDUINO_PATH=~/.arduino15/packages/arduino
@@ -18,10 +19,10 @@ source /opt/ros/humble/setup.bash
 colcon build --packages-select trailbot_interfaces
 
 # Copy trailbot_interfaces in Arduino
-scp -r ~/ros2_ws/src/TRAILBot/trailbot_interfaces/ ~/Arduino/libraries/micro_ros_arduino/extras/library_generation/extra_packages/
+scp -r ~/ros2_ws/src/TRAILBot/trailbot_interfaces/ ~/Arduino/libraries/micro_ros_arduino-2.0.5-humble/extras/library_generation/extra_packages/
 
 # Build micro_ros_arduino library
-cd ~/Arduino/libraries/micro_ros_arduino*
+cd ~/Arduino/libraries/micro_ros_arduino-2.0.5-humble
 sudo docker pull microros/micro_ros_static_library_builder:humble
 sudo docker run -it --rm -v $(pwd):/project --env MICROROS_LIBRARY_FOLDER=extras microros/micro_ros_static_library_builder:humble -p cortex_m3
 
