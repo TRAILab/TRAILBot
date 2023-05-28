@@ -33,7 +33,7 @@ cd ~/ros2_ws/src/TRAILBot/Arduino
  
 2. First, we will test the installation of the precompiled micro-ROS libraries for the microcontroller. Open the Arduino IDE and navigate to `File -> Examples -> micro_ros_arduino -> micro-ros_publisher` to open up an example sketch. Verify that it compiles. Connect your microcontroller to your computer and upload the sketch. If the installation was properly completed, this should compile and upload successfully.
 
-4. Next, we can initiate the micro-ROS agent to verify installation of the micro-ROS libraries onto the host computer. First check the device name by running `ls /dev`. It will typically be named something like `/dev/ttyACM0` (though if you are not sure, you can always run `ls /dev` before and after plugging in the Arduino to determine what device has changed). 
+3. Next, we can initiate the micro-ROS agent to verify installation of the micro-ROS libraries onto the host computer. First check the device name by running `ls /dev`. It will typically be named something like `/dev/ttyACM0` (though if you are not sure, you can always run `ls /dev` before and after plugging in the Arduino to determine what device has changed). 
    
     Assuming a device name of `/dev/ttyACM0`, the micro-ROS agent can be initiated by running: 
     ```bash
