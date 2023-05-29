@@ -58,6 +58,7 @@ class VoiceArduinoBridge(Node):
         #    if runservo service's response is successful,
         #       snack_wanted response.success = True
         #       snack_wanted response.message = 'Snack dispensed successfully'
+        #       Update snack quantity param
         #    else:
         #       snack_wanted response.success = False
         #       snack_wanted response.message = 'Error: Servo ... did not operate.'

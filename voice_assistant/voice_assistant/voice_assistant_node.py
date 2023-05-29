@@ -108,7 +108,7 @@ class VoiceAssistant(Node):
         self.subscription  # To prevent unused variable warning
 
         # Publisher: to let behaviour planner know that the user has ended the chat
-        self.publisher_ = self.create_publisher(Bool, 'chat_ended', 1)
+        self.publisher_ = self.create_publisher(Bool, 'query_complete', 1)
         timer_period = 0.5  # seconds
         self.timer = self.create_timer(
             timer_period, self.publisher_timer_callback)
