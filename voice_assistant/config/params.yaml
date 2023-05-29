@@ -1,7 +1,5 @@
 /voice_assistant_node:
   ros__parameters:
-    snack_options: ['chips', 'chocolate', 'candies', 'nuts'] #TODO: handle chocolates or candy
-    available_snacks_quantity: [5, 5, 5, 5] # number of snacks available for each of the snack_options
     exit_cmd_options: ['bye', 'bubye', 'adios', 'ciao', 'no thanks', 'no thank you', 'see you', 'take care']
     speech_recognizer:
       energy_threshold: 200 # can be set between 50-5000. Increase this number if ambient noise is high
@@ -11,4 +9,10 @@
       use_whisper: true # uses OpenAI transcriber
     text_to_speech_engine: elevenlabs # Options are: pyttsx3, elevenlabs. Elevenlabs is more realistic
     use_sim_time: false
+
+/voice_arduino_bridge_node:
+  ros__parameters:
+    snack_options: ['chips', 'chocolate', 'candies', 'nuts'] #TODO: handle chocolates or candy
+    available_snacks_quantity: [5, 5, 5, 5] # number of snacks available for each of the snack_options
+    snack2servos_map: [1, 2, 3, 4]
     

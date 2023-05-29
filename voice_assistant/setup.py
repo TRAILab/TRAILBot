@@ -21,7 +21,7 @@ setup(
     entry_points={
         'console_scripts': [
             'voice_assistant_node = voice_assistant.voice_assistant_node:main',
-            'snack_wanted_service = voice_assistant.snack_wanted_service:main'
+            'voice_arduino_bridge_node = voice_assistant.voice_arduino_bridge_node:main'
         ],
     },
 )
