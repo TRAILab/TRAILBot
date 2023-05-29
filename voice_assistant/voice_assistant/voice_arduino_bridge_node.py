@@ -12,7 +12,7 @@ class VoiceArduinoBridge(Node):
     In the actual behaviour planner node, "snack_wanted" service should be created  
     and in its callback 'runservo' service should be called to operate the servo motors.
 
-    1. Declare Parameters for available snacks, their quantity, snack2
+    1. Declare Parameters for available snacks, their quantity, snack2servo_map
     2. Create server for snack_wanted service
     3. Create client for runservo service 
     4. Create a launch file to launch both nodes
@@ -54,14 +54,13 @@ class VoiceArduinoBridge(Node):
         snack = request.snack
         # TODO: check
         # if snack is available:
-        # send_request(servo) # calls run servo service
+        #    send_request(servo) # calls run servo service
         #    if runservo service's response is successful,
         #       snack_wanted response.success = True
         #       snack_wanted response.message = 'Snack dispensed successfully'
         #    else:
         #       snack_wanted response.success = False
         #       snack_wanted response.message = 'Error: Servo ... did not operate.'
-        #
         # else:
         # response.success = False
         # response.message = 'not available'
