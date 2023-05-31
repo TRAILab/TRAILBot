@@ -13,7 +13,11 @@ setup(
             ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
         (os.path.join('share', package_name, 'launch'), glob('launch/*.launch.py')),
+<<<<<<< Updated upstream
         (os.path.join('share', package_name, 'config'), glob('config/*.yaml'))
+=======
+        (os.path.join('share', package_name, 'params'), glob('params/*.yaml'))
+>>>>>>> Stashed changes
     ],
     install_requires=['setuptools'],
     zip_safe=True,
@@ -25,7 +29,7 @@ setup(
     entry_points={
         'console_scripts': [
             'voice_assistant_node = voice_assistant.voice_assistant_node:main',
-            'voice_arduino_bridge_node = voice_assistant.voice_arduino_bridge_node:main'
+            'snack_wanted_service = voice_assistant.snack_wanted_service:main'
         ],
     },
 )
