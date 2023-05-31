@@ -61,7 +61,7 @@ def generate_launch_description():
     # Generate launch description
     ld = LaunchDescription()
     ld.add_action(gazebo_builder)
-    # ld.add_action(rviz_node)
+    ld.add_action(rviz_node)
     # ld.add_action(slam_node)
     # ld.add_action(delayed_spawn)
     # ld.add_action(delayed_spawn2)

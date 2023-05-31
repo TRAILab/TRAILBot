@@ -161,6 +161,13 @@ def generate_launch_description():
                               'container_name': 'nav2_container'}.items()),
     ])
 
+    pc2scan_node = Node(
+                package='pointcloud_to_laserscan',
+                executable='pointcloud_to_laserscan_node',
+                output='screen',
+                respawn=use_respawn,
+                respawn_delay=2.0,)
+
     # Create the launch description and populate
     ld = LaunchDescription()
 
@@ -180,6 +187,8 @@ def generate_launch_description():
     ld.add_action(declare_log_level_cmd)
 
     # Add the actions to launch all of the navigation nodes
+    # ld.add_action(pc2scan_node)
     ld.add_action(bringup_cmd_group)
+
 
     return ld

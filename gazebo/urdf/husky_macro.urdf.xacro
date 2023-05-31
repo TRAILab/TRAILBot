@@ -130,8 +130,8 @@
       <child link="arch_top_link" />
     </joint>
     <xacro:add_depth_camera parent_link="arch_top_link"/>
-    <!-- <xacro:add_lidar parent_link="arch_top_link"/> -->
-    <xacro:add_lidar3D parent_link="arch_top_link"/>
+    <xacro:add_lidar parent_link="arch_top_link"/>
+    <!-- <xacro:add_lidar3D parent_link="arch_top_link"/> -->
 
     <ros2_control name="${prefix}husky_hardware" type="system">
       <hardware>
