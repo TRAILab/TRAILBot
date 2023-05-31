@@ -20,5 +20,6 @@ find_package(rosidl_default_generators REQUIRED)
 rosidl_generate_interfaces(${PROJECT_NAME}
 "srv/SnackWanted.srv"
 "srv/RunServo.srv"
+"msg/SnacksInventory.msg"
 )
 ament_package()

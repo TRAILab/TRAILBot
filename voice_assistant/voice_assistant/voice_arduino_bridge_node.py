@@ -13,9 +13,10 @@ class VoiceArduinoBridge(Node):
     and in its callback 'runservo' service should be called to operate the servo motors.
 
     1. Declare Parameters for available snacks, their quantity, snack2servo_map
-    2. Create server for snack_wanted service
-    3. Create client for runservo service 
-    4. Create a launch file to launch both nodes
+    2. Publish available snacks + their quantity on a topic "available_snacks" at 1 Hz
+    3. In voice assistant node: subscribe to the topic "available_snacks" and set a member variable
+    4. Create server for snack_wanted service
+    5. Create client for runservo service 
 
     """
 
