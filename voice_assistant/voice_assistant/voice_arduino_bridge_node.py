@@ -1,5 +1,7 @@
 import rclpy
 from rclpy.node import Node
+from rclpy.parameter import Parameter
+from std_msgs.msg import String
 
 from trailbot_interfaces.srv import SnackWanted
 from trailbot_interfaces.srv import RunServo
@@ -12,22 +14,14 @@ class VoiceArduinoBridge(Node):
     In the actual behaviour planner node, "snack_wanted" service should be created  
     and in its callback 'runservo' service should be called to operate the servo motors.
 
-<<<<<<< Updated upstream
-    1. Declare Parameters for available snacks, their quantity, snack2servo_map
-    2. Publish available snacks + their quantity on a topic "available_snacks" at 1 Hz
-    3. In voice assistant node: subscribe to the topic "available_snacks" and set a member variable
-    4. Create server for snack_wanted service
-    5. Create client for runservo service 
-=======
     1. Declare Parameters for available snacks, their quantity, snack2servo_map - DONE
     2. Create server for snack_wanted service - DONE
     3. Create client for runservo service - DONE
-    4. Create a launch file to launch both nodes - DONE, but needs checking (an error)
+    4. Create a launch file to launch both nodes - DONE, but needs checking
 
     additional:
     Figure out a way to make the snack parameters global/shareable,
     and be able to easily update them when the vending machine is refilled.
->>>>>>> Stashed changes
 
     """
 
@@ -49,6 +43,14 @@ class VoiceArduinoBridge(Node):
         while not self.cli.wait_for_service(timeout_sec=1.0):
             self.get_logger().info('runservo service not available, waiting again...')
         self.runservo_request = RunServo.Request()
+
+        # Set up available_snacks publisher
+        self.publisher_ = self.create_publisher(String, 'available_snacks', 10)
+        timer_period = 1  # publishes every second
+        # Create the timer
+        self.timer = self.create_timer(timer_period, self.timer_callback)
+        # Initialize a counter variable
+        self.i = 0
 
     # Send request to run servo service
 
@@ -74,29 +76,30 @@ class VoiceArduinoBridge(Node):
 
         snack = request.snack
 
-        # how do I know which snack they're looking for? What function/node is that coming from?
-        # is that request.snack?
-        # take i as the index of snack
-        i = 1 # fow now
-        if self.get_parameter('available_snacks_quantity').value[i] != 0:
+        snack_options = self.get_parameter('snack_options').value
+        snack_quantities = self.get_parameter('available_snack_quantity').value
+        ind = snack_options.index(snack)
+        if snack_quantities[ind] == 0:
+            response.success = False
+            response.message = f'Sorry, {request.snack} is not currently available.'
+        else:     # (if snack is available)
+        #    send_request(servo) - calls run servo service
+        #    if runservo service's response is successful:
+    
+            servos = self.get_parameter('snack2servos_map').value
+            servo_id = servos[ind]
+            runservo_service_response = self.send_request(servo_id)
+            assert runservo_service_response.success, f"ERROR: Servo ID {servo_id} is not between 1 and 4."
 
-        # TODO: check
-        # if snack is available:
-        #    send_request(servo) # calls run servo service
-        #    if runservo service's response is successful,
-            response = self.send_request(RunServo)
             self.get_logger().info(
                 f'Response of RunServo service request: {response.success}, {response.message}')
 
-            if response.success:
-                response.success = True
-                response.message = f'{request.snack} dispensed successfully!'
-        #       Update snack quantity parameter
-        #       will this line actually update the parameter?
-                self.get_parameter('available_snacks_quantity').value[i] -= 1        # change the i later
-            else:
-                response.success = False
-                response.message = f'Sorry, {request.snack} is not currently available.'
+            response.success = True
+            response.message = f'{request.snack} dispensed successfully!'
+    #       Update snack quantity parameter
+            snack_quantities[ind] -= 1
+            param_quantity = Parameter('available_snacks_quantity', Parameter.Type.LIST, snack_quantities)
+            self.set_parameters([param_quantity])
             
         self.get_logger().info(f'Incoming request\nsnack: {request.snack}')
         self.get_logger().info(
@@ -104,6 +107,20 @@ class VoiceArduinoBridge(Node):
 
         return response
 
+
+    def available_snacks_callback(self):
+        """
+        Callback function - gives the current quantities of snacks.
+        Gets called every second.
+        """
+        snack_quantities = self.get_parameter('available_snack_quantity').value
+
+        msg = String()
+        msg.data = 'The snack quantities are: %d' % snack_quantities
+        self.publisher_.publish(msg)
+        self.get_logger().info('Publishing: "%s"' % msg.data)
+        # Increment the counter by 1    
+        self.i += 1
 
 def main():
     rclpy.init()

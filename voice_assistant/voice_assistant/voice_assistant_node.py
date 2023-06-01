@@ -69,7 +69,8 @@ class VoiceAssistant(Node):
         # Note: You can list microphones with this command and set the device_index
         # to the index of your favourite microphone from the list
         print('Available mics:')
-        print(SpeechRecognizer.list_mics())
+        mic_list = SpeechRecognizer.list_mics()
+        print({key: i for i, key in enumerate(mic_list)})       # dictionary with microphones and their indexes
         self.get_logger().info('Mic index in use: %s' % str(
             self.get_parameter('speech_recognizer.mic_device_index').value))
         self.get_logger().info('speech_recognizer.energy_threshold: %s' %
@@ -108,10 +109,18 @@ class VoiceAssistant(Node):
         self.subscription  # To prevent unused variable warning
 
         # Publisher: to let behaviour planner know that the user has ended the chat
-        self.publisher_ = self.create_publisher(Bool, 'query_complete', 1)
+        self.publisher_ = self.create_publisher(Bool, 'chat_ended', 1)
         timer_period = 0.5  # seconds
         self.timer = self.create_timer(
             timer_period, self.publisher_timer_callback)
+        
+        # Subscriber: receive the current snack info
+        self.subscription = self.create_subscription(
+            String, 
+            'available_snacks',
+            self.listener_callback,
+            10)
+        self.subscription  # prevent unused variable warning
 
     def publisher_timer_callback(self):
         msg = Bool()
@@ -175,6 +184,14 @@ class VoiceAssistant(Node):
             # TODO: what to do in this case?
             # Behaviour planner should update the "available_snacks_quantity" param after a snack is dispensed
             # and if snack is finished, it should set response.success = False and response.message = 'Snack not available'
+            
+            snack_quantities = rclpy.get_param("/available_snacks_quantity")
+            ind = snack_quantities.index(snack_wanted)
+            snack_quantities[ind] -= 1
+            rclpy.set_param("/available_snacks_quantity", snack_quantities)
+            
+            response.success = False
+            response.message = f'Sorry, {request.snack} is not currently available.'
             self.speak(f'Sorry, {snack_wanted} is not available.')
             self.speak(f'We will restock {snack_wanted} soon.')
 
@@ -285,6 +302,9 @@ class VoiceAssistant(Node):
                 self.say_bye()
             else:
                 self.process_user_input(user_input)
+
+    def snack_info_callback(self, msg):
+        self.get_logger().info('I heard: "%s"' % msg.data)
 
 
 def main(args=None):
