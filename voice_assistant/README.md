@@ -127,6 +127,15 @@ echo 'export ELEVENLABS_API_KEY="<secret api key, (free per email account and fo
    ros2 topic pub --once /state std_msgs/msg/String "{data: "Query"}"
    ```
 
+## 1.6. Update Snack Inventory
+
+In a new terminal you can update snack inventory from commandline while nodes are running
+
+```bash
+ros2 param set /voice_arduino_bridge_node snack_options '['chips', 'juice', 'candies', 'chocolate']'
+
+ros2 param set /voice_arduino_bridge_node snack_quantity '[3, 1, 5, 6]'
+```
 
 ## 1.6. Troubleshoot
 
