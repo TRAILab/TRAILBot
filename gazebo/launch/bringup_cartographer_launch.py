@@ -151,8 +151,8 @@ def generate_launch_description():
             # arguments=['-configuration_directory', '/opt/ros/humble/share/turtlebot3_manipulation_cartographer/config/',
                     # '-configuration_basename', 'turtlebot3_2d.lua']),
             arguments=['-configuration_directory', cartographer_config_dir,
-                    '-configuration_basename', configuration_basename]),
-                    # '-configuration_basename', configuration_basename_3d]),
+                    # '-configuration_basename', configuration_basename]),
+                    '-configuration_basename', configuration_basename_3d]),
 
         IncludeLaunchDescription(
             PythonLaunchDescriptionSource([os.path.join(local_dir, 'launch', 'occupancy_grid.launch.py')]),
