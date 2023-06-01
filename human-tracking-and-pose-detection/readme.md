@@ -1,3 +1,28 @@
+
+## Arguments
+
+### `-v` or `--verbose`
+
+- Description: Enable print statements
+
+### `-k` or `--display_keypoint`
+
+- Description: Enable display of just the keypoints
+
+### `-i` or `--display_image`
+
+- Description: Enable display of image and keypoints
+
+## Usage
+
+To use the application, run the script and provide the desired arguments as command-line options. Here's an example:
+
+```bash
+python script.py -v -k -i
+```
+
+
+
 based on https://www.tensorflow.org/hub/tutorials/movenet
 
 

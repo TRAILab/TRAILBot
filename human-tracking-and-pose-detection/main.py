@@ -1,10 +1,10 @@
-import math
-import time
-import cv2
-import numpy as np
-import tensorflow_hub as hub
-import tensorflow as tf
 import argparse
+import cv2
+import math
+import numpy as np
+import tensorflow as tf
+import tensorflow_hub as hub
+import time
 parser_args = tuple()
 
 
