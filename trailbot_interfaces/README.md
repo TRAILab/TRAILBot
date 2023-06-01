@@ -3,7 +3,7 @@ This package will have contain custom Trailbot services and msgs.
 
 ## Build package
 ```bash
-cd ~/ros2_ws
+cd ~/trail_ws
 
 # [Optional] Activate virtual env
 source src/colcon_venv/venv/bin/activate

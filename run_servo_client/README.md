@@ -2,7 +2,7 @@
 
 ## Build package
 ```bash
-cd ~/ros2_ws
+cd ~/trail_ws
 
 # [Optional] Activate virtual env
 source src/colcon_venv/venv/bin/activate
@@ -17,7 +17,7 @@ colcon build --packages-select trailbot_interfaces run_servo_client
 
 ## Run package
 ```bash
-cd ~/ros2_ws
+cd ~/trail_ws
 
 # [Optional] Activate virtual env
 source src/colcon_venv/venv/bin/activate

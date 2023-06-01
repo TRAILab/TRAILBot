@@ -12,7 +12,7 @@ This document assumes you have ROS2 and docker installed on your host machine/la
 
 ```bash
 # In a new terminal:
-cd ~/ros2_ws/src/TRAILBot/Arduino
+cd ~/trail_ws/src/TRAILBot/Arduino
 chmod +x *.sh
 ./setup_microros_agent.sh
 ```
@@ -23,7 +23,7 @@ chmod +x *.sh
 2. Run the following in a new terminal:
 
 ```bash
-cd ~/ros2_ws/src/TRAILBot/Arduino
+cd ~/trail_ws/src/TRAILBot/Arduino
 ./setup_microros_arduinodue.sh
 ```
 
@@ -38,7 +38,7 @@ cd ~/ros2_ws/src/TRAILBot/Arduino
     Assuming a device name of `/dev/ttyACM0`, the micro-ROS agent can be initiated by running: 
     ```bash
     # In a new terminal:
-    cd ~/ros2_ws/src/TRAILBot/Arduino
+    cd ~/trail_ws/src/TRAILBot/Arduino
     ./run_microros_agent.sh
     ```
 

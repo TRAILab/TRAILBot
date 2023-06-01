@@ -14,7 +14,7 @@ Open Arduino ide,  compile and upload `micro-ros_runservo_service.ino` in Arduin
 
    ```bash
    # In a new terminal:
-   cd ~/ros2_ws/src/TRAILBot/Arduino
+   cd ~/trail_ws/src/TRAILBot/Arduino
    ./run_microros_agent.sh
    ```
 

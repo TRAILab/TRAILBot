@@ -6,7 +6,7 @@ The instructions in this section are only for bookkeeping how I created the pack
 I followed [ros2 tutorial](https://docs.ros.org/en/humble/Tutorials/Beginner-Client-Libraries/Custom-ROS2-Interfaces.html) to make custom RunServo.srv
 ```bash
 source /opt/ros/humble/setup.bash 
-cd ~/ros2_ws/src
+cd ~/trail_ws/src
 ros2 pkg create --build-type ament_cmake trailbot_interfaces
 cd trailbot_interfaces
 mkdir srv
@@ -14,11 +14,11 @@ mkdir srv
 # Make changes to CMakeLists.txt and package.xml as explained in the ros2 tutorial
 
 # Build trailbot_interfaces pkg 
-cd ~/ros2_ws
+cd ~/trail_ws
 colcon build --packages-select trailbot_interfaces
 
 # In a new terminal, check if ros recognizes the new srv
-cd ~/ros2_ws
+cd ~/trail_ws
 source /opt/ros/humble/setup.bash 
 source install/setup.bash
 ros2 interface show trailbot_interfaces/srv/RunServo
@@ -32,9 +32,9 @@ ros2 interface show trailbot_interfaces/srv/RunServo
 2. Create ros2 package
 ```bash
 source /opt/ros/humble/setup.bash 
-cd ~/ros2_ws/src
+cd ~/trail_ws/src
 ros2 pkg create --build-type ament_python voice_assistant --dependencies rclpy trailbot_interfaces
-# Add voice_assistant.py in ros2_ws/src/voice_assistant/voice_assistant/ folder
+# Add voice_assistant.py in trail_ws/src/voice_assistant/voice_assistant/ folder
 # Follow ros2 tutorial to change package.xml and setup.py
 ```
 -->
@@ -45,7 +45,7 @@ ros2 pkg create --build-type ament_python voice_assistant --dependencies rclpy t
 
 ```bash
 # Create python virtual env
-cd ~/ros2_ws/src
+cd ~/trail_ws/src
 mkdir -p colcon_venv/src
 cd colcon_venv
 virtualenv -p python3 ./venv --system-site-packages --symlinks
@@ -66,13 +66,13 @@ executable = /usr/bin/env python3
 
 **Note:** I could not get conda env to work with ROS2. There were some python path conflicts between conda and ROS2, as a result I would get ModuleNotFound Errors e.g. catkin_pkg not found. To hide conda paths from ROS2, I had to comment out conda related stuff from bashrc and rename my /home/barza/anaconda3 folder so that ROS2 does not use python from anaconda's lib folder. If I have to use conda for non-ROS applications, I will have to undo these changes, which is messy. If you know of a cleaner/better way of hiding conda from ROS2 or using conda with ROS2 without conflicts/errors, please let me know. Thanks!
 
-**Tip (VSCode):** I installed ROS (by Microsoft) and CMake (by twxs) extensions to help in autocompletion of ROS2 code. Run `code .` in `ros2_ws/src` folder to open VSCode and choose the python interpreter from colcon_venv.
+**Tip (VSCode):** I installed ROS (by Microsoft) and CMake (by twxs) extensions to help in autocompletion of ROS2 code. Run `code .` in `trail_ws/src` folder to open VSCode and choose the python interpreter from colcon_venv.
 
 ## 1.2. Install python packages
 
 ```bash
 # [Optional] Activate virtual env
-source ~/ros2_ws/src/colcon_venv/venv/bin/activate
+source ~/trail_ws/src/colcon_venv/venv/bin/activate
 
 # Install required packages
 sudo apt install espeak
@@ -84,7 +84,7 @@ pip install -r requirements.txt
 
 ## 1.3. Build package
 ```bash
-cd ~/ros2_ws
+cd ~/trail_ws
 
 # [Optional] Activate virtual env
 source src/colcon_venv/venv/bin/activate
@@ -107,7 +107,7 @@ echo 'export ELEVENLABS_API_KEY="<secret api key, (free per email account and fo
 
 1. Open a new terminal and run voice_assistant_node
    ```bash
-   cd ~/ros2_ws
+   cd ~/trail_ws
 
    # [Optional] Activate virtual env
    source src/colcon_venv/venv/bin/activate
