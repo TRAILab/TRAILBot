@@ -63,16 +63,21 @@ def movenet(input_image, model):
     # SavedModel format expects tensor type of int32.
     input_image = tf.cast(input_image, dtype=tf.int32)
     outputs = model(input_image)  # Output is a [1, 6, 56] tensor.
-
+    """
+    The first 17 * 3 elements are the keypoint locations and scores in the format: [y_0, x_0, s_0, y_1, x_1, s_1, …, y_16, x_16, s_16], where y_i, x_i, s_i are the yx-coordinates (normalized to image frame, e.g. range in [0.0, 1.0]) and confidence scores of the i-th joint correspondingly. The order of the 17 keypoint joints is: [nose, left eye, right eye, left ear, right ear, left shoulder, right shoulder, left elbow, right elbow, left wrist, right wrist, left hip, right hip, left knee, right knee, left ankle, right ankle]. The remaining 5 elements [ymin, xmin, ymax, xmax, score] represent the region of the bounding box (in normalized coordinates) and the confidence score of the instance
+    """
     keypoints = outputs['output_0'].numpy()
 
     threshold = 0.3
     count_of_people = np.sum(keypoints[0, :, -1] > threshold)
     print_verbose_only("count_of_people", count_of_people)
+    
+    #there are 6 people
+    #there are 17 body points and therefore 3*17=51 numbers per person
     return keypoints[:, :, :51].reshape((6, 17, 3))[0]
 
 
-def isTherePerson(points, score_threshold=0.3):
+def is_there_person(points, score_threshold=0.3):
     """
     return True/False of whether there is a person
     """
@@ -80,7 +85,7 @@ def isTherePerson(points, score_threshold=0.3):
     return visible_joints >= 3
 
 
-def isPersonFacingCamera(points, score_threshold=0.3):
+def is_person_facing_camera(points, score_threshold=0.3):
     """
     return True/False depending on if the person is facing camera or not
     """
@@ -92,7 +97,7 @@ def isPersonFacingCamera(points, score_threshold=0.3):
     return visible_joints_face >= 3 and facing_forward
 
 
-def getHeadingAngle(
+def get_heading_angle(
         points,
         score_threshold=0.3,
         fov=90,
@@ -147,12 +152,11 @@ def process_frame(image, model):
     # Run model inference
     keypoints = movenet(input_image, model)
 
-    angle = getHeadingAngle(keypoints)
+    angle = get_heading_angle(keypoints)
     log = ""
-    log += f'is there person:{isTherePerson(keypoints)}' + '\n'
-    log += f"Person {'is' if isPersonFacingCamera(keypoints) else 'NOT'} facing laptop!\n"
-    log += f"heading angle:{angle}" + '\n'
-
+    log += f'is there person:{is_there_person(keypoints)}' + '\n'
+    log += f"Person {'is' if is_person_facing_camera(keypoints) else 'NOT'} facing laptop!\n"
+    log += f"heading angle:{angle}\n"
     if abs(angle) < 10:
         log += "CENTER\n"
     elif angle < 0:
@@ -165,8 +169,8 @@ def process_frame(image, model):
 
 
 def main():
-    global parse_args
-    parse_args = parse_arguments()
+    global parser_args
+    parser_args = parse_arguments()
     if parser_args.display_image:
         from helper_for_visualization import draw_prediction_on_image
 
