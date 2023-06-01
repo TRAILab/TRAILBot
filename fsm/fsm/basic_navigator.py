@@ -40,6 +40,12 @@ class BasicNavigator(Node):
         self.feedback = None
         self.status = None
 
+        self.subscription = self.create_subscription(
+            PoseStamped,
+            '/goal_pose',
+            self.listener_callback,
+            10)
+
         # amcl_pose_qos = QoSProfile(
         #   durability=QoSDurabilityPolicy.TRANSIENT_LOCAL,
         #   reliability=QoSReliabilityPolicy.RELIABLE,
@@ -208,9 +214,84 @@ class BasicNavigator(Node):
         self.get_logger().debug(msg)
         return
     
+    def listener_callback(self, msg):
+        self.get_logger().info('I heard: "%s"' % msg.pose.position.x)
+    
+# class MinimalSubscriber(Node):
+#     def __init__(self):
+#         super().__init__('minimal_subscriber')
+#         self.subscription = self.create_subscription(
+#             PoseStamped,
+#             '/goal_pose',
+#             self.listener_callback,
+#             10)
+#         self.subscription  # prevent unused variable warning
+
+    # def listener_callback(self, msg):
+    #     self.get_logger().info('I heard: "%s"' % msg.data)
+
+# class MinimalPublisher(Node):
+
+#     def __init__(self):
+#         super().__init__('minimal_publisher')
+#         self.publisher_ = self.create_publisher(String, 'robot_state', 10)
+ 
+#     def timer_callback(self):
+#         msg = String()
+#         msg.data = 'Hello World: %d' % self.i
+#         self.publisher_.publish(msg)
+        # self.get_logger().info('Publishing: "%s"' % msg.data)
+
+
+    def goal_update(self, msg):
+        goal_pose = PoseStamped()
+        goal_pose.header.frame_id = 'map'
+        goal_pose.header.stamp = self.get_clock().now().to_msg()
+        goal_pose.pose.position.x = msg.pose.position.x
+        goal_pose.pose.position.y = msg.pose.position.y
+        goal_pose.pose.orientation.w = msg.pose.position.w
+        self.goToPose(goal_pose)
+
+        i = 0
+        while not self.isNavComplete():
+        ################################################
+        #
+        # Implement some code here for your application!
+        #
+        ################################################
+
+            # Do something with the feedback
+            i = i + 1
+            feedback = self.getFeedback()
+            if feedback and i % 5 == 0:
+                # print('Estimated time of arrival: ' + '{0:.0f}'.format(
+                #       Duration.from_msg(feedback.estimated_time_remaining).nanoseconds / 1e9)
+                #       + ' seconds.')
+                print(f'Estimated distance remaining: {feedback.distance_remaining}')
+
+                # Some navigation timeout to demo cancellation
+                if Duration.from_msg(feedback.navigation_time) > Duration(seconds=600.0):
+                    self.cancelNav()
+
+        # Do something depending on the return code
+        result = self.getResult()
+        if result == GoalStatus.STATUS_SUCCEEDED:
+            print('Goal succeeded!')
+        elif result == GoalStatus.STATUS_CANCELED:
+            print('Goal was canceled!')
+        elif result == GoalStatus.STATUS_ABORTED:
+            print('Goal failed!')
+        else:
+            print('Goal has an invalid return status!')
+
+
 def main(argv=sys.argv[1:]):
+    
     rclpy.init()
     navigator = BasicNavigator()
+    navigator.waitUntilNav2Active()
+    # import pdb; pdb.set_trace()
+    rclpy.spin(navigator)
 
     # Set our demo's initial pose
     initial_pose = Pose()
@@ -221,48 +302,48 @@ def main(argv=sys.argv[1:]):
     # navigator.setInitialPose(initial_pose)
 
     # Wait for navigation to fully activate
-    navigator.waitUntilNav2Active()
+    # navigator.waitUntilNav2Active()
 
     # Go to our demos first goal pose
-    goal_pose = PoseStamped()
-    goal_pose.header.frame_id = 'map'
-    goal_pose.header.stamp = navigator.get_clock().now().to_msg()
-    goal_pose.pose.position.x = 5.0
-    goal_pose.pose.position.y = -5.0
-    goal_pose.pose.orientation.w = 1.0
-    navigator.goToPose(goal_pose)
+    # goal_pose = PoseStamped()
+    # goal_pose.header.frame_id = 'map'
+    # goal_pose.header.stamp = navigator.get_clock().now().to_msg()
+    # goal_pose.pose.position.x = msg.
+    # goal_pose.pose.position.y = -3.0
+    # goal_pose.pose.orientation.w = 1.0
+    # navigator.goToPose(goal_pose)
 
-    i = 0
-    while not navigator.isNavComplete():
-        ################################################
-        #
-        # Implement some code here for your application!
-        #
-        ################################################
+    # i = 0
+    # while not navigator.isNavComplete():
+    #     ################################################
+    #     #
+    #     # Implement some code here for your application!
+    #     #
+    #     ################################################
 
-        # Do something with the feedback
-        i = i + 1
-        feedback = navigator.getFeedback()
-        if feedback and i % 5 == 0:
-            # print('Estimated time of arrival: ' + '{0:.0f}'.format(
-            #       Duration.from_msg(feedback.estimated_time_remaining).nanoseconds / 1e9)
-            #       + ' seconds.')
-            print(f'Estimated distance remaining: {feedback.distance_remaining}')
+    #     # Do something with the feedback
+    #     i = i + 1
+    #     feedback = navigator.getFeedback()
+    #     if feedback and i % 5 == 0:
+    #         # print('Estimated time of arrival: ' + '{0:.0f}'.format(
+    #         #       Duration.from_msg(feedback.estimated_time_remaining).nanoseconds / 1e9)
+    #         #       + ' seconds.')
+    #         print(f'Estimated distance remaining: {feedback.distance_remaining}')
 
-            # Some navigation timeout to demo cancellation
-            if Duration.from_msg(feedback.navigation_time) > Duration(seconds=600.0):
-                navigator.cancelNav()
+    #         # Some navigation timeout to demo cancellation
+    #         if Duration.from_msg(feedback.navigation_time) > Duration(seconds=600.0):
+    #             navigator.cancelNav()
 
-    # Do something depending on the return code
-    result = navigator.getResult()
-    if result == GoalStatus.STATUS_SUCCEEDED:
-        print('Goal succeeded!')
-    elif result == GoalStatus.STATUS_CANCELED:
-        print('Goal was canceled!')
-    elif result == GoalStatus.STATUS_ABORTED:
-        print('Goal failed!')
-    else:
-        print('Goal has an invalid return status!')
+    # # Do something depending on the return code
+    # result = navigator.getResult()
+    # if result == GoalStatus.STATUS_SUCCEEDED:
+    #     print('Goal succeeded!')
+    # elif result == GoalStatus.STATUS_CANCELED:
+    #     print('Goal was canceled!')
+    # elif result == GoalStatus.STATUS_ABORTED:
+    #     print('Goal failed!')
+    # else:
+    #     print('Goal has an invalid return status!')
 
     exit(0)
 
