@@ -78,7 +78,7 @@ source ~/trail_ws/src/colcon_venv/venv/bin/activate
 sudo apt install espeak
 sudo apt-get update -y
 sudo apt-get install -y portaudio19-dev ffmpeg
-pip install -r requirements.txt
+pip install -r ~/trail_ws/src/TRAILBot/voice_assistant/requirements.txt
 ```
 
 
