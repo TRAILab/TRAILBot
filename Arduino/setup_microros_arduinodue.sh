@@ -13,13 +13,16 @@ export ARDUINO_PATH=~/.arduino15/packages/arduino
 cd $ARDUINO_PATH/hardware/sam/1.6.12/
 curl https://raw.githubusercontent.com/micro-ROS/micro_ros_arduino/humble/extras/patching_boards/platform_arduinocore_sam.txt > platform.txt
 
-# Build trailbot_interfaces in trail_ws
-cd ~/trail_ws
+scp -r ~/trail_ws/src/TRAILBot/trailbot_interfaces/ ~/microros_ws/src/
+
+# Build trailbot_interfaces in microros_ws
+cd ~/microros_ws
 source /opt/ros/humble/setup.bash 
 colcon build --packages-select trailbot_interfaces
+source install/setup.bash
 
 # Copy trailbot_interfaces in Arduino
-scp -r ~/trail_ws/src/TRAILBot/trailbot_interfaces/ ~/Arduino/libraries/micro_ros_arduino-2.0.5-humble/extras/library_generation/extra_packages/
+scp -r ~/microros_ws/src/trailbot_interfaces/ ~/Arduino/libraries/micro_ros_arduino-2.0.5-humble/extras/library_generation/extra_packages/
 
 # Build micro_ros_arduino library
 cd ~/Arduino/libraries/micro_ros_arduino-2.0.5-humble

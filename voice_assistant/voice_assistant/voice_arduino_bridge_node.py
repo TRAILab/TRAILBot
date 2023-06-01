@@ -1,6 +1,7 @@
 import rclpy
 from rclpy.node import Node
 from rclpy.parameter import Parameter
+import time
 
 from trailbot_interfaces.msg import SnacksInventory
 from trailbot_interfaces.srv import RunServo, SnackWanted
@@ -61,10 +62,14 @@ class VoiceArduinoBridge(Node):
     def snack_wanted_callback(self, request, response):
 
         snack = request.snack
-
+        self.get_logger().info(f'Received request: {snack}')
         snack_options = self.get_parameter('snack_options').value
         snack_quantities = self.get_parameter(
             'snack_quantity').value
+
+        self.get_logger().info(f'Current snack inventory:')
+        self.get_logger().info(f'snacks: {snack_options}')
+        self.get_logger().info(f'quantity: {snack_quantities}')
 
         if snack not in snack_options:
             self.get_logger.error(f'Unknown Snack Requested: {snack}!')
@@ -81,6 +86,11 @@ class VoiceArduinoBridge(Node):
             servos = self.get_parameter('snack2servos_map').value
             servo_id = servos[ind]
             runservo_service_response = self.send_request(servo_id)
+            self.get_logger().info(
+                f'runservo_service_response.success: {runservo_service_response.success}')
+            self.get_logger().info(
+                f'runservo_service_response.message: {runservo_service_response.message}')
+
             assert runservo_service_response.success, \
                 f"ERROR: Servo ID {servo_id} is not between 1 and 4. Check snack2servos_map!"
 
@@ -92,6 +102,14 @@ class VoiceArduinoBridge(Node):
             param_quantity = Parameter(
                 'snack_quantity', Parameter.Type.INTEGER_ARRAY, snack_quantities)
             self.set_parameters([param_quantity])
+
+            # Print
+            snack_options = self.get_parameter('snack_options').value
+            snack_quantities = self.get_parameter(
+                'snack_quantity').value
+            self.get_logger().info(f'snack inventory updated')
+            self.get_logger().info(f'snacks: {snack_options}')
+            self.get_logger().info(f'quantity: {snack_quantities}')
 
         return response
 

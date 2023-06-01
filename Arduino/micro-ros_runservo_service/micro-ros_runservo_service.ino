@@ -25,15 +25,15 @@ trailbot_interfaces__srv__RunServo_Request req;
 #define RCCHECK(fn) { rcl_ret_t temp_rc = fn; if((temp_rc != RCL_RET_OK)){while(1){};}}
 #define RCSOFTCHECK(fn) { rcl_ret_t temp_rc = fn; if((temp_rc != RCL_RET_OK)){}}
 
-void operate_servo(Servo& servo, trailbot_interfaces__srv__RunServo_Response * res_in, const char * servo_name, const int32_t & time_us_1=2000, const int32_t & time_us_2=1500){
+void operate_servo(Servo& servo, trailbot_interfaces__srv__RunServo_Response * res_in, const char * servo_name, const int32_t & time_us_1=1000, const int32_t & time_us_2=1500){
   servo.writeMicroseconds(time_us_1);
-  delay(950);
+  delay(1200);
   servo.writeMicroseconds(time_us_2);
-  delay(950);
+  delay(1200);
   res_in->success = true;
-  char msg_str[30] = "Operation succeeded: ";
-  strcat(msg_str, servo_name);
-  res_in->message = micro_ros_string_utilities_set(res_in->message, msg_str);      
+  // char msg_str[30] = "Operation succeeded: ";
+  // strcat(msg_str, servo_name);
+  res_in->message = micro_ros_string_utilities_set(res_in->message, "Operation succeeded");      
 }
 
 void service_callback(const void * req, void * res){

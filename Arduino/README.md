@@ -20,8 +20,8 @@ Open Arduino ide,  compile and upload `micro-ros_runservo_service.ino` in Arduin
 
 3. **Test node:** Open a new terminal and call `/runservo` service to see if you can operate servos:
    ```bash
-   ros2 service call /runservo trailbot_interfaces/srv/RunServo {servo: 1}
-   ros2 service call /runservo trailbot_interfaces/srv/RunServo {servo: 2}
-   ros2 service call /runservo trailbot_interfaces/srv/RunServo {servo: 3}
-   ros2 service call /runservo trailbot_interfaces/srv/RunServo {servo: 4}
+   ros2 service call /runservo trailbot_interfaces/srv/RunServo '{servo: 1}'
+   ros2 service call /runservo trailbot_interfaces/srv/RunServo '{servo: 2}'
+   ros2 service call /runservo trailbot_interfaces/srv/RunServo '{servo: 3}'
+   ros2 service call /runservo trailbot_interfaces/srv/RunServo '{servo: 4}'
    ```

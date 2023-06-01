@@ -65,10 +65,11 @@ class VoiceAssistant(Node):
         # Speech Recognizer set-up
         # Note: You can list microphones with this command and set the device_index
         # to the index of your favourite microphone from the list
-        print('Available mics:')
+        self.get_logger().info('Available mics:')
         mic_list = SpeechRecognizer.list_mics()
         # dictionary with microphones and their indexes
-        print({key: i for i, key in enumerate(mic_list)})
+        for index, key in enumerate(mic_list):
+            self.get_logger().info(f'{key}: {index}')
         self.get_logger().info('Mic index in use: %s' % str(
             self.get_parameter('speech_recognizer.mic_device_index').value))
         self.get_logger().info('speech_recognizer.energy_threshold: %s' %
@@ -82,7 +83,8 @@ class VoiceAssistant(Node):
                                                       'speech_recognizer.timeout').value,
                                                   phrase_time_limit=self.get_parameter(
                                                       'speech_recognizer.phrase_time_limit').value,
-                                                  dynamic_energy_threshold=False)
+                                                  dynamic_energy_threshold=False,
+                                                  logger=self.get_logger())
 
         # Set-up conversation_handler to save conversations
         self.conversation_handler = ConversationHandler(
@@ -227,9 +229,8 @@ class VoiceAssistant(Node):
 
     def find_snack_in_input(self, user_input):
         # Find the requested snack in user_input
-        snack_options = self.get_parameter('snack_options').value
         want_snacks, snack_wanted = self.look_for_keywords(
-            user_input, snack_options)
+            user_input, self.snack_options)
         return want_snacks, snack_wanted
 
     def chat_with_user(self, user_input):
@@ -245,7 +246,7 @@ class VoiceAssistant(Node):
 
         response = completion.choices[0].message.content
         self.messages.append({"role": "assistant", "content": response})
-        print(f"\n{response}\n")
+        # print(f"\n{response}\n")
         self.conversation_handler.save_inprogress(self.messages)
 
         self.speak(f'{response}')
@@ -283,9 +284,10 @@ class VoiceAssistant(Node):
 
             # Introduce upon reaching the human
             available_snacks = self.get_available_snacks_str()
-            intro = ['Hi! Would you like to have snacks?',
-                     f'I have {available_snacks}. What would you like?',
-                     'Or, you can ask me anything.']
+            # intro = ['Hi! Would you like to have snacks?',
+            #          f'I have {available_snacks}. What would you like?',
+            #          'Or, you can ask me anything.']
+            intro = 'Hi! Would you like to have snacks?'
             self.speak(intro)
 
             # Get user prompt
