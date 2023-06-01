@@ -13,6 +13,6 @@
 /voice_arduino_bridge_node:
   ros__parameters:
     snack_options: ['chips', 'chocolate', 'candies', 'nuts'] #TODO: handle chocolates or candy
-    available_snacks_quantity: [5, 5, 5, 5] # number of snacks available for each of the snack_options
+    snack_quantity: [5, 5, 5, 5] # number of snacks available for each of the snack_options
     snack2servos_map: [1, 2, 3, 4]
     

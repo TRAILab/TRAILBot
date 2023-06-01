@@ -118,13 +118,9 @@ echo 'export ELEVENLABS_API_KEY="<secret api key, (free per email account and fo
    # Source local packages 
    source install/setup.bash
 
-   # Run snack_wanted_service node 
-   # Note: Since behaviour planner is not complete, I created a temporary `snack_wanted_service node` that responds to `snack_wanted` requests from the voice_assistant_node. This allows us to test the voice_assistant_node's logic without running behaviour planner. In the final stage, we will replace this step with running the behviour planner node.
+   # Run voice_assistant
+   ros2 launch voice_assistant voice_assistant.launch.py
 
-   ros2 run voice_assistant snack_wanted_service
-
-   # Run voice_assistant_node in a new terminal after sourcing ros2
-    ros2 run voice_assistant voice_assistant_node --ros-args --params-file ~/ros2_ws/src/TRAILBot/voice_assistant/config/params.yaml
    ```
 2. Chatbot starts interacting with the user if the robot's state changes to 'Query'. Without behaviour planner running, you can manually change robot's state to 'Query' to test/activate chatbot.
    ```bash
