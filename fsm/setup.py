@@ -22,6 +22,7 @@ setup(
         'console_scripts': [
             "trailbot_action = fsm.trailbot_action:main",
             "trailbot_fsm = fsm.trailbot_fsm:main",
+            "basic_navigator = fsm.basic_navigator:main",
             "tf2_listener = fsm.tf2_listener:main",
         ],
     },
