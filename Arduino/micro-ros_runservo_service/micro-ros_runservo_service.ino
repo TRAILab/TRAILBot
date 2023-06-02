@@ -25,15 +25,15 @@ trailbot_interfaces__srv__RunServo_Request req;
 #define RCCHECK(fn) { rcl_ret_t temp_rc = fn; if((temp_rc != RCL_RET_OK)){while(1){};}}
 #define RCSOFTCHECK(fn) { rcl_ret_t temp_rc = fn; if((temp_rc != RCL_RET_OK)){}}
 
-void operate_servo(Servo& servo, trailbot_interfaces__srv__RunServo_Response * res_in, const char * servo_name, const int32_t & time_us_1=1000, const int32_t & time_us_2=1500){
-  servo.writeMicroseconds(time_us_1);
-  delay(1200);
-  servo.writeMicroseconds(time_us_2);
-  delay(1200);
+void operate_servo(Servo& servo, trailbot_interfaces__srv__RunServo_Response * res_in, const char * servo_name, const int32_t & delay_ms=1200){
+  servo.writeMicroseconds(1000); // change this to 2000 to change rotation direction
+  delay(delay_ms);
+  servo.writeMicroseconds(1500);
+  delay(delay_ms);
   res_in->success = true;
-  // char msg_str[30] = "Operation succeeded: ";
-  // strcat(msg_str, servo_name);
-  res_in->message = micro_ros_string_utilities_set(res_in->message, "Operation succeeded");      
+  char msg_str[30] = "Operation succeeded: ";
+  strcat(msg_str, servo_name);
+  res_in->message = micro_ros_string_utilities_set(res_in->message, msg_str);      
 }
 
 void service_callback(const void * req, void * res){
@@ -43,16 +43,16 @@ void service_callback(const void * req, void * res){
   int32_t servoId = req_in->servo;
   switch(servoId){
     case 1:
-      operate_servo(servo1, res_in, "Servo1");  
+      operate_servo(servo1, res_in, "Servo1", 1400);  
       break;
     case 2:
-      operate_servo(servo2, res_in, "Servo2");
+      operate_servo(servo2, res_in, "Servo2", 1400);
       break;
     case 3:
-      operate_servo(servo3, res_in, "Servo3");  
+      operate_servo(servo3, res_in, "Servo3", 1400);  
       break;
     case 4:
-      operate_servo(servo4, res_in, "Servo4");
+      operate_servo(servo4, res_in, "Servo4", 1400);
       break;
     default:
       res_in->success = false;      //light up LED

@@ -41,6 +41,8 @@ class VoiceArduinoBridge(Node):
         self.timer = self.create_timer(
             timer_period, self.publisher_timer_callback)
 
+        self.snack_requested = None
+
     def send_request(self, servo):
         """
         Sends request to runservo service 
@@ -83,33 +85,9 @@ class VoiceArduinoBridge(Node):
             response.message = f'Sorry, we have run out of {request.snack}.'
             return response
         else:
-            servos = self.get_parameter('snack2servos_map').value
-            servo_id = servos[ind]
-            runservo_service_response = self.send_request(servo_id)
-            self.get_logger().info(
-                f'runservo_service_response.success: {runservo_service_response.success}')
-            self.get_logger().info(
-                f'runservo_service_response.message: {runservo_service_response.message}')
-
-            assert runservo_service_response.success, \
-                f"ERROR: Servo ID {servo_id} is not between 1 and 4. Check snack2servos_map!"
-
+            self.snack_requested = snack
             response.success = True
-            response.message = f'{request.snack} dispensed successfully!'
-
-            # Update snack quantity parameter
-            snack_quantities[ind] -= 1
-            param_quantity = Parameter(
-                'snack_quantity', Parameter.Type.INTEGER_ARRAY, snack_quantities)
-            self.set_parameters([param_quantity])
-
-            # Print
-            snack_options = self.get_parameter('snack_options').value
-            snack_quantities = self.get_parameter(
-                'snack_quantity').value
-            self.get_logger().info(f'snack inventory updated')
-            self.get_logger().info(f'snacks: {snack_options}')
-            self.get_logger().info(f'quantity: {snack_quantities}')
+            response.message = f'{request.snack} is available.'
 
         return response
 
@@ -128,13 +106,48 @@ class VoiceArduinoBridge(Node):
         msg.quantity = snack_quantities
         self.publisher.publish(msg)
 
+    def run(self):
+        while self.snack_requested is not None:
+            snack_options = self.get_parameter('snack_options').value
+            snack_quantities = self.get_parameter('snack_quantity').value
+            ind = snack_options.index(self.snack_requested)
+            servos = self.get_parameter('snack2servos_map').value
+            servo_id = servos[ind]
+            runservo_service_response = self.send_request(servo_id)
+            self.get_logger().info(
+                f'runservo_service_response.success: {runservo_service_response.success}')
+            self.get_logger().info(
+                f'runservo_service_response.message: {runservo_service_response.message}')
+
+            assert runservo_service_response.success, \
+                f"ERROR: Servo ID {servo_id} is not between 1 and 4. Check snack2servos_map!"
+
+            # Update snack quantity parameter
+            snack_quantities[ind] -= 1
+            param_quantity = Parameter(
+                'snack_quantity', Parameter.Type.INTEGER_ARRAY, snack_quantities)
+            self.set_parameters([param_quantity])
+
+            # Print
+            snack_options = self.get_parameter('snack_options').value
+            snack_quantities = self.get_parameter(
+                'snack_quantity').value
+            self.get_logger().info(f'snack inventory updated')
+            self.get_logger().info(f'snacks: {snack_options}')
+            self.get_logger().info(f'quantity: {snack_quantities}')
+
+            # Reset snack requested
+            self.snack_requested = None
+
 
 def main():
     rclpy.init()
 
     voice_arduino_bridge_node = VoiceArduinoBridge()
 
-    rclpy.spin(voice_arduino_bridge_node)
+    while rclpy.ok():
+        rclpy.spin_once(voice_arduino_bridge_node)
+        voice_arduino_bridge_node.run()
 
     rclpy.shutdown()
 
