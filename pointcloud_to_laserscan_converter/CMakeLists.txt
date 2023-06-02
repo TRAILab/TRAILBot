@@ -4,10 +4,6 @@ project(pointcloud_to_laserscan_converter)
 find_package(ament_cmake_auto REQUIRED)
 ament_auto_find_build_dependencies()
 
-rclcpp_components_register_node(laserscan_to_pointcloud
-  PLUGIN "pointcloud_to_laserscan::LaserScanToPointCloudNode"
-  EXECUTABLE laserscan_to_pointcloud_node)
-
 ament_auto_add_library(pointcloud_to_laserscan_converter SHARED
   src/pointcloud_to_laserscan_node.cpp)
 
