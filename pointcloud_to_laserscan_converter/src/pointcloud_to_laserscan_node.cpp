@@ -38,7 +38,7 @@
  * Author: Paul Bovbel
  */
 
-#include "pointcloud_to_laserscan/pointcloud_to_laserscan_node.hpp"
+#include "pointcloud_to_laserscan_node.hpp"
 
 #include <chrono>
 #include <functional>
@@ -52,11 +52,11 @@
 #include "tf2_sensor_msgs/tf2_sensor_msgs.hpp"
 #include "tf2_ros/create_timer_ros.h"
 
-namespace pointcloud_to_laserscan
+namespace pointcloud_to_laserscan_converter
 {
 
 PointCloudToLaserScanNode::PointCloudToLaserScanNode(const rclcpp::NodeOptions & options)
-: rclcpp::Node("pointcloud_to_laserscan", options)
+: rclcpp::Node("pointcloud_to_laserscan_converter", options)
 {
   target_frame_ = this->declare_parameter("target_frame", "");
   tolerance_ = this->declare_parameter("transform_tolerance", 0.01);
@@ -235,4 +235,4 @@ void PointCloudToLaserScanNode::cloudCallback(
 
 #include "rclcpp_components/register_node_macro.hpp"
 
-RCLCPP_COMPONENTS_REGISTER_NODE(pointcloud_to_laserscan::PointCloudToLaserScanNode)
+RCLCPP_COMPONENTS_REGISTER_NODE(pointcloud_to_laserscan_converter::PointCloudToLaserScanNode)

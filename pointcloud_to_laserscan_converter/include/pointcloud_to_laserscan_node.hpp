@@ -55,7 +55,8 @@
 #include "sensor_msgs/msg/laser_scan.hpp"
 #include "sensor_msgs/msg/point_cloud2.hpp"
 
-#include "pointcloud_to_laserscan_converter/visibility_control.h"
+// #include "pointcloud_to_laserscan_converter/visibility_control.h"
+#include "visibility_control.h"
 
 namespace pointcloud_to_laserscan_converter
 {
