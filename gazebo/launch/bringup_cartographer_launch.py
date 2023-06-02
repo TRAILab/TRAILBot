@@ -112,6 +112,12 @@ def generate_launch_description():
     declare_log_level_cmd = DeclareLaunchArgument(
         'log_level', default_value='info',
         description='log level')
+    
+
+    # #launch the pointcloud to laserscan
+    # p2lz = os.path.join(get_package_share_directory('pointcloud_to_laserscan'),'launch','sample_pointcloud_to_laserscan_launch.py')
+    # p2lz_builder = IncludeLaunchDescription(PythonLaunchDescriptionSource([p2lz]))
+
 
     # Cartographer node
     use_sim_time = LaunchConfiguration('use_sim_time', default='true')
@@ -138,7 +144,34 @@ def generate_launch_description():
             parameters=[configured_params, {'autostart': autostart}],
             arguments=['--ros-args', '--log-level', log_level],
             remappings=remappings,
-            output='screen'),
+            output='screen'
+        ),
+
+        Node(
+            package='pointcloud_to_laserscan_converter', executable='pointcloud_to_laserscan_node',
+            #remappings=[('cloud_in', [LaunchConfiguration(variable_name='scanner'), '/cloud']),
+                        #('scan', [LaunchConfiguration(variable_name='scanner'), '/scan'])],
+            parameters=[{
+                # 'target_frame': 'base_link',
+                'target_frame': 'laser_frame',
+                'transform_tolerance': 0.01,
+                #base link height max/min
+                # 'min_height': 0.1, #4 inches
+                # 'max_height': 1.0,
+                #laser_frame height max/min
+                'min_height': -0.9282, #4 inches above ground 
+                'max_height': 0.1, 
+                'angle_min': -3.14,  # -M_PI/2
+                'angle_max': 3.14,  # M_PI/2
+                'angle_increment': 0.0087,  # M_PI/360.0
+                'scan_time': 0.3333,
+                'range_min': 0.45,
+                'range_max': 30.0,
+                'use_inf': True,
+                'inf_epsilon': 1.0
+            }],
+            name='pointcloud_to_laserscan'
+        ),
 
         Node(
             package='cartographer_ros',
@@ -209,6 +242,7 @@ def generate_launch_description():
     ld.add_action(declare_use_composition_cmd)
     ld.add_action(declare_use_respawn_cmd)
     ld.add_action(declare_log_level_cmd)
+    # ld.add_action(p2lz_builder)
 
     # Add the actions to launch all of the navigation nodes
     ld.add_action(bringup_cmd_group)

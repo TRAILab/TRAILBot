@@ -21,7 +21,8 @@
       <parent link="camera_link"/>
       <child link="camera_link_optical"/>
       <!-- <origin xyz="0 0 0" rpy="${-pi/2} 0 ${-pi/2}"/> -->
-      <origin xyz="0 0 0" rpy="${-pi/2} 0 ${pi/2}"/>
+      <!-- <origin xyz="0 0 0" rpy="${-pi/2} 0 ${pi/2}"/> -->
+      <origin xyz="0.33 0 0.90755" rpy="0 0 0"/>
     </joint>
 
     <link name="camera_link_optical"></link>
