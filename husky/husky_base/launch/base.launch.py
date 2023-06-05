@@ -52,12 +52,7 @@ def generate_launch_description():
     velo_launch1 = IncludeLaunchDescription(PythonLaunchDescriptionSource([velo_launch_path1]))
     velo_launch_path2 = os.path.join(get_package_share_directory('velodyne_pointcloud'),'launch','velodyne_convert_node-VLP16-launch.py')
     velo_launch2 = IncludeLaunchDescription(PythonLaunchDescriptionSource([velo_launch_path2]))
-
-
-    #Ximea Camera launch 
-    ximea_launch_path = os.path.join(get_package_share_directory('ximea-driver'),'launch','ximea_driver.launch.py')
-    ximea_launch = IncludeLaunchDescription(PythonLaunchDescriptionSource([ximea_launch_path]))
-
+    
     #PC2LSCAN
     PCL2SCAN_launch_path = os.path.join(get_package_share_directory('velodyne_laserscan'),'launch','velodyne_laserscan_node-launch.py')
     PCL2SCAN = IncludeLaunchDescription(PythonLaunchDescriptionSource([PCL2SCAN_launch_path]))
@@ -70,6 +65,20 @@ def generate_launch_description():
         name='rviz2',
         arguments=['-d', rviz_config_path],
         output='screen')
+    
+    #Ximea Camera Node
+    ld = LaunchDescription()
+    config = os.path.join(
+        get_package_share_directory("ximea_driver"),
+        "config",
+        "params.yaml",
+    )
+    ximea_node = Node(
+        package="ximea_driver",
+        executable="ximea_driver_node",
+        name="ximea_driver_node",
+        parameters=[config]
+    )
 
 
     # Cartographer node
@@ -181,6 +190,6 @@ def generate_launch_description():
     ld.add_action(occupancy_grid)
     ld.add_action(rviz_node)
     ld.add_action(PCL2SCAN)
-    ld.add_action(ximea_launch)
+    ld.add_action(ximea_node)
 
     return ld
