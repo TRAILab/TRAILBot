@@ -24,10 +24,17 @@ Install NAV2 and Correlating Dependencies:
   - sudo apt install ros-humble-twist-mux
   - sudo apt install ros-humble-gazebo-ros2-control
 
-Clone
+Sensor Drivers:
+  - 
+
+Clone this repo and dependending repo's
 ```
 cd ~/ros2_ws/src
-git clone --recursive https://github.com/TRAILab/husky_trailbot.git
+git clone https://github.com/TRAILab/husky_trailbot.git
+git clone https://github.com/TRAILab/velodyne.git
+git clone https://github.com/TRAILab/ximea-driver.git
+cd ximea-driver
+./tools/install_sdk.sh
 cd ..
 
 ```

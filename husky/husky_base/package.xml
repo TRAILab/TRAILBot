@@ -2,12 +2,9 @@
 <package format="2">
   <name>husky_base</name>
   <version>1.0.8</version>
-  <description>Clearpath Husky robot driver</description>
+  <description>TRAILBOT/HUSKY Robot Driver</description>
 
-  <author email="mpurvis@clearpathrobotics.com">Mike Purvis</author>
-  <author email="paul@bovbel.com">Paul Bovbel</author>
-
-  <maintainer email="tbaltovski@clearpathrobotics.com">Tony Baltovski</maintainer>
+  <maintainer email="koenin1@mcmaster.ca">Nick Koenig</maintainer>
 
   <license>BSD</license>
 

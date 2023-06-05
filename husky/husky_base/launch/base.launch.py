@@ -53,6 +53,11 @@ def generate_launch_description():
     velo_launch_path2 = os.path.join(get_package_share_directory('velodyne_pointcloud'),'launch','velodyne_convert_node-VLP16-launch.py')
     velo_launch2 = IncludeLaunchDescription(PythonLaunchDescriptionSource([velo_launch_path2]))
 
+
+    #Ximea Camera launch 
+    ximea_launch_path = os.path.join(get_package_share_directory('ximea-driver'),'launch','ximea_driver.launch.py')
+    ximea_launch = IncludeLaunchDescription(PythonLaunchDescriptionSource([ximea_launch_path]))
+
     #PC2LSCAN
     PCL2SCAN_launch_path = os.path.join(get_package_share_directory('velodyne_laserscan'),'launch','velodyne_laserscan_node-launch.py')
     PCL2SCAN = IncludeLaunchDescription(PythonLaunchDescriptionSource([PCL2SCAN_launch_path]))
@@ -72,7 +77,6 @@ def generate_launch_description():
     trailbot_cartographer_prefix = get_package_share_directory(package_name)
     cartographer_config_dir = LaunchConfiguration('cartographer_config_dir', default=os.path.join(
                                                   trailbot_cartographer_prefix, 'config'))
-    configuration_basename = LaunchConfiguration('configuration_basename', default='trailbot_lds_2d.lua') 
     configuration_basename = LaunchConfiguration('configuration_basename', default='trailbot_lds_2d.lua') 
     resolution = LaunchConfiguration('resolution', default='0.05')
     publish_period_sec = LaunchConfiguration('publish_period_sec', default='1.0')
@@ -177,5 +181,6 @@ def generate_launch_description():
     ld.add_action(occupancy_grid)
     ld.add_action(rviz_node)
     ld.add_action(PCL2SCAN)
+    ld.add_action(ximea_launch)
 
     return ld
