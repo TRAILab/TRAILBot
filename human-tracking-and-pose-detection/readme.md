@@ -13,6 +13,10 @@
 
 - Description: Enable display of image and keypoints
 
+### `-d` or `--download_model`
+
+- Description: Download model from internet and save it into ./multipose_model
+
 ## Usage
 
 To use the application, run the script and provide the desired arguments as command-line options. Here's an example:

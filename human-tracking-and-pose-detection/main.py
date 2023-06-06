@@ -2,11 +2,16 @@ import argparse
 import cv2
 import math
 import numpy as np
+import os
+import tarfile
 import tensorflow as tf
 import tensorflow_hub as hub
 import time
-parser_args = tuple()
+import urllib.request
 
+MODEL_URL = "https://tfhub.dev/google/movenet/multipose/lightning/1?tf-hub-format=compressed"
+SAVED_MODEL_PATH = "./multipose_model"
+parser_args = tuple()
 
 def parse_arguments():
     """
@@ -28,8 +33,35 @@ def parse_arguments():
         '--display_image',
         action='store_true',
         help='Enable display of image and keypoints')
+    parser.add_argument(
+        '-d',
+        '--download_model', 
+        action='store_true', 
+        help='Flag to download the model. This must be ran at least once')
     return parser.parse_args()
 
+def download_model():
+    # Create the directory if it doesn't exist
+    os.makedirs(os.path.dirname(SAVED_MODEL_PATH), exist_ok=True)
+
+    # Download the compressed model from the URL
+    model_path, _ = urllib.request.urlretrieve(MODEL_URL)
+
+    # Extract the compressed model to the specified path
+    with tarfile.open(model_path, "r:gz") as tar:
+        tar.extractall(SAVED_MODEL_PATH)
+    
+    model = hub.load(SAVED_MODEL_PATH).signatures['serving_default']
+    return model
+
+def load_saved_model():
+    """
+    load the saved model from SAVED_MODEL_PATH
+    """
+    if not os.path.exists(SAVED_MODEL_PATH):
+        raise FileNotFoundError(f"Model not found at {SAVED_MODEL_PATH}")
+    model = hub.load(SAVED_MODEL_PATH).signatures['serving_default']
+    return model
 
 def print_verbose_only(*args, **kwargs):
     """
@@ -115,6 +147,12 @@ def get_heading_angle(
     return offset + scaling * math.degrees(x_angle_radian)
 
 
+def get_x_y_coord(points,score_threshold=0.3,image_width=1280, image_height=1024): 
+    visible_points = points[ points[:,2] > score_threshold]
+    x_mean = np.mean(visible_points[:, 1])
+    y_mean = np.mean(visible_points[:, 0])
+    return x_mean*image_width, y_mean*image_height
+
 def keypoints_to_img(
         points,
         nth_point_to_highlight=None,
@@ -163,7 +201,7 @@ def process_frame(image, model):
         log += "LEFT\n"
     else:
         log += "RIGHT\n"
-
+    print(get_x_y_coord(keypoints))
     print_verbose_only(log)
     return keypoints
 
@@ -174,8 +212,11 @@ def main():
     if parser_args.display_image:
         from helper_for_visualization import draw_prediction_on_image
 
-    model = hub.load(
-        "models_downloaded/multipose_tf").signatures['serving_default']
+    if parser_args.download_model:
+        model = download_model()
+    else:
+        model = load_saved_model()
+
 
     cap = cv2.VideoCapture(0)  # Open the webcam stream.
 
