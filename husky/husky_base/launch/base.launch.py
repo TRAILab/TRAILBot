@@ -66,19 +66,19 @@ def generate_launch_description():
         arguments=['-d', rviz_config_path],
         output='screen')
     
-    #Ximea Camera Node
-    ld = LaunchDescription()
-    config = os.path.join(
-        get_package_share_directory("ximea_driver"),
-        "config",
-        "params.yaml",
-    )
-    ximea_node = Node(
-        package="ximea_driver",
-        executable="ximea_driver_node",
-        name="ximea_driver_node",
-        parameters=[config]
-    )
+    # #Ximea Camera Node (commented because no current implementation)
+    # ld = LaunchDescription()
+    # config = os.path.join(
+    #     get_package_share_directory("ximea_driver"),
+    #     "config",
+    #     "params.yaml",
+    # )
+    # ximea_node = Node(
+    #     package="ximea_driver",
+    #     executable="ximea_driver_node",
+    #     name="ximea_driver_node",
+    #     parameters=[config]
+    # )
 
 
     # Cartographer node
@@ -190,6 +190,6 @@ def generate_launch_description():
     ld.add_action(occupancy_grid)
     ld.add_action(rviz_node)
     ld.add_action(PCL2SCAN)
-    ld.add_action(ximea_node)
+    #ld.add_action(ximea_node)
 
     return ld
