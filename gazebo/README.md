@@ -18,10 +18,11 @@ sudo apt install ros-humble-gazebo-ros2-control
 ```
 
 ## Building and sourcing
-Assumes a structure "... /{work directory}/src/TRAILbot/". From the TRAILBot directory, run in a terminal  
+Assumes starting from a structure "... /{work directory}/src/TRAILbot/". From the TRAILBot directory, run in a terminal  
 ```bash
-./build.sh
-source ../../install/setup.bash
+cd ../..
+colcon build --symlink-install
+. install/setup.bash
 ```
 
 ## Usage
