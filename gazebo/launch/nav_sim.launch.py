@@ -38,7 +38,6 @@ def generate_launch_description():
     autostart = 'true'
     use_composition = 'True'
     use_respawn = 'False'
-    # bringup_path = os.path.join(get_package_share_directory(package_name),'launch','bringup_launch.py')
     bringup_path = os.path.join(get_package_share_directory(package_name),'launch','bringup_cartographer_launch.py')
     bringup_cmd = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(bringup_path),
@@ -52,19 +51,11 @@ def generate_launch_description():
                           'use_composition': use_composition,
                           'use_respawn': use_respawn}.items())
 
-    # delayed_spawn = TimerAction(period=15.0,
-    #                 actions=[rviz_node, slam_node])
-
-    # delayed_spawn2 = TimerAction(period=20.0,
-    #                 actions=[nav_node])
 
     # Generate launch description
     ld = LaunchDescription()
     ld.add_action(gazebo_builder)
     ld.add_action(rviz_node)
-    # ld.add_action(slam_node)
-    # ld.add_action(delayed_spawn)
-    # ld.add_action(delayed_spawn2)
     ld.add_action(bringup_cmd)
 
     return ld

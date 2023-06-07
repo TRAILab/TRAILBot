@@ -113,18 +113,12 @@ def generate_launch_description():
         'log_level', default_value='info',
         description='log level')
     
-
-    # #launch the pointcloud to laserscan
-    # p2lz = os.path.join(get_package_share_directory('pointcloud_to_laserscan'),'launch','sample_pointcloud_to_laserscan_launch.py')
-    # p2lz_builder = IncludeLaunchDescription(PythonLaunchDescriptionSource([p2lz]))
-
-
     # Cartographer node
     use_sim_time = LaunchConfiguration('use_sim_time', default='true')
     trailbot_cartographer_prefix = get_package_share_directory('trailbot_gazebo')
     cartographer_config_dir = LaunchConfiguration('cartographer_config_dir', default=os.path.join(
                                                   trailbot_cartographer_prefix, 'config'))
-    configuration_basename = LaunchConfiguration('configuration_basename', default='trailbot_lds_2d.lua') 
+    #configuration_basename = LaunchConfiguration('configuration_basename', default='trailbot_lds_2d.lua') 
     configuration_basename_3d = LaunchConfiguration('configuration_basename', default='trailbot_lds_3d.lua') 
     resolution = LaunchConfiguration('resolution', default='0.05')
     publish_period_sec = LaunchConfiguration('publish_period_sec', default='1.0')
@@ -147,6 +141,7 @@ def generate_launch_description():
             output='screen'
         ),
 
+        #pointcloud to laserscan conversion node
         Node(
             package='pointcloud_to_laserscan_converter', executable='pointcloud_to_laserscan_node',
             #remappings=[('cloud_in', [LaunchConfiguration(variable_name='scanner'), '/cloud']),
@@ -161,8 +156,8 @@ def generate_launch_description():
                 #laser_frame height max/min
                 'min_height': -0.9282, #4 inches above ground 
                 'max_height': 0.1, 
-                'angle_min': -3.14,  # -M_PI/2
-                'angle_max': 3.14,  # M_PI/2
+                'angle_min': -3.14,  #was -M_PI/2 now -PI
+                'angle_max': 3.14,  #was  M_PI/2 now PI
                 'angle_increment': 0.0087,  # M_PI/360.0
                 'scan_time': 0.3333,
                 'range_min': 0.45,
@@ -192,28 +187,6 @@ def generate_launch_description():
             launch_arguments={'use_sim_time': use_sim_time, 'resolution':resolution,
                             'publish_period_sec': publish_period_sec}.items(),),
 
-        # IncludeLaunchDescription(
-        #     PythonLaunchDescriptionSource(os.path.join(launch_dir, 'slam_launch.py')),
-        #     condition=IfCondition(slam),
-        #     launch_arguments={'namespace': namespace,
-        #                       'use_sim_time': use_sim_time,
-        #                       'autostart': autostart,
-        #                       'use_respawn': use_respawn,
-        #                       'params_file': params_file}.items()),
-
-        # IncludeLaunchDescription(
-        #     PythonLaunchDescriptionSource(os.path.join(launch_dir,
-        #                                                'localization_launch.py')),
-        #     condition=IfCondition(PythonExpression(['not ', slam])),
-        #     launch_arguments={'namespace': namespace,
-        #                       'map': map_yaml_file,
-        #                       'use_sim_time': use_sim_time,
-        #                       'autostart': autostart,
-        #                       'params_file': params_file,
-        #                       'use_composition': use_composition,
-        #                       'use_respawn': use_respawn,
-        #                       'container_name': 'nav2_container'}.items()),
-
         IncludeLaunchDescription(
             PythonLaunchDescriptionSource(os.path.join(launch_dir, 'navigation_launch.py')),
             launch_arguments={'namespace': namespace,
@@ -242,7 +215,7 @@ def generate_launch_description():
     ld.add_action(declare_use_composition_cmd)
     ld.add_action(declare_use_respawn_cmd)
     ld.add_action(declare_log_level_cmd)
-    # ld.add_action(p2lz_builder)
+
 
     # Add the actions to launch all of the navigation nodes
     ld.add_action(bringup_cmd_group)
