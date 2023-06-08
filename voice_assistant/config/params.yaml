@@ -12,6 +12,7 @@
 
 /voice_arduino_bridge_node:
   ros__parameters:
+    test_voice_only: True # if actually connect with arduino and runservos or only test voice interaction
     snack_options: ['chips', 'chocolate', 'candies', 'nuts'] #TODO: handle chocolates or candy
     snack_quantity: [5, 5, 5, 5] # number of snacks available for each of the snack_options
     snack2servos_map: [1, 2, 3, 4]

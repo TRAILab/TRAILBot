@@ -22,16 +22,20 @@ class VoiceArduinoBridge(Node):
             'snack_options', ['chips', 'chocolate', 'candies', 'nuts'])
         self.declare_parameter('snack_quantity', [5, 5, 5, 5])
         self.declare_parameter('snack2servos_map', [1, 2, 3, 4])
+        self.declare_parameter('test_voice_only', False)
 
         # Server for snack_wanted service
         self.srv = self.create_service(
             SnackWanted, 'snack_wanted', self.snack_wanted_callback)
 
-        # Set up runservo client
-        self.cli = self.create_client(RunServo, 'runservo')
-        while not self.cli.wait_for_service(timeout_sec=1.0):
-            self.get_logger().info('runservo service not available, waiting again...')
-        self.runservo_request = RunServo.Request()
+        self.test_voice_only = self.get_parameter('test_voice_only').value
+
+        if not self.test_voice_only:
+            # Set up runservo client
+            self.cli = self.create_client(RunServo, 'runservo')
+            while not self.cli.wait_for_service(timeout_sec=1.0):
+                self.get_logger().info('runservo service not available, waiting again...')
+            self.runservo_request = RunServo.Request()
 
         # Set up available_snacks publisher
         self.publisher = self.create_publisher(
@@ -113,14 +117,19 @@ class VoiceArduinoBridge(Node):
             ind = snack_options.index(self.snack_requested)
             servos = self.get_parameter('snack2servos_map').value
             servo_id = servos[ind]
-            runservo_service_response = self.send_request(servo_id)
-            self.get_logger().info(
-                f'runservo_service_response.success: {runservo_service_response.success}')
-            self.get_logger().info(
-                f'runservo_service_response.message: {runservo_service_response.message}')
 
-            assert runservo_service_response.success, \
-                f"ERROR: Servo ID {servo_id} is not between 1 and 4. Check snack2servos_map!"
+            if not self.test_voice_only:
+                runservo_service_response = self.send_request(servo_id)
+                self.get_logger().info(
+                    f'runservo_service_response.success: {runservo_service_response.success}')
+                self.get_logger().info(
+                    f'runservo_service_response.message: {runservo_service_response.message}')
+
+                assert runservo_service_response.success, \
+                    f"ERROR: Servo ID {servo_id} is not between 1 and 4. Check snack2servos_map!"
+            else:
+                assert servo_id >= 1 and servo_id <= 4, \
+                    f"ERROR: Servo ID {servo_id} is not between 1 and 4. Check snack2servos_map!"
 
             # Update snack quantity parameter
             snack_quantities[ind] -= 1
