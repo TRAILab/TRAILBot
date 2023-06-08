@@ -20,12 +20,9 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            "trailbot_action = fsm.trailbot_action:main",
             "trailbot_fsm = fsm.trailbot_fsm:main",
             "basic_navigator = fsm.basic_navigator:main",
             "navigator = fsm.navigator:main",
-            "fsm_node = fsm.fsm_node:main",
-            "tf2_listener = fsm.tf2_listener:main",
         ],
     },
 )
