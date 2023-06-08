@@ -1,5 +1,6 @@
 import argparse
 from cv_bridge import CvBridge
+from geometry_msgs.msg import Point
 import math
 import numpy as np
 import os
@@ -7,6 +8,7 @@ import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import Image, PointCloud2
 import sensor_msgs_py.point_cloud2 as pc2
+from std_msgs.msg import Bool, Float32
 import tarfile
 import tensorflow as tf
 import tensorflow_hub as hub
@@ -204,17 +206,52 @@ class LidarCameraSubscriber(Node):
             10)
         self.lidar_subscription
 
+        self.is_person_publisher = self.create_publisher(
+            Bool,
+            'is_person_topic',
+            10)
+        self.angle_publisher = self.create_publisher(
+            Float32,
+            'angle_topic',
+            10)
+        self.depth_publisher = self.create_publisher(
+            Float32,
+            'depth_topic',
+            10)
+        self.xy_publisher = self.create_publisher(
+            Point,
+            'xy_topic',
+            10)
+
     def camera_callback(self, msg):
         timestamp = msg.header.stamp
         cv_image = self.bridge.imgmsg_to_cv2(
             msg, desired_encoding='passthrough')
         process_frame(cv_image)
-        message = f"{"camera "}"
+        message = f"{'camera '}"
         message += f" person: {'YES' if is_there_person_bool else 'NO '}"
         message += f" angle: {angle:<20}"
         message += f" depth: {closest_depth:<20}"
         message += f"xy: {xy[0]:<10}{xy[1]:<10}"
         print_verbose_only(message)
+
+        # Publish the message
+        is_person_msg = Bool()
+        is_person_msg.data = is_there_person_bool
+        self.is_person_publisher.publish(is_person_msg)
+
+        angle_msg = Float32()
+        angle_msg.data = angle
+        self.angle_publisher.publish(angle_msg)
+
+        depth_msg = Float32()
+        depth_msg.data = closest_depth
+        self.depth_publisher.publish(depth_msg)
+
+        xy_msg = Point()
+        xy_msg.x = xy[0]
+        xy_msg.y = xy[1]
+        self.xy_publisher.publish(xy_msg)
 
     def lidar_callback(self, msg):
         global closest_depth
@@ -235,12 +272,30 @@ class LidarCameraSubscriber(Node):
                 test_x, test_y, convert_to_2d(points))
         else:
             closest_depth = -1.0
-        message = f"{"lidar  "}"
+        message = f"{'lidar  '}"
         message += f" person: {'YES' if is_there_person_bool else 'NO '}"
         message += f" angle: {angle:<20}"
         message += f" depth: {closest_depth:<20}"
         message += f"xy: {xy[0]:<10}{xy[1]:<10}"
         print_verbose_only(message)
+
+        # Publish the message
+        is_person_msg = Bool()
+        is_person_msg.data = is_there_person_bool
+        self.is_person_publisher.publish(is_person_msg)
+
+        angle_msg = Float32()
+        angle_msg.data = angle
+        self.angle_publisher.publish(angle_msg)
+
+        depth_msg = Float32()
+        depth_msg.data = closest_depth
+        self.depth_publisher.publish(depth_msg)
+
+        xy_msg = Point()
+        xy_msg.x = xy[0]
+        xy_msg.y = xy[1]
+        self.xy_publisher.publish(xy_msg)
 
 
 def read_matrix(string):
