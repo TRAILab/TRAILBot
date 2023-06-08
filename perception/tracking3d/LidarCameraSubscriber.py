@@ -18,6 +18,7 @@ import urllib.request
 MODEL_URL = "https://tfhub.dev/google/movenet/multipose/lightning/1?tf-hub-format=compressed"
 SAVED_MODEL_PATH = "./multipose_model"
 parser_args = tuple()
+model = None 
 
 xy = 1280, 1024
 is_there_person_bool = False
@@ -366,6 +367,16 @@ def find_closest_point_depth(x, y, np_2d_array):
 
 
 def main(args=None):
+    global parser_args
+    global model 
+
+    parser_args = parse_arguments()
+    if parser_args.download_model:
+        model = download_model()
+    else:
+        model = load_saved_model()
+
+
     print("ready...")
     rclpy.init(args=args)
     subscriber = LidarCameraSubscriber()
