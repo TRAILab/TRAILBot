@@ -17,7 +17,7 @@
 
   <xacro:include filename="$(find trailbot_gazebo)/urdf/accessories/depth_camera.urdf.xacro"/>
   <xacro:include filename="$(find trailbot_gazebo)/urdf/accessories/lidar.urdf.xacro"/>
-  <xacro:include filename="$(find trailbot_gazebo)/urdf/accessories/lidar3D.urdf.xacro"/>
+  <!-- <xacro:include filename="$(find trailbot_gazebo)/urdf/accessories/lidar3D.urdf.xacro"/> -->
   <xacro:include filename="$(find trailbot_gazebo)/urdf/inertial_macros.xacro"/>
 
   <xacro:property name="M_PI" value="3.14159"/>

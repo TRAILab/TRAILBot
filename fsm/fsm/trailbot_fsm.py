@@ -20,6 +20,7 @@ class SearchState(State):
         state_msg = String()
         state_msg.data = self.__class__.__name__
         self.state_publisher.publish(state_msg)
+        # print('SearchState blackboard: ', blackboard)
         
         if blackboard.get('target_found', False):
             return 'target_found'
@@ -36,6 +37,7 @@ class ApproachState(State):
         state_msg = String()
         state_msg.data = self.__class__.__name__
         self.state_publisher.publish(state_msg)
+        # print('ApproachState blackboard: ', blackboard)
 
         target_location = blackboard.get('target_location', None)
         if target_location is not None:
@@ -50,6 +52,7 @@ class WaitState(State):
         super().__init__(outcomes=['snack_dispensed', 'snack_not_dispensed'])
         self.state_publisher = state_publisher
         self.blackboard = blackboard
+        # print('WaitState blackboard: ', blackboard)
 
     def execute(self, blackboard):
         state_msg = String()
@@ -65,11 +68,13 @@ class DoneState(State):
         super().__init__(outcomes=['done'])
         self.state_publisher = state_publisher
         self.blackboard = blackboard
+        # print('DoneState blackboard: ', blackboard)
 
     def execute(self, blackboard):
         state_msg = String()
         state_msg.data = self.__class__.__name__
         self.state_publisher.publish(state_msg)
+        print('Searchstate blackboard: ', blackboard)
         
         blackboard['target_found'] = False
         blackboard['snack_dispensed'] = False
@@ -80,6 +85,7 @@ class FSM(Node):
         super().__init__('trailbot_fsm')
 
         self.blackboard = {}
+        self.current_state = None
 
         self.state_publisher = self.create_publisher(String, 'trailbot_state', 10)
         self.goal_publisher = self.create_publisher(PoseStamped, 'goal_pose', 10)
@@ -105,7 +111,7 @@ class FSM(Node):
         sm = StateMachine(outcomes=['finished'])
 
         sm.add_state('SEARCH', SearchState(self.state_publisher, self.blackboard), transitions={'target_found': 'APPROACH', 'target_not_found': 'SEARCH'})
-        sm.add_state('APPROACH', ApproachState(self.goal_publisher,self.state_publisher, self.blackboard), transitions={'arrived': 'WAIT', 'not_arrived': 'SEARCH'})
+        sm.add_state('APPROACH', ApproachState(self.goal_publisher,self.state_publisher, self.blackboard), transitions={'arrived': 'WAIT', 'not_arrived': 'APPROACH'})
         sm.add_state('WAIT', WaitState(self.state_publisher, self.blackboard), transitions={'snack_dispensed': 'DONE', 'snack_not_dispensed': 'WAIT'})
         sm.add_state('DONE', DoneState(self.state_publisher, self.blackboard), transitions={'done': 'SEARCH'})
 
@@ -122,6 +128,14 @@ class FSM(Node):
 
     def snack_callback(self, msg):
         self.blackboard['snack_dispensed'] = True
+
+    def update_state(self, state):
+        if state != self.current_state:
+            self.current_state = state
+            state_msg = String()
+            state_msg.data = state.__class__.__name__
+            self.state_publisher.publish(state_msg)
+
 
 def main(args=None):
     rclpy.init(args=args)
