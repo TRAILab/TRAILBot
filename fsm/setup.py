@@ -24,6 +24,7 @@ setup(
             "basic_navigator = fsm.basic_navigator:main",
             "navigator = fsm.navigator:main",
             "test_cmd_vel_node = fsm.test_cmd_vel_node:main",
+            "test_snack_node = fsm.test_snack_node:main",
         ],
     },
 )

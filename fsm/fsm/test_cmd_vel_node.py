@@ -37,21 +37,33 @@ class MinimalPublisher(Node):
     
     def check_condition_and_publish(self):
         if self.last_cmd_vel is not None and self.last_goal_status is not None:
+            
             if self.last_cmd_vel.linear.x <= 0.0 and self.last_cmd_vel.angular.z <= 0.2 and self.last_goal_status == 'ApproachState':
-                goal_status_msg = String()
-                goal_status_msg.data = 'goal_reached'
-                self.goal_status_publisher.publish(goal_status_msg)
+                goal_reached_msg = String()
+                goal_reached_msg.data = 'goal_reached'
+                self.goal_status_publisher.publish(goal_reached_msg)
         
                 stop_msg = Twist()
                 stop_msg.linear.x = 0.0
                 stop_msg.angular.z = 0.0
                 self.cmd_vel_publisher.publish(stop_msg)
             
-            if self.last_goal_status == 'WaitState':
+            elif self.last_goal_status == 'WaitState':
+                goal_reached_msg = String()
+                goal_reached_msg.data = 'goal_reached'
+                self.goal_status_publisher.publish(goal_reached_msg)
+                
                 stop_msg = Twist()
                 stop_msg.linear.x = 0.0
                 stop_msg.angular.z = 0.0
                 self.cmd_vel_publisher.publish(stop_msg)
+            else:
+                goal_not_reached_msg = String()
+                goal_not_reached_msg.data = 'goal_not_reached'
+                self.goal_status_publisher.publish(goal_not_reached_msg)
+                
+
+            
         
 
 def main(args=None):

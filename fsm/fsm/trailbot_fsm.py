@@ -77,6 +77,7 @@ class DoneState(State):
         print('Searchstate blackboard: ', blackboard)
         
         blackboard['target_found'] = False
+        blackboard['goal_reached'] = False
         blackboard['snack_dispensed'] = False
         return 'done'
     
@@ -85,10 +86,12 @@ class FSM(Node):
         super().__init__('trailbot_fsm')
 
         self.blackboard = {}
-        self.current_state = None
+        self.current_state = 'SEARCH'
 
         self.state_publisher = self.create_publisher(String, 'trailbot_state', 10)
         self.goal_publisher = self.create_publisher(PoseStamped, 'goal_pose', 10)
+
+        # Update subscriber topics to subsribe to the lidar and voice assistant nodes
         self.goal_subscriber = self.create_subscription(
             String,
             'goal_status',
@@ -108,15 +111,26 @@ class FSM(Node):
             10
         )
 
-        sm = StateMachine(outcomes=['finished'])
+        self.sm = StateMachine(outcomes=['finished'])
 
-        sm.add_state('SEARCH', SearchState(self.state_publisher, self.blackboard), transitions={'target_found': 'APPROACH', 'target_not_found': 'SEARCH'})
-        sm.add_state('APPROACH', ApproachState(self.goal_publisher,self.state_publisher, self.blackboard), transitions={'arrived': 'WAIT', 'not_arrived': 'APPROACH'})
-        sm.add_state('WAIT', WaitState(self.state_publisher, self.blackboard), transitions={'snack_dispensed': 'DONE', 'snack_not_dispensed': 'WAIT'})
-        sm.add_state('DONE', DoneState(self.state_publisher, self.blackboard), transitions={'done': 'SEARCH'})
+        self.sm.add_state('SEARCH', SearchState(self.state_publisher, self.blackboard), transitions={'target_found': 'APPROACH', 'target_not_found': 'SEARCH'})
+        self.sm.add_state('APPROACH', ApproachState(self.goal_publisher,self.state_publisher, self.blackboard), transitions={'arrived': 'WAIT', 'not_arrived': 'APPROACH'})
+        self.sm.add_state('WAIT', WaitState(self.state_publisher, self.blackboard), transitions={'snack_dispensed': 'DONE', 'snack_not_dispensed': 'WAIT'})
+        self.sm.add_state('DONE', DoneState(self.state_publisher, self.blackboard), transitions={'done': 'SEARCH'})
 
-        outcome = sm.execute(self.blackboard)
-        print(outcome)
+    def run(self):
+        while rclpy.ok():
+            outcome = self.sm.execute(self.blackboard)
+            print(outcome)
+            if self.current_state == 'SEARCH' and self.blackboard.get('target_found', False):
+                self.blackboard['target_found'] = False
+                self.blackboard['goal_reached'] = False
+                self.current_state = 'APPROACH'
+            else:
+                self.current_state = outcome
+
+            self.update_state(self.current_state)
+            rclpy.spin_once(self)
 
     def goal_status_callback(self, msg):
         if msg.data == 'goal_reached':
@@ -136,11 +150,69 @@ class FSM(Node):
             state_msg.data = state.__class__.__name__
             self.state_publisher.publish(state_msg)
 
+# class FSM(Node):
+#     def __init__(self):
+#         super().__init__('trailbot_fsm')
+
+#         self.blackboard = {}
+#         self.current_state = None
+
+#         self.state_publisher = self.create_publisher(String, 'trailbot_state', 10)
+#         self.goal_publisher = self.create_publisher(PoseStamped, 'goal_pose', 10)
+
+#         # Update subscriber topics to subsribe to the lidar and voice assistant nodes
+#         self.goal_subscriber = self.create_subscription(
+#             String,
+#             'goal_status',
+#             self.goal_status_callback,
+#             10
+#         )
+#         self.target_subscriber = self.create_subscription(
+#             PoseStamped,
+#             'target_location',
+#             self.target_callback,
+#             10
+#         )
+#         self.snack_subscriber = self.create_subscription(
+#             String,
+#             'snack_dispensed',
+#             self.snack_callback,
+#             10
+#         )
+
+#         sm = StateMachine(outcomes=['finished'])
+
+#         sm.add_state('SEARCH', SearchState(self.state_publisher, self.blackboard), transitions={'target_found': 'APPROACH', 'target_not_found': 'SEARCH'})
+#         sm.add_state('APPROACH', ApproachState(self.goal_publisher,self.state_publisher, self.blackboard), transitions={'arrived': 'WAIT', 'not_arrived': 'APPROACH'})
+#         sm.add_state('WAIT', WaitState(self.state_publisher, self.blackboard), transitions={'snack_dispensed': 'DONE', 'snack_not_dispensed': 'WAIT'})
+#         sm.add_state('DONE', DoneState(self.state_publisher, self.blackboard), transitions={'done': 'SEARCH'})
+
+#         outcome = sm.execute(self.blackboard)
+#         print(outcome)
+
+#     def goal_status_callback(self, msg):
+#         if msg.data == 'goal_reached':
+#             self.blackboard['goal_reached'] = True
+
+#     def target_callback(self, msg):
+#         self.blackboard['target_location'] = msg
+#         self.blackboard['target_found'] = True
+
+#     def snack_callback(self, msg):
+#         self.blackboard['snack_dispensed'] = True
+
+#     def update_state(self, state):
+#         if state != self.current_state:
+#             self.current_state = state
+#             state_msg = String()
+#             state_msg.data = state.__class__.__name__
+#             self.state_publisher.publish(state_msg)
 
 def main(args=None):
     rclpy.init(args=args)
     node = FSM()
-    node.join_spin()
+    # node.join_spin()
+    node.run()
     node.destroy_node()
     rclpy.shutdown()
 

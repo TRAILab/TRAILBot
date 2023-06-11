@@ -29,6 +29,23 @@ def generate_launch_description():
         arguments=['-d', rviz_config_path],
         output='screen')
 
+    # FSM Node
+    fsm_node = Node(
+        package='fsm',
+        executable='trailbot_fsm',
+        name='fsm',
+        output='screen'
+    )
+    
+    # Navigator Node
+    navigator_node = Node(
+        package='fsm',
+        executable='test_cmd_vel_node',
+        name='test_cmd_vel_node',
+        output='screen'
+    )
+
+
     namespace = ''
     use_namespace = 'false'
     slam = 'True'
@@ -52,6 +69,7 @@ def generate_launch_description():
                           'use_composition': use_composition,
                           'use_respawn': use_respawn}.items())
 
+
     # delayed_spawn = TimerAction(period=15.0,
     #                 actions=[rviz_node, slam_node])
 
@@ -62,6 +80,8 @@ def generate_launch_description():
     ld = LaunchDescription()
     ld.add_action(gazebo_builder)
     ld.add_action(rviz_node)
+    ld.add_action(fsm_node)
+    ld.add_action(navigator_node)
     # ld.add_action(slam_node)
     # ld.add_action(delayed_spawn)
     # ld.add_action(delayed_spawn2)
