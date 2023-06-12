@@ -1,15 +1,15 @@
 # clone
-$ cd ~/ros2_ws/src
-$ git clone https://github.com/uleroboticsgroup/simple_node.git
-$ git clone https://github.com/uleroboticsgroup/yasmin.git
+    $ cd ~/ros2_ws/src
+    $ git clone https://github.com/uleroboticsgroup/simple_node.git
+    $ git clone https://github.com/uleroboticsgroup/yasmin.git
 
 # dependencies
-$ cd yasmin
-$ pip3 install -r requirements.txt
+    $ cd yasmin
+    $ pip3 install -r requirements.txt
 
 # colcon
-$ cd ~/ros2_ws
-$ colcon build
+    $ cd ~/ros2_ws
+    $ colcon build
 
 # add fsm node and navigator node to launch directory
 From the marc/humble_carto branch add the fsm folder into the trailbot's launch directory
@@ -40,7 +40,8 @@ Add the following to the launch file
 
 # FYI
 The fsm accepts PoseStamped msgs for its goal position i.e 
-ros2 topic pub --once /target_location geometry_msgs/msg/PoseStamped '{header: {frame_id: "map"}, pose: {position: {x: 3.0, y: -3.0, z: 0.002472}, orientation: {x: 0.0, y: 0.0, z: 0.0, w: 1.0}}}'
+
+    ros2 topic pub --once /target_location geometry_msgs/msg/PoseStamped '{header: {frame_id: "map"}, pose: {position: {x: 3.0, y: -3.0, z: 0.002472}, orientation: {x: 0.0, y: 0.0, z: 0.0, w: 1.0}}}'
 
 
 
