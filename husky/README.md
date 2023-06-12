@@ -28,7 +28,6 @@ Install this dependency from the top folder (i.e. "ros2_ws") in your directory
 ```
 cd ~/ros2_ws 
 rosdep install --from-paths src --ignore-src --rosdistro humble -r -y
-cd ..
 ```
 
 Sensor Drivers:
