@@ -15,14 +15,30 @@ import tensorflow_hub as hub
 import time
 import urllib.request
 
+
+#config constants
 MODEL_URL = "https://tfhub.dev/google/movenet/multipose/lightning/1?tf-hub-format=compressed"
 SAVED_MODEL_PATH = "./multipose_model"
+people_detection_threshold = 0.3
+point_detection_threshold = 0.3
+image_width=1280,
+image_height=1024
+camera_transformation_k = """
+    628.5359544 0 676.9575694
+    0 627.7249542 532.7206716
+    0 0 1
+"""
+rotation_matrix = """
+    -0.007495781893 -0.0006277316155    0.9999717092
+    -0.9999516401   -0.006361853422 -0.007499625104
+    0.006366381192  -0.9999795662   -0.0005800141927
+"""
+translation_vector = np.array([-0.06024059837, -0.08180891509, -0.3117851288])
+
+
+#globals 
 parser_args = tuple()
 model = None 
-
-xy = 1280, 1024
-is_there_person_bool = False
-angle = 0.0
 
 
 def parse_arguments():
@@ -98,8 +114,7 @@ def movenet(input_image, model):
     # coordinates) and the confidence score of the instance
     keypoints = outputs['output_0'].numpy()
 
-    threshold = 0.3
-    count_of_people = np.sum(keypoints[0, :, -1] > threshold)
+    count_of_people = np.sum(keypoints[0, :, -1] > people_detection_threshold )
     print_verbose_only("count_of_people", count_of_people)
 
     # there are 6 people
@@ -107,38 +122,37 @@ def movenet(input_image, model):
     return keypoints[:, :, :51].reshape((6, 17, 3))[0]
 
 
-def is_there_person(points, score_threshold=0.3):
+def is_there_person(points):
     """
     return True/False of whether there is a person
     """
-    visible_joints = np.sum(points[:, 2] > score_threshold)
+    visible_joints = np.sum(points[:, -1] > point_detection_threshold)
     return visible_joints >= 3
 
 
-def is_person_facing_camera(points, score_threshold=0.3):
+def is_person_facing_camera(points):
     """
     return True/False depending on if the person is facing camera or not
     """
     LEFT_EYE = 1
     NOSE = 0
     RIGHT_EYE = 2
-    visible_joints_face = np.sum(points[:5, 2] > score_threshold)
+    visible_joints_face = np.sum(points[:5, -1] > point_detection_threshold)
     facing_forward = points[LEFT_EYE][1] > points[NOSE][1] > points[RIGHT_EYE][1]
     return visible_joints_face >= 3 and facing_forward
 
 
 def get_heading_angle(
         points,
-        score_threshold=0.3,
         fov=90,
         image_width=1,
         offset=0,
         scaling=1):
     """
-    get the heading angle of the person, in degree, relative to the center
-    of the field of view
+    get the heading angle from the camera's perspective to the person,
+     in degree, relative to the center of the field of view
     """
-    visible_points = points[points[:, 2] > score_threshold]
+    visible_points = points[points[:, -1] > point_detection_threshold]
     x_mean = np.mean(visible_points[:, 1])
     x_angle_radian = math.atan(
         (x_mean - (image_width / 2)) / (image_width / 2) * math.tan(math.radians(fov / 2)))
@@ -147,23 +161,18 @@ def get_heading_angle(
 
 def get_x_y_coord(
         points,
-        score_threshold=0.3,
-        image_width=1280,
-        image_height=1024):
-    visible_points = points[points[:, 2] > score_threshold]
+    ):
+    visible_points = points[points[:, -1] > point_detection_threshold]
     x_mean = np.mean(visible_points[:, 1])
     y_mean = np.mean(visible_points[:, 0])
     return x_mean * image_width, y_mean * image_height
 
 
-def process_frame(image):
+def process_frame(image, person_array):
     """
     process a frame. Determine keypoints and number of people and
     heading angle.
     """
-    global xy
-    global is_there_person_bool
-    global angle
 
     input_size = 256
     input_image = tf.expand_dims(image, axis=0)
@@ -172,25 +181,32 @@ def process_frame(image):
     # Run model inference
     keypoints = movenet(input_image, model)
 
-    xy = get_x_y_coord(keypoints)
-    angle = get_heading_angle(keypoints)
-    is_there_person_bool = is_there_person(keypoints)
-    log = ""
-    log += f'is there person: {is_there_person_bool}\n'
-    log += f"Person {'is' if is_person_facing_camera(keypoints) else 'NOT'} facing laptop!\n"
-    log += f"heading angle: {angle}\n"
+    person_array[0].heading_angle = get_heading_angle(keypoints)
+    person_array[0].x, person_array[0].y = get_x_y_coord(keypoints)
+    person_array[0].on_screen =  is_there_person(keypoints) 
 
-    if abs(angle) < 10:
-        log += "CENTER\n"
-    elif angle < 0:
-        log += "LEFT\n"
-    else:
-        log += "RIGHT\n"
-    print_verbose_only(log)
+    is_there_anyone = is_there_person(keypoints)
+    return is_there_anyone
 
+
+class Person:
+    """
+    struct to store information for a detected person
+    """
+    def __init__(self):
+        self.x = -1.0
+        self.y = -1.0
+        self.z = -1.0
+        self.on_screen = False
+        self.heading_angle = 0.0
 
 class LidarCameraSubscriber(Node):
     def __init__(self):
+        #make array of 6 person
+        self.person_array = [Person() for _ in range(6)]
+        self.is_there_anyone = False
+
+
         super().__init__('image_subscriber')
         self.camera_subscription = self.create_subscription(
             Image,
@@ -207,137 +223,100 @@ class LidarCameraSubscriber(Node):
             10)
         self.lidar_subscription
 
+        #topics to publish
         self.is_person_publisher = self.create_publisher(
             Bool,
             'is_person_topic',
             10)
-        self.angle_publisher = self.create_publisher(
-            Float32,
-            'angle_topic',
-            10)
-        self.depth_publisher = self.create_publisher(
-            Float32,
-            'depth_topic',
-            10)
-        self.xy_publisher = self.create_publisher(
-            Point,
-            'xy_topic',
+        # self.angle_publisher = self.create_publisher(
+        #     Float32,
+        #     'angle_topic',
+        #     10)
+        c = self.create_publisher(
+            PoseStamped,
+            'pose_stamped_topic', 
             10)
 
     def camera_callback(self, msg):
-        timestamp = msg.header.stamp
         cv_image = self.bridge.imgmsg_to_cv2(
             msg, desired_encoding='passthrough')
-        process_frame(cv_image)
-        message = f"{'camera '}"
-        message += f" person: {'YES' if is_there_person_bool else 'NO '}"
-        message += f" angle: {angle:<20}"
-        message += f" depth: {closest_depth:<20}"
-        message += f"xy: {xy[0]:<10}{xy[1]:<10}"
-        print_verbose_only(message)
-
-        # Publish the message
-        is_person_msg = Bool()
-        is_person_msg.data = is_there_person_bool
-        self.is_person_publisher.publish(is_person_msg)
-
-        angle_msg = Float32()
-        angle_msg.data = angle
-        self.angle_publisher.publish(angle_msg)
-
-        depth_msg = Float32()
-        depth_msg.data = closest_depth
-        self.depth_publisher.publish(depth_msg)
-
-        xy_msg = Point()
-        xy_msg.x = xy[0]
-        xy_msg.y = xy[1]
-        self.xy_publisher.publish(xy_msg)
+        self.is_there_anyone = process_frame(cv_image)
+        self.publish_message("camera",msg.header.stamp)
 
     def lidar_callback(self, msg):
         global closest_depth
+        if self.is_there_anyone:
+            # Deserialize PointCloud2 data into xyz points
+            point_gen = pc2.read_points(
+                msg, field_names=(
+                    "x", "y", "z"), skip_nans=True)
+            points = np.array(list(point_gen))
+            points2d = convert_to_2d(points)
 
-        timestamp = msg.header.stamp
+        #update depth for every person
+        for person in self.person_array:
+            if not person.on_screen:
+                person.z = -1.0
+            else:
+                person.z = estimate_depth(person.x, person.y, points2d)
 
-        # Deserialize PointCloud2 data into a generator of (x, y, z) points
-        point_gen = pc2.read_points(
-            msg, field_names=(
-                "x", "y", "z"), skip_nans=True)
+        self.publish_message("lidar",msg.header.stamp)
 
-        points = [[x, y, z] for x, y, z in point_gen]
-
-        if is_there_person_bool:
-            points = np.array(points)
-            test_x, test_y = xy
-            closest_depth = find_closest_point_depth(
-                test_x, test_y, convert_to_2d(points))
-        else:
-            closest_depth = -1.0
-        message = f"{'lidar  '}"
-        message += f" person: {'YES' if is_there_person_bool else 'NO '}"
-        message += f" angle: {angle:<20}"
-        message += f" depth: {closest_depth:<20}"
-        message += f"xy: {xy[0]:<10}{xy[1]:<10}"
+    def publish_message(source_str, timestamp):
+        #person0 for debugging purpse
+        person0 = self.person_array[0]
+        message = f"{'{source_str:<7}'}"
+        message += f" person: {'YES' if self.is_there_anyone else 'NO '}"
+        message += f" angle: {person0.heading_angle:<20}"
+        message += f"person_coordinate: {person0.x:<15}{person0.y:<15}{person0.z:15}"
         print_verbose_only(message)
 
         # Publish the message
         is_person_msg = Bool()
-        is_person_msg.data = is_there_person_bool
+        is_person_msg.data = self.is_there_anyone
         self.is_person_publisher.publish(is_person_msg)
 
-        angle_msg = Float32()
-        angle_msg.data = angle
-        self.angle_publisher.publish(angle_msg)
+        # angle_msg = Float32()
+        # angle_msg.data = angle
+        # self.angle_publisher.publish(angle_msg)
 
-        depth_msg = Float32()
-        depth_msg.data = closest_depth
-        self.depth_publisher.publish(depth_msg)
+        pose_stamped_msg = PoseStamped()
+        pose_stamped_msg.header.stamp = timestamp
+        pose_stamped_msg.pose.position.x = person0.x
+        pose_stamped_msg.pose.position.y = person0.y
+        pose_stamped_msg.pose.position.z = person0.z
+        self.pose_publisher.publish(pose_stamped_msg)
 
-        xy_msg = Point()
-        xy_msg.x = xy[0]
-        xy_msg.y = xy[1]
-        self.xy_publisher.publish(xy_msg)
-
-
-def read_matrix(string):
+def read_space_seperated_matrix(string):
     """
-    convert string matrix to np matrix
+    convert space seperated matrix string to np matrix
     """
     lines = string.strip().split('\n')
     matrix = []
     for line in lines:
-        values = line.split()  # Exclude the first element 'Rotation'
+        values = line.split()  # Exclude the first element 'rotation_matrix'
         matrix.append([float(value) for value in values])
     numpy_matrix = np.array(matrix)
     return numpy_matrix
 
 
+def parse_global_matrix():
+    global rotation_matrix, translation_vector, camera_transformation_k
+    camera_transformation_k = read_space_seperated_matrix(camera_transformation_k)
+    rotation_matrix = read_space_seperated_matrix(rotation_matrix).T
+    translation_vector = np.tile(translation_vector, (length, 1)).T
+
+
 def convert_to_2d(point_cloud, image_height=1024):
     """
-    convert 3d lidar data into 2d coordinate
+    convert 3d lidar data into 2d coordinate of the camera frame
     """
 
     length = point_cloud.shape[0]
-
-    rotation = read_matrix("""
-    -0.007495781893 -0.0006277316155    0.9999717092
-    -0.9999516401   -0.006361853422 -0.007499625104
-    0.006366381192  -0.9999795662   -0.0005800141927
-    """)
-    translation = np.array([-0.06024059837, -0.08180891509, -0.3117851288])
-
-    rotation = rotation.T
-    translation = np.tile(translation, (length, 1)).T
-
-    k = np.array([
-        [628.5359544, 0, 676.9575694],
-        [0, 627.7249542, 532.7206716],
-        [0, 0, 1],
-    ])
-
+    
     point_cloud = point_cloud.T
-    point_cloud = np.dot(rotation, point_cloud) + translation
-    point_cloud = np.dot(k, point_cloud)
+    point_cloud = np.dot(rotation_matrix, point_cloud) + translation_vector
+    point_cloud = np.dot(camera_transformation_k, point_cloud)
 
     uv_coordinate = np.empty_like(point_cloud)
 
@@ -352,24 +331,27 @@ def convert_to_2d(point_cloud, image_height=1024):
     return filtered_uv_coordinate
 
 
-def find_closest_point_depth(x, y, np_2d_array):
+def estimate_depth(x, y, np_2d_array):
     """
-    find the point closest to x,y from a 2d np array
+    estimate the depth by finding points closest to x,y from thhe 2d array
     """
-    # Calculate the Euclidean distance between each point and the target
-    # coordinates (x, y)
-    distances_sq = (np_2d_array[0, :] - x) ** 2 + (np_2d_array[1, :] - y) ** 2
-    # Find the index of the point with the minimum distance
-    closest_index = np.argmin(distances_sq)
-    # Retrieve the depth value of the closest point
-    closest_depth = np_2d_array[2, closest_index]
-    return closest_depth
+    # Calculate the distance between each point and the target coordinates (x, y)
+    distances_sq = (np_2d_array[0,:] - x) ** 2 + (np_2d_array[1,:] - y) ** 2
+
+    # Find the indices of the k nearest poitns
+    k = 10     # Number of nearest neighbors we want
+    closest_indices = np.argpartition(distances_sq, k)[:k]
+
+    # Get the depth value of the closest point
+    closest_depths = np_2d_array[2,closest_indices]
+    return np.mean(closest_depths)
 
 
 def main(args=None):
     global parser_args
     global model 
 
+    parse_global_matrix()
     parser_args = parse_arguments()
     if parser_args.download_model:
         model = download_model()
