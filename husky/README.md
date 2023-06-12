@@ -24,18 +24,21 @@ Install NAV2 and Correlating Dependencies:
   - sudo apt install ros-humble-twist-mux
   - sudo apt install ros-humble-gazebo-ros2-control
 
+Install this dependency from the top folder (i.e. "ros2_ws") in your directory
+  - cd ~/ros2_ws rosdep install --from-paths src --ignore-src --rosdistro humble -r -y
+
 Sensor Drivers:
   - 
 
 Clone this repo and dependending repo's
 ```
 cd ~/ros2_ws/src
-git clone https://github.com/TRAILab/husky_trailbot.git
+git clone https://github.com/TRAILab/TRAILBot.git
 git clone https://github.com/TRAILab/velodyne.git
 git clone https://github.com/TRAILab/ximea-driver.git
 cd ximea-driver
 ./tools/install_sdk.sh
-cd ..
+cd ../..
 
 ```
 build
@@ -55,7 +58,7 @@ Launch and Use Husky
 
 To run the needed launch file(s) to use the trailbot follow the steps below:
 
-Making sure that the husky is turned input:
+Making sure that the husky is turned on:
 ```
 ros2 launch husky_base base.launch.py
 ```
