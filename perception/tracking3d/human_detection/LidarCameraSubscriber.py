@@ -116,7 +116,7 @@ def movenet(input_image, model):
     keypoints = outputs['output_0'].numpy()
 
     count_of_people = np.sum(keypoints[0, :, -1] > people_detection_threshold )
-    print_verbose_only("count_of_people", count_of_people)
+    # print_verbose_only("count_of_people", count_of_people)
 
     # there are 6 people
     # there are 17 body points and therefore 3*17=51 numbers per person
@@ -268,7 +268,7 @@ class LidarCameraSubscriber(Node):
     def publish_message(self,source_str, timestamp):
         #person0 for debugging purpse
         person0 = self.person_array[0]
-        message = f"{'{source_str:<7}'}"
+        message = f"{source_str:<7}"
         message += f" person: {'YES' if self.is_there_anyone else 'NO '}"
         message += f" angle: {person0.heading_angle:<20}"
         message += f"person_coordinate: {person0.x:<15}{person0.y:<15}{person0.z:15}"
