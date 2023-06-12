@@ -38,6 +38,10 @@ Add the following to the launch file
 
 # modify the subscriber in the trailbot_fsm and navigator_node to subscribe to the perception and voice assistant node
 
+# FYI
+The fsm accepts PoseStamped msgs for its goal position i.e 
+ros2 topic pub --once /target_location geometry_msgs/msg/PoseStamped '{header: {frame_id: "map"}, pose: {position: {x: 3.0, y: -3.0, z: 0.002472}, orientation: {x: 0.0, y: 0.0, z: 0.0, w: 1.0}}}'
+
 
 
 
