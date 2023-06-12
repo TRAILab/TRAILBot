@@ -21,6 +21,7 @@ setup(
     entry_points={
         'console_scripts': [
             "trailbot_fsm = fsm.trailbot_fsm:main",
+            "navigator_node = fsm.navigator_node:main",
             "basic_navigator = fsm.basic_navigator:main",
             "navigator = fsm.navigator:main",
             "test_cmd_vel_node = fsm.test_cmd_vel_node:main",

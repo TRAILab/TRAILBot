@@ -40,7 +40,7 @@ def generate_launch_description():
     # Navigator Node
     navigator_node = Node(
         package='fsm',
-        executable='test_cmd_vel_node',
+        executable='navigator_node',
         name='test_cmd_vel_node',
         output='screen'
     )
