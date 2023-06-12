@@ -14,6 +14,7 @@ $ colcon build
 # add fsm node and navigator node to launch file
 From the marc/humble_carto branch add the fsm folder into the trailbot's launch directory
 Add the following to the launch file
+
     # FSM Node
     fsm_node = Node(
         package='fsm',
