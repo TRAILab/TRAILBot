@@ -284,10 +284,7 @@ class VoiceAssistant(Node):
 
             # Introduce upon reaching the human
             available_snacks = self.get_available_snacks_str()
-            # intro = ['Hi! Would you like to have snacks?',
-            #          f'I have {available_snacks}. What would you like?',
-            #          'Or, you can ask me anything.']
-            intro = 'Hi! Would you like to have snacks?'
+            intro = f'Hi! Would you like to have snacks? I have {available_snacks}. What would you like?'
             self.speak(intro)
 
             # Get user prompt
