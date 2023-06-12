@@ -1,0 +1,38 @@
+{
+  "configurations": [
+    {
+      "browse": {
+        "databaseFilename": "${default}",
+        "limitSymbolsToIncludedHeaders": false
+      },
+      "includePath": [
+        "/home/daniel/Documents/S2023/install/yasmin_viewer/include/**",
+        "/home/daniel/Documents/S2023/install/yasmin_ros/include/**",
+        "/home/daniel/Documents/S2023/install/yasmin_msgs/include/**",
+        "/home/daniel/Documents/S2023/install/yasmin/include/**",
+        "/home/daniel/Documents/S2023/install/simple_node/include/**",
+        "/home/daniel/Documents/ros2_ws/install/yasmin_viewer/include/**",
+        "/home/daniel/Documents/ros2_ws/install/yasmin_ros/include/**",
+        "/home/daniel/Documents/ros2_ws/install/yasmin_msgs/include/**",
+        "/home/daniel/Documents/ros2_ws/install/yasmin/include/**",
+        "/home/daniel/Documents/ros2_ws/install/simple_node/include/**",
+        "/home/daniel/Documents/ros2_ws/install/action_tutorials_interfaces/include/**",
+        "/opt/ros/humble/include/**",
+        "/home/daniel/Documents/S2023/src/TRAILBot/control/include/**",
+        "/home/daniel/Documents/S2023/src/TRAILBot/perception/include/**",
+        "/home/daniel/Documents/S2023/src/TRAILBot/planning/include/**",
+        "/home/daniel/Documents/S2023/src/TRAILBot/simple_node/simple_node/include/**",
+        "/home/daniel/Documents/S2023/src/TRAILBot/yasmin/yasmin/include/**",
+        "/home/daniel/Documents/S2023/src/TRAILBot/yasmin/yasmin_ros/include/**",
+        "/home/daniel/Documents/S2023/src/TRAILBot/yasmin/yasmin_viewer/include/**",
+        "/usr/include/**"
+      ],
+      "name": "ROS",
+      "intelliSenseMode": "gcc-x64",
+      "compilerPath": "/usr/bin/gcc",
+      "cStandard": "gnu11",
+      "cppStandard": "c++14"
+    }
+  ],
+  "version": 4
+}

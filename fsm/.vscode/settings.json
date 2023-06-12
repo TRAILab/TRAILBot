@@ -1,0 +1,19 @@
+{
+    "python.autoComplete.extraPaths": [
+        "/home/marc/test_ncrn/install/fsm/lib/python3.10/site-packages",
+        "/home/marc/test_ncrn/build/my_package",
+        "/home/marc/test_ncrn/install/my_package/lib/python3.10/site-packages",
+        "/home/marc/test_ncrn/install/lio_sam/local/lib/python3.10/dist-packages",
+        "/opt/ros/humble/lib/python3.10/site-packages",
+        "/opt/ros/humble/local/lib/python3.10/dist-packages"
+    ],
+    "python.analysis.extraPaths": [
+        "/home/marc/test_ncrn/install/fsm/lib/python3.10/site-packages",
+        "/home/marc/test_ncrn/build/my_package",
+        "/home/marc/test_ncrn/install/my_package/lib/python3.10/site-packages",
+        "/home/marc/test_ncrn/install/lio_sam/local/lib/python3.10/dist-packages",
+        "/opt/ros/humble/lib/python3.10/site-packages",
+        "/opt/ros/humble/local/lib/python3.10/dist-packages"
+    ],
+    "ros.distro": "humble"
+}

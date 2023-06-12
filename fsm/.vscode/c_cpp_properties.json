@@ -1,0 +1,30 @@
+{
+  "configurations": [
+    {
+      "browse": {
+        "databaseFilename": "${default}",
+        "limitSymbolsToIncludedHeaders": false
+      },
+      "includePath": [
+        "/home/marc/test_ncrn/install/velodyne_gazebo_plugins/include/**",
+        "/home/marc/test_ncrn/install/pointcloud_to_laserscan/include/**",
+        "/home/marc/test_ncrn/install/lio_sam/include/**",
+        "/opt/ros/humble/include/**",
+        "/home/marc/test_ncrn/src/LIO-SAM/include/**",
+        "/home/marc/test_ncrn/src/TRAILBot/control/include/**",
+        "/home/marc/test_ncrn/src/TRAILBot/perception/include/**",
+        "/home/marc/test_ncrn/src/TRAILBot/planning/include/**",
+        "/home/marc/test_ncrn/src/nature-stack/include/**",
+        "/home/marc/test_ncrn/src/pointcloud_to_laserscan/include/**",
+        "/home/marc/test_ncrn/src/velodyne_simulator/velodyne_gazebo_plugins/include/**",
+        "/usr/include/**"
+      ],
+      "name": "ROS",
+      "intelliSenseMode": "gcc-x64",
+      "compilerPath": "/usr/bin/gcc",
+      "cStandard": "gnu11",
+      "cppStandard": "c++14"
+    }
+  ],
+  "version": 4
+}
