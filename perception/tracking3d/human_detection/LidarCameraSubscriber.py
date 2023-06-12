@@ -1,6 +1,7 @@
 import argparse
 from cv_bridge import CvBridge
 from geometry_msgs.msg import Point
+from geometry_msgs.msg import PoseStamped
 import math
 import numpy as np
 import os
@@ -304,7 +305,6 @@ def parse_global_matrix():
     global rotation_matrix, translation_vector, camera_transformation_k
     camera_transformation_k = read_space_seperated_matrix(camera_transformation_k)
     rotation_matrix = read_space_seperated_matrix(rotation_matrix).T
-    translation_vector = np.tile(translation_vector, (length, 1)).T
 
 
 def convert_to_2d(point_cloud, image_height=1024):
@@ -313,9 +313,10 @@ def convert_to_2d(point_cloud, image_height=1024):
     """
 
     length = point_cloud.shape[0]
+    translation = np.tile(translation_vector, (length, 1)).T
     
     point_cloud = point_cloud.T
-    point_cloud = np.dot(rotation_matrix, point_cloud) + translation_vector
+    point_cloud = np.dot(rotation_matrix, point_cloud) + translation
     point_cloud = np.dot(camera_transformation_k, point_cloud)
 
     uv_coordinate = np.empty_like(point_cloud)
@@ -353,15 +354,18 @@ def main(args=None):
 
     parse_global_matrix()
     parser_args = parse_arguments()
+
     if parser_args.download_model:
+        print('downloading model...')
         model = download_model()
     else:
         model = load_saved_model()
-
-
-    print("ready...")
+    print("Human detection ready...")
     rclpy.init(args=args)
     subscriber = LidarCameraSubscriber()
     rclpy.spin(subscriber)
     subscriber.destroy_node()
     rclpy.shutdown()
+
+if __name__ == '__main__':
+    main()
