@@ -18,6 +18,9 @@ class SpeechRecognizer:
             f'Inside Speech Recognizer: mic in use index: {mic_index}')
 
         openai.api_key = os.environ.get('OPENAI_API_KEY')
+        with self.mic as source:
+            self.logger.info("\nAmbient noise adjust...")
+            self.speech_recognizer.adjust_for_ambient_noise(source)
 
     def whisper(self, audio):
         """Transcribe audio using openAI's whisper model 
@@ -47,8 +50,6 @@ class SpeechRecognizer:
             user_input (str): transcribed voice command
         """
         with self.mic as source:
-            self.logger.info("\nAmbient noise adjust...")
-            self.speech_recognizer.adjust_for_ambient_noise(source)
             self.logger.info("\nListening...")
             try:
                 audio = self.speech_recognizer.listen(
