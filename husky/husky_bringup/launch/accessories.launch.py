@@ -74,7 +74,7 @@ def generate_launch_description():
 
             with open(velodyne_pointcloud_params_file, 'r') as f:
                 config_velodyne_pointcloud_vlp16_params = yaml.safe_load(f)['velodyne_convert_node']['ros__parameters']
-            config_velodyne_pointcloud_vlp16_params['calibration'] = os.path.join(velodyne_pointcloud_dir, 'params', 'VLP16db.yaml')
+            config_velodyne_pointcloud_vlp16_params['calibration'] = os.path.join(velodyne_pointcloud_dir, 'params', 'VLP16_hires_db.yaml')
 
             node_velodyne_driver = Node(
                 package='velodyne_driver', 
