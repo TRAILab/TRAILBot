@@ -35,11 +35,8 @@ Add the following to the launch file
 
     ld.add_action(fsm_node)
     ld.add_action(navigator_node)
-    
-# colcon and source
 
-# modify the subscriber in the trailbot_fsm and navigator node to subscribe to the 
-# perception and voice assistant node
+# modify the subscriber in the trailbot_fsm and navigator node to subscribe to the perception and voice assistant node
 
 
 
