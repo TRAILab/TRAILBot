@@ -22,7 +22,7 @@ MODEL_URL = "https://tfhub.dev/google/movenet/multipose/lightning/1?tf-hub-forma
 SAVED_MODEL_PATH = "./multipose_model"
 people_detection_threshold = 0.3
 point_detection_threshold = 0.3
-image_width=1280,
+image_width=1280
 image_height=1024
 camera_transformation_k = """
     628.5359544 0 676.9575694
@@ -233,7 +233,7 @@ class LidarCameraSubscriber(Node):
         #     Float32,
         #     'angle_topic',
         #     10)
-        c = self.create_publisher(
+        self.pose_publisher = self.create_publisher(
             PoseStamped,
             'pose_stamped_topic', 
             10)
@@ -241,7 +241,7 @@ class LidarCameraSubscriber(Node):
     def camera_callback(self, msg):
         cv_image = self.bridge.imgmsg_to_cv2(
             msg, desired_encoding='passthrough')
-        self.is_there_anyone = process_frame(cv_image)
+        self.is_there_anyone = process_frame(cv_image,self.person_array)
         self.publish_message("camera",msg.header.stamp)
 
     def lidar_callback(self, msg):
@@ -251,7 +251,9 @@ class LidarCameraSubscriber(Node):
             point_gen = pc2.read_points(
                 msg, field_names=(
                     "x", "y", "z"), skip_nans=True)
-            points = np.array(list(point_gen))
+            # points = np.array(list(point_gen))
+            points = [[x, y, z] for x, y, z in point_gen]
+            points = np.array(points)
             points2d = convert_to_2d(points)
 
         #update depth for every person
@@ -263,7 +265,7 @@ class LidarCameraSubscriber(Node):
 
         self.publish_message("lidar",msg.header.stamp)
 
-    def publish_message(source_str, timestamp):
+    def publish_message(self,source_str, timestamp):
         #person0 for debugging purpse
         person0 = self.person_array[0]
         message = f"{'{source_str:<7}'}"
@@ -274,7 +276,7 @@ class LidarCameraSubscriber(Node):
 
         # Publish the message
         is_person_msg = Bool()
-        is_person_msg.data = self.is_there_anyone
+        is_person_msg.data = bool(self.is_there_anyone)
         self.is_person_publisher.publish(is_person_msg)
 
         # angle_msg = Float32()
