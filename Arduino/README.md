@@ -24,7 +24,7 @@ Everytime you connect arduino, it usually shows up under /dev/ttyACM0 but it can
 8. Load the new rule: `sudo udevadm trigger`
 9. Check if the static name setting is done properly: `ls -l /dev/arduino`
 
-## 1.3. Run micro-ros agent and test run_servo_service node
+## 1.4. Run micro-ros agent and test run_servo_service node
 
 1. Power Cycle/Reconnect Arduino Due to laptop via USB.
 
