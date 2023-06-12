@@ -11,8 +11,10 @@ $ pip3 install -r requirements.txt
 $ cd ~/ros2_ws
 $ colcon build
 
-# add fsm node and navigator node to launch file
+# add fsm node and navigator node to launch directory
 From the marc/humble_carto branch add the fsm folder into the trailbot's launch directory
+
+# modify launch file
 Add the following to the launch file
 
     # FSM Node
