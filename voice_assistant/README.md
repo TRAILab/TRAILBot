@@ -137,7 +137,40 @@ ros2 param set /voice_arduino_bridge_node snack_options '['chips', 'juice', 'can
 ros2 param set /voice_arduino_bridge_node snack_quantity '[3, 1, 5, 6]'
 ```
 
-## 1.6. Troubleshoot
+## 1.7. Running with Aliases (shortcuts)
+
+### 1.7.1. Test voice interaction and servos
+Steps to test voice interaction and servos:
+
+1. Terminal 1: run_agent
+2. Connect arduino’s usb wire to laptop
+3. Terminal 2: voice
+4. Terminal 3: query
+5. Chat with the robot once you see “Listening…” on voice assistant node output
+
+**Note:** If you see Audio errors on voice assistant node, you will have to set the mic index in params.yaml to the active index. 
+
+### 1.7.2. Test servos
+If you want to only test servos-> follow steps 1,2 and then in 
+
+   terminal 2: `run_s<servo number>`
+
+
+
+## 1.8. Calibrating motor rotation
+While calibrating motors, you will need to reupload the new arduino code in the arduino.
+
+1. Make sure you stop microros agent!
+
+2.  Terminal: arduino (alias for starting arduino ide)
+3.  Tune the ‘delay’ parameter for each servo so that the tip of the coil rotates 360 degrees.
+4. Upload code to arduino
+5. Terminal: run_agent
+6. Plug out and plug in arduino USB
+7. Terminal: run_s1 (run servo to inspect if the servo completes 360 degree rotation) 
+
+
+## 1.9. Troubleshoot
 
 1. Make sure you are in a quiet place.
 2. If error message includes the following assertion failed:
