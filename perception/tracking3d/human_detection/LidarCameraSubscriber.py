@@ -245,7 +245,6 @@ class LidarCameraSubscriber(Node):
         self.publish_message("camera",msg.header.stamp)
 
     def lidar_callback(self, msg):
-        global closest_depth
         if self.is_there_anyone:
             # Deserialize PointCloud2 data into xyz points
             point_gen = pc2.read_points(
@@ -254,7 +253,7 @@ class LidarCameraSubscriber(Node):
             # points = np.array(list(point_gen))
             points = [[x, y, z] for x, y, z in point_gen]
             points = np.array(points)
-            points2d = convert_to_2d(points)
+            points2d = convert_to_camera_frame(points)
 
         #update depth for every person
         for person in self.person_array:
@@ -285,9 +284,10 @@ class LidarCameraSubscriber(Node):
 
         pose_stamped_msg = PoseStamped()
         pose_stamped_msg.header.stamp = timestamp
-        pose_stamped_msg.pose.position.x = person0.x
-        pose_stamped_msg.pose.position.y = person0.y
-        pose_stamped_msg.pose.position.z = person0.z
+        lidar_x,lidar_y,lidar_z = convert_to_lidar_frame((person0.x,person0.y,person0.z))
+        pose_stamped_msg.pose.position.x = lidar_x  
+        pose_stamped_msg.pose.position.y = lidar_y
+        pose_stamped_msg.pose.position.z = lidar_z
         self.pose_publisher.publish(pose_stamped_msg)
 
 def read_space_seperated_matrix(string):
@@ -308,18 +308,35 @@ def parse_global_matrix():
     camera_transformation_k = read_space_seperated_matrix(camera_transformation_k)
     rotation_matrix = read_space_seperated_matrix(rotation_matrix).T
 
+    global inverse_camera_transformation_k, inverse_rotation_matrix
+    inverse_camera_transformation_k = np.linalg.inv(camera_transformation_k)
+    inverse_rotation_matrix = np.linalg.inv(rotation_matrix)
 
-def convert_to_2d(point_cloud, image_height=1024):
-    """
-    convert 3d lidar data into 2d coordinate of the camera frame
-    """
 
+def convert_to_lidar_frame(uv_coordinate):
+    """
+    convert 2d camera coordinate + depth into 3d lidar frame
+    """
+    point_cloud = np.empty( (3,) , dtype=float)
+    point_cloud[2] = uv_coordinate[2]
+    point_cloud[1] = ( image_height - uv_coordinate[1] )*point_cloud[2]
+    point_cloud[0] = uv_coordinate[0]*point_cloud[2]
+
+    point_cloud = inverse_camera_transformation_k @ point_cloud
+    point_cloud = inverse_rotation_matrix @ (point_cloud-translation_vector) 
+    return point_cloud
+
+
+def convert_to_camera_frame(point_cloud):
+    """
+    convert 3d lidar data into 2d coordinate of the camera frame + depth
+    """
     length = point_cloud.shape[0]
     translation = np.tile(translation_vector, (length, 1)).T
     
     point_cloud = point_cloud.T
-    point_cloud = np.dot(rotation_matrix, point_cloud) + translation
-    point_cloud = np.dot(camera_transformation_k, point_cloud)
+    point_cloud = rotation_matrix@point_cloud + translation
+    point_cloud = camera_transformation_k @ point_cloud
 
     uv_coordinate = np.empty_like(point_cloud)
 
@@ -330,7 +347,8 @@ def convert_to_2d(point_cloud, image_height=1024):
     uv_coordinate[1] = image_height - point_cloud[1] / point_cloud[2]
     uv_coordinate[2] = point_cloud[2]
 
-    filtered_uv_coordinate = uv_coordinate[:, uv_coordinate[2, :] >= 0]
+    uv_depth = uv_coordinate[2, :]
+    filtered_uv_coordinate = uv_coordinate[:, uv_depth >= 0]
     return filtered_uv_coordinate
 
 
@@ -370,4 +388,5 @@ def main(args=None):
     rclpy.shutdown()
 
 if __name__ == '__main__':
+    print("\n\nDEBUG MODE ON\n\n")
     main()

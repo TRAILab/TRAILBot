@@ -17,6 +17,11 @@ ros2 run image_transport republish compressed raw --ros-args --remap in/compress
 source install/setup.bash 
 ros2 run human_detection human_detection
 ros2 bag play testbag
+
+
+cd ~/trail_ws
+.install/setup.bash
+ros2 launch husky_base base.launch.py
 ```
 
 ```bash
