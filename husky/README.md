@@ -12,7 +12,7 @@ real robot operation.
 For Husky instructions and tutorials, please see [Robots/Husky](http://wiki.ros.org/Robots/Husky).
 
 
-Dependencies/Requirement to build
+Dependencies/Requirement to build:
 =============
 Install ROS2 Humble (follow guide below):
   - https://docs.ros.org/en/humble/Installation/Ubuntu-Install-Debians.html
@@ -25,10 +25,13 @@ Install NAV2 and Correlating Dependencies:
   - sudo apt install ros-humble-gazebo-ros2-control
 
 Install this dependency from the top folder (i.e. "ros2_ws") in your directory
-  - cd ~/ros2_ws rosdep install --from-paths src --ignore-src --rosdistro humble -r -y
+```
+cd ~/ros2_ws 
+rosdep install --from-paths src --ignore-src --rosdistro humble -r -y
+cd ..
+```
 
 Sensor Drivers:
-  - 
 
 Clone this repo and dependending repo's
 ```
