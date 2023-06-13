@@ -80,13 +80,21 @@ def generate_launch_description():
         parameters=[config]
     )
 
+    #IMU
+    IMU_node = Node(
+        package="umx_driver",
+        executable="um7_driver",
+        name="um7_node",
+        parameters=[{'port': '/dev/ttyUSB1'}]
+    )
+
 
     # Cartographer node
     use_sim_time = LaunchConfiguration('use_sim_time', default='true')
     trailbot_cartographer_prefix = get_package_share_directory(package_name)
     cartographer_config_dir = LaunchConfiguration('cartographer_config_dir', default=os.path.join(
                                                   trailbot_cartographer_prefix, 'config'))
-    configuration_basename = LaunchConfiguration('configuration_basename', default='trailbot_lds_2d.lua') 
+    configuration_basename = LaunchConfiguration('configuration_basename', default='trailbot_lds_3d.lua') 
     resolution = LaunchConfiguration('resolution', default='0.05')
     publish_period_sec = LaunchConfiguration('publish_period_sec', default='1.0')
 
@@ -114,6 +122,8 @@ def generate_launch_description():
         # remappings=['/husky_velocity_controller/odom', '/odom']
 
     )
+
+
 
     node_robot_state_publisher = Node(
         package="robot_state_publisher",
@@ -189,6 +199,7 @@ def generate_launch_description():
     ld.add_action(velo_launch2)
     ld.add_action(occupancy_grid)
     ld.add_action(rviz_node)
+    ld.add_action(IMU_node)
     #ld.add_action(PCL2SCAN)
     #ld.add_action(ximea_node)
 

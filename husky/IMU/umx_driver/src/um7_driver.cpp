@@ -321,7 +321,7 @@ Um7Driver::Um7Driver()
   axes_(OutputAxisOptions::DEFAULT)
 {
   // Load parameters
-  std::string port = this->declare_parameter<std::string>("port", "/dev/ttyUSB0");
+  std::string port = this->declare_parameter<std::string>("port", "/dev/ttyUSB1");
   int32_t baud = this->declare_parameter<int32_t>("baud", 115200);
 
   // Parameters for configure_sensor
