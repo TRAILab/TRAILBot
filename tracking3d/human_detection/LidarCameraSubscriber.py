@@ -9,7 +9,7 @@ import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import Image, PointCloud2
 import sensor_msgs_py.point_cloud2 as pc2
-from std_msgs.msg import Bool, Float32
+from std_msgs.msg import Bool, Float32, String
 import tarfile
 import tensorflow as tf
 import tensorflow_hub as hub
@@ -207,7 +207,7 @@ class LidarCameraSubscriber(Node):
         #make array of 6 person
         self.person_array = [Person() for _ in range(6)]
         self.is_there_anyone = False
-
+        self.cur_state = ""
 
         super().__init__('image_subscriber')
         self.camera_subscription = self.create_subscription(
@@ -220,10 +220,17 @@ class LidarCameraSubscriber(Node):
 
         self.lidar_subscription = self.create_subscription(
             PointCloud2,
-            'velodyne_points',  # Change this to the topic you're subscribing to
+            'velodyne_points',  
             self.lidar_callback,
             10)
         self.lidar_subscription
+
+        self.state_subscription = self.create_subscription(
+            String,
+            '/trailbot_state',
+            self.state_callback,
+            10)
+
 
         #topics to publish
         self.is_person_publisher = self.create_publisher(
@@ -238,8 +245,13 @@ class LidarCameraSubscriber(Node):
             PoseStamped,
             'target_location', 
             10)
+    def state_callback(self, msg):
+        self.cur_state = msg.data
 
     def camera_callback(self, msg):
+        if self.cur_state!="SearchState":
+            return 
+
         cv_image = self.bridge.imgmsg_to_cv2(
             msg, desired_encoding='passthrough')
         self.is_there_anyone = process_frame(cv_image,self.person_array)
@@ -250,6 +262,9 @@ class LidarCameraSubscriber(Node):
         if not self.is_there_anyone:
             return
 
+        if self.cur_state!="SearchState":
+            return 
+            
         # Deserialize PointCloud2 data into xyz points
         point_gen = pc2.read_points(
             msg, field_names=(
