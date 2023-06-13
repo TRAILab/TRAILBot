@@ -287,10 +287,22 @@ class LidarCameraSubscriber(Node):
 
         pose_stamped_msg = PoseStamped()
         pose_stamped_msg.header.stamp = timestamp
+        pose_stamped_msg.header.frame_id = "velodyne"
+
         lidar_x,lidar_y,lidar_z = convert_to_lidar_frame((person0.x,person0.y,person0.z))
+        
+        #position
         pose_stamped_msg.pose.position.x = lidar_x  
         pose_stamped_msg.pose.position.y = lidar_y
         pose_stamped_msg.pose.position.z = lidar_z
+
+        #orientation
+        yaw = math.atan2(lidar_y, lidar_x)
+        pose_stamped_msg.pose.orientation.x = 0.0  
+        pose_stamped_msg.pose.orientation.y = 0.0 
+        pose_stamped_msg.pose.orientation.z = math.sin(yaw/2)
+        pose_stamped_msg.pose.orientation.w = math.cos(yaw / 2)
+        
         self.pose_publisher.publish(pose_stamped_msg)
 
 def read_space_seperated_matrix(string):
