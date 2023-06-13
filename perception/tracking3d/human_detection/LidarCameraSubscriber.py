@@ -16,7 +16,7 @@ import tensorflow_hub as hub
 import time
 import urllib.request
 
-
+temp=""
 #config constants
 MODEL_URL = "https://tfhub.dev/google/movenet/multipose/lightning/1?tf-hub-format=compressed"
 SAVED_MODEL_PATH = "./multipose_model"
@@ -271,6 +271,7 @@ class LidarCameraSubscriber(Node):
         message += f" person: {'YES' if self.is_there_anyone else 'NO '}"
         message += f" angle: {person0.heading_angle:<20}"
         message += f"person_coordinate: {person0.x:<22} {person0.y:<22} {person0.z:22}"
+        message+=f" {distances_sq[closest_indices]}"
         print_verbose_only(message)
 
         # Publish the message
@@ -362,8 +363,8 @@ def estimate_depth(x, y, np_2d_array):
     # Find the indices of the k nearest poitns
     k = 5     # Number of nearest neighbors we want
     closest_indices = np.argpartition(distances_sq, k)[:k]
-    print(distances_sq[closest_indices])
-
+    global temp
+    temp =distances_sq[closest_indices]
     # Get the depth value of the closest point
     closest_depths = np_2d_array[2,closest_indices]
     return np.mean(closest_depths)
