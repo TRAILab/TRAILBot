@@ -51,7 +51,7 @@ def generate_launch_description():
                 'angle_min': -3.14,  #was -M_PI/2 now -PI
                 'angle_max': 3.14,  #was  M_PI/2 now PI
                 'angle_increment': 0.0087,  # M_PI/360.0
-                'scan_time': 0.3333,
+                'scan_time': 0.1, #10 hz (was at .3333)
                 'range_min': 0.45,
                 'range_max': 30.0,
                 'use_inf': True,
