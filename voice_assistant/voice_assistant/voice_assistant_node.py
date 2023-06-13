@@ -138,8 +138,6 @@ class VoiceAssistant(Node):
 
     def state_listener_callback(self, msg):
         # Activate chatbot if in 'QueryState'
-        self.get_logger().info(f'Previous state: {self.state}')
-        self.get_logger().info(f'Incoming state: {msg.data}')
         if msg.data == 'QueryState' and self.state != 'QueryState':
             self.state = msg.data
             self.in_query_state = True
