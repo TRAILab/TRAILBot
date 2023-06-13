@@ -196,7 +196,6 @@ def generate_launch_description():
     # Launch human detection
     human_detection_node = Node(
         package='human_detection',
-        name='human_detection_node',
         executable='human_detection_node'
     )
 
