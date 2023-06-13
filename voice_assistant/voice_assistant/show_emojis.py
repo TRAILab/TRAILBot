@@ -8,6 +8,8 @@ class Emojis():
         # TODO: is there a cleaner way to get the emojis path?
         self.emoji_path = Path.home() / 'trail_ws/src/TRAILBot/voice_assistant/emojis'
         cv2.startWindowThread()
+        cv2.namedWindow("GUI", cv2.WINDOW_NORMAL)
+        cv2.resizeWindow("GUI", 2000, 2000)
 
     def show_speaking(self):
         path = self.emoji_path / 'smile_emoji.png'
