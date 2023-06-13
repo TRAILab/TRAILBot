@@ -14,8 +14,6 @@ def generate_launch_description():
     trailbot_cartographer_prefix = get_package_share_directory('trailbot_gazebo')
     cartographer_config_dir = LaunchConfiguration('cartographer_config_dir', default=os.path.join(
                                                   trailbot_cartographer_prefix, 'config'))
-    # configuration_basename = LaunchConfiguration('configuration_basename',
-    #                                              default='trailbot_lds_2d.lua')
     configuration_basename = LaunchConfiguration('configuration_basename',
                                                   default='trailbot_lds_2d.lua')
 
