@@ -110,8 +110,8 @@ class FSM(Node):
         self.sm = StateMachine(outcomes=['finished'])
 
         self.sm.add_state('SEARCH', SearchState(self.state_publisher, self.blackboard), transitions={'target_found': 'APPROACH', 'target_not_found': 'SEARCH'})
-        self.sm.add_state('APPROACH', ApproachState(self.goal_publisher, self.state_publisher, self.blackboard), transitions={'arrived': 'Query', 'not_arrived': 'APPROACH'})
-        self.sm.add_state('Query', QueryState(self.state_publisher, self.blackboard), transitions={'query_complete': 'DONE', 'query_not_complete': 'Query'})
+        self.sm.add_state('APPROACH', ApproachState(self.goal_publisher, self.state_publisher, self.blackboard), transitions={'arrived': 'QUERY', 'not_arrived': 'APPROACH'})
+        self.sm.add_state('QUERY', QueryState(self.state_publisher, self.blackboard), transitions={'query_complete': 'DONE', 'query_not_complete': 'QUERY'})
         self.sm.add_state('DONE', DoneState(self.state_publisher, self.blackboard), transitions={'done': 'SEARCH'})
 
     def run(self):
