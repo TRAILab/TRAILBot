@@ -235,7 +235,7 @@ class LidarCameraSubscriber(Node):
         #     10)
         self.pose_publisher = self.create_publisher(
             PoseStamped,
-            'pose_stamped_topic', 
+            'target_location', 
             10)
 
     def camera_callback(self, msg):
@@ -248,7 +248,7 @@ class LidarCameraSubscriber(Node):
     def lidar_callback(self, msg):
         if not self.is_there_anyone:
             return
-            
+
         # Deserialize PointCloud2 data into xyz points
         point_gen = pc2.read_points(
             msg, field_names=(
