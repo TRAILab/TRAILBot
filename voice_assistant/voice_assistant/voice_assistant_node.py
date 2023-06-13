@@ -102,7 +102,7 @@ class VoiceAssistant(Node):
         self.snack_wanted_request = SnackWanted.Request()
         # if user has said bye (or one of the self.exit_cmd_options)
         self.end_chat = False
-        self.in_query_state = False  # True if robot's state is 'Query', False otherwise
+        self.in_query_state = False  # True if robot's state is 'QueryState', False otherwise
 
         # Subscriber: to detect the state of the robot
         self.state_subscriber = self.create_subscription(
@@ -136,8 +136,8 @@ class VoiceAssistant(Node):
         self.publisher.publish(msg)
 
     def state_listener_callback(self, msg):
-        # Activate chatbot if in 'Query' state
-        if msg.data == 'Query':
+        # Activate chatbot if in 'QueryState'
+        if msg.data == 'QueryState':
             self.in_query_state = True
             self.end_chat = False
             self.get_logger().info('State changed to: "%s"' % msg.data)

@@ -122,9 +122,9 @@ echo 'export ELEVENLABS_API_KEY="<secret api key, (free per email account and fo
    ros2 launch voice_assistant voice_assistant.launch.py
 
    ```
-2. Chatbot starts interacting with the user if the robot's state changes to 'Query'. Without behaviour planner running, you can manually change robot's state to 'Query' to test/activate chatbot.
+2. Chatbot starts interacting with the user if the robot's state changes to 'QueryState'. Without behaviour planner running, you can manually change robot's state to 'QueryState' to test/activate chatbot.
    ```bash
-   ros2 topic pub --once /state std_msgs/msg/String "{data: "Query"}"
+   ros2 topic pub --once /state std_msgs/msg/String "{data: "QueryState"}"
    ```
 
 ## 1.6. Update Snack Inventory
