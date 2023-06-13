@@ -370,9 +370,11 @@ def estimate_depth(x, y, np_2d_array):
     global temp
     temp = closest_distances
     pixel_distance_threshold = 3000
-    valid_indices = [idx for idx in closest_indices if distances_sq[idx] <= pixel_distance_threshold]
-    filtered_indices = np.array(valid_indices)
 
+    valid_indices = [idx for idx in closest_indices if distances_sq[idx]<=pixel_distance_threshold]
+    filtered_indices = np.array(valid_indices)
+    print(valid_indices)
+    print(filtered_indices)
     # Get the depth value of the closest point
     closest_depths = np_2d_array[2,filtered_indices]
 
