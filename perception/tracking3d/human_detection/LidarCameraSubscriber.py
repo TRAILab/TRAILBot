@@ -20,8 +20,8 @@ temp=""
 #config constants
 MODEL_URL = "https://tfhub.dev/google/movenet/multipose/lightning/1?tf-hub-format=compressed"
 SAVED_MODEL_PATH = "./multipose_model"
-people_detection_threshold = 0.3
-point_detection_threshold = 0.3
+people_detection_threshold = 0.4
+point_detection_threshold = 0.4
 image_width=1280
 image_height=1024
 camera_transformation_k = """
@@ -242,18 +242,21 @@ class LidarCameraSubscriber(Node):
         cv_image = self.bridge.imgmsg_to_cv2(
             msg, desired_encoding='passthrough')
         self.is_there_anyone = process_frame(cv_image,self.person_array)
-        self.publish_message("camera",msg.header.stamp)
+        if self.is_there_anyone:
+            self.publish_message("camera",msg.header.stamp)
 
     def lidar_callback(self, msg):
-        if self.is_there_anyone:
-            # Deserialize PointCloud2 data into xyz points
-            point_gen = pc2.read_points(
-                msg, field_names=(
-                    "x", "y", "z"), skip_nans=True)
-            # points = np.array(list(point_gen))
-            points = [[x, y, z] for x, y, z in point_gen]
-            points = np.array(points)
-            points2d = convert_to_camera_frame(points)
+        if not self.is_there_anyone:
+            return
+            
+        # Deserialize PointCloud2 data into xyz points
+        point_gen = pc2.read_points(
+            msg, field_names=(
+                "x", "y", "z"), skip_nans=True)
+        # points = np.array(list(point_gen))
+        points = [[x, y, z] for x, y, z in point_gen]
+        points = np.array(points)
+        points2d = convert_to_camera_frame(points)
 
         #update depth for every person
         for person in self.person_array:
@@ -363,10 +366,20 @@ def estimate_depth(x, y, np_2d_array):
     # Find the indices of the k nearest poitns
     k = 5     # Number of nearest neighbors we want
     closest_indices = np.argpartition(distances_sq, k)[:k]
+    closest_distances = distances_sq[closest_indices]
     global temp
-    temp =distances_sq[closest_indices]
+    temp = closest_distances
+    pixel_distance_threshold = 3000
+    valid_indices = [idx for idx in closest_indices if closest_distances[idx] <= pixel_distance_threshold]
+    filtered_indices = np.array(valid_indices)
+
     # Get the depth value of the closest point
-    closest_depths = np_2d_array[2,closest_indices]
+    closest_depths = np_2d_array[2,filtered_indices]
+
+    # if there is no points close enough to target x y
+    if len(closest_depths) == 0:
+        return 0.4
+
     return np.mean(closest_depths)
 
 
