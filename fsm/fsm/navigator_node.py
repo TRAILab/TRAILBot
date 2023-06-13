@@ -39,7 +39,7 @@ class MinimalPublisher(Node):
     def check_condition_and_publish(self):
         if self.last_cmd_vel is not None and self.last_goal_status is not None:
             
-            if self.last_cmd_vel.linear.x <= 0.0 and self.last_cmd_vel.angular.z <= 0.2 and self.last_goal_status == 'ApproachState':
+            if self.last_cmd_vel.linear.x <= 0.0 and self.last_cmd_vel.angular.z <= 0.05 and self.last_goal_status == 'ApproachState':
                 goal_reached_msg = String()
                 goal_reached_msg.data = 'goal_reached'
                 self.goal_status_publisher.publish(goal_reached_msg)

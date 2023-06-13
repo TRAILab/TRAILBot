@@ -190,7 +190,7 @@ def process_frame(image, person_array):
     is_there_anyone = is_there_person(keypoints)
     return is_there_anyone
 
-
+publish_counter=0
 class Person:
     """
     struct to store information for a detected person
@@ -243,8 +243,8 @@ class LidarCameraSubscriber(Node):
         cv_image = self.bridge.imgmsg_to_cv2(
             msg, desired_encoding='passthrough')
         self.is_there_anyone = process_frame(cv_image,self.person_array)
-        if self.is_there_anyone:
-            self.publish_message("camera",msg.header.stamp)
+        # if self.is_there_anyone:
+            # self.publish_message("camera",msg.header.stamp)
 
     def lidar_callback(self, msg):
         if not self.is_there_anyone:
@@ -265,8 +265,10 @@ class LidarCameraSubscriber(Node):
                 person.z = -1.0
             else:
                 person.z = estimate_depth(person.x, person.y, points2d)
-
-        self.publish_message("lidar",msg.header.stamp)
+        global publish_counter
+        if publish_counter<1:
+            publish_counter+=1
+            self.publish_message("lidar",msg.header.stamp)
 
     def publish_message(self,source_str, timestamp):
         #person0 for debugging purpse
@@ -276,6 +278,7 @@ class LidarCameraSubscriber(Node):
         message += f" angle: {person0.heading_angle:<20}"
         message += f"person_coordinate: {person0.x:<22} {person0.y:<22} {person0.z:22}"
         print_verbose_only(message)
+        print("\n\n\n",message,"\n\n\n")
 
         # Publish the message
         is_person_msg = Bool()
