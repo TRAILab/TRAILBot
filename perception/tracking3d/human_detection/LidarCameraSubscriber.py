@@ -375,6 +375,7 @@ def main(args=None):
 
     parse_global_matrix()
     parser_args = parse_arguments()
+    parser_args.verbose = True
 
     if parser_args.download_model:
         print('downloading model...')
@@ -389,6 +390,5 @@ def main(args=None):
     rclpy.shutdown()
 
 if __name__ == '__main__':
-    parser_args.verbose = True
     print("\n\nDEBUG MODE ON1\n\n")
     main()
