@@ -3,15 +3,17 @@ import re
 import time
 
 import openai
-
 import rclpy
 from rclpy.node import Node
 from std_msgs.msg import Bool, String
 
+from trailbot_interfaces.msg import SnacksInventory
 from trailbot_interfaces.srv import SnackWanted
-from .text_to_speech_engine import ElevenLabsEngine, Pyttsx3Engine
-from .speech_recognizer import SpeechRecognizer
+
 from .conversation_handler import ConversationHandler
+from .speech_recognizer import SpeechRecognizer
+from .text_to_speech_engine import ElevenLabsEngine, Pyttsx3Engine
+from .show_emojis import Emojis
 
 
 class VoiceAssistant(Node):
@@ -24,10 +26,10 @@ class VoiceAssistant(Node):
         """
         super().__init__('voice_assistant_node')
 
+        # Emojis gui
+        self.gui = Emojis()
+
         # Declare params
-        self.declare_parameter(
-            'snack_options', ['chips', 'chocolates', 'candies', 'nuts'])
-        self.declare_parameter('available_snacks_quantity', [5, 5, 5, 5])
         self.declare_parameter('exit_cmd_options', [
                                'bye', 'bubye', 'adios', 'ciao', 'thanks', 'thank you'])
         self.declare_parameter('speech_recognizer.mic_device_index', 12)
@@ -41,14 +43,13 @@ class VoiceAssistant(Node):
 
         # Get params
         self.exit_cmd_options = self.get_parameter('exit_cmd_options').value
+        self.snack_options = []
+        self.snack_quantity = []
 
         # Print params
         use_whisper = self.get_parameter('speech_recognizer.use_whisper').value
-        snack_options = self.get_parameter('snack_options').value
-        available_snacks_quantity = self.get_parameter(
-            'available_snacks_quantity').value
-        self.get_logger().info(f'use_whisper: {use_whisper}, exit_cmd_options: {self.exit_cmd_options}, \
-                               available_snacks: {snack_options}, available_snacks_quantity: {available_snacks_quantity}')
+        self.get_logger().info(
+            f'use_whisper: {use_whisper}, exit_cmd_options: {self.exit_cmd_options}')
 
         # openAI set-up
         personality = "You are a helpful assistant."
@@ -68,8 +69,11 @@ class VoiceAssistant(Node):
         # Speech Recognizer set-up
         # Note: You can list microphones with this command and set the device_index
         # to the index of your favourite microphone from the list
-        print('Available mics:')
-        print(SpeechRecognizer.list_mics())
+        self.get_logger().info('Available mics:')
+        mic_list = SpeechRecognizer.list_mics()
+        # dictionary with microphones and their indexes
+        for index, key in enumerate(mic_list):
+            self.get_logger().info(f'{key}: {index}')
         self.get_logger().info('Mic index in use: %s' % str(
             self.get_parameter('speech_recognizer.mic_device_index').value))
         self.get_logger().info('speech_recognizer.energy_threshold: %s' %
@@ -83,7 +87,8 @@ class VoiceAssistant(Node):
                                                       'speech_recognizer.timeout').value,
                                                   phrase_time_limit=self.get_parameter(
                                                       'speech_recognizer.phrase_time_limit').value,
-                                                  dynamic_energy_threshold=False)
+                                                  logger=self.get_logger(),
+                                                  gui=self.gui)
 
         # Set-up conversation_handler to save conversations
         self.conversation_handler = ConversationHandler(
@@ -97,30 +102,42 @@ class VoiceAssistant(Node):
         self.snack_wanted_request = SnackWanted.Request()
         # if user has said bye (or one of the self.exit_cmd_options)
         self.end_chat = False
-        self.in_query_state = False  # True if robot's state is 'Query', False otherwise
+        self.in_query_state = False  # True if robot's state is 'QueryState', False otherwise
 
         # Subscriber: to detect the state of the robot
-        self.subscription = self.create_subscription(
+        self.state_subscriber = self.create_subscription(
             String,
-            'state',
-            self.listener_callback,
+            'trailbot_state',
+            self.state_listener_callback,
             1)
-        self.subscription  # To prevent unused variable warning
+        self.state_subscriber  # To prevent unused variable warning
 
         # Publisher: to let behaviour planner know that the user has ended the chat
-        self.publisher_ = self.create_publisher(Bool, 'chat_ended', 1)
+        self.publisher = self.create_publisher(Bool, 'query_complete', 1)
         timer_period = 0.5  # seconds
         self.timer = self.create_timer(
             timer_period, self.publisher_timer_callback)
 
+        # Subscriber: receive the current snack inventory
+        self.snacks_inventory_subscriber = self.create_subscription(
+            SnacksInventory,
+            'snack_inventory',
+            self.available_snacks_listener_callback,
+            10)
+        self.snacks_inventory_subscriber  # prevent unused variable warning
+
+    def available_snacks_listener_callback(self, msg):
+        self.snack_options = msg.snacks
+        self.snack_quantity = msg.quantity
+
     def publisher_timer_callback(self):
         msg = Bool()
         msg.data = self.end_chat
-        self.publisher_.publish(msg)
+        self.publisher.publish(msg)
 
-    def listener_callback(self, msg):
-        # Activate chatbot if in 'Query' state
-        if msg.data == 'Query':
+    def state_listener_callback(self, msg):
+        # Activate chatbot if in 'QueryState'
+        if msg.data == 'QueryState':
             self.in_query_state = True
             self.end_chat = False
             self.get_logger().info('State changed to: "%s"' % msg.data)
@@ -129,18 +146,16 @@ class VoiceAssistant(Node):
             self.in_query_state = False
 
     def get_available_snacks(self):
-        snack_options = self.get_parameter('snack_options').value
-        snack_quantity = self.get_parameter('available_snacks_quantity').value
-
+        rclpy.spin_once(self)
         available_snack_options = [
-            snack_options[i] for i, quantity in enumerate(snack_quantity) if quantity > 0]
+            self.snack_options[i] for i, quantity in enumerate(self.snack_quantity) if quantity > 0]
         return available_snack_options
 
     def get_available_snacks_str(self):
         available_snack_options = self.get_available_snacks()
         available_snack_options[-1] = 'and ' + available_snack_options[-1]
         available_snack_options_str = " ".join(available_snack_options)
-        print('Available snacks: ', available_snack_options_str)
+        # print('Available snacks: ', available_snack_options_str)
         return available_snack_options_str
 
     def send_request(self, snack_wanted):
@@ -170,13 +185,11 @@ class VoiceAssistant(Node):
             f'Response of snack_wanted service request: {response.success}, {response.message}')
 
         if response.success:
-            self.speak(f'Please pick up your {snack_wanted} from my side!')
+            self.speak(f'Please pick up your {snack_wanted}.')
         else:
-            # TODO: what to do in this case?
-            # Behaviour planner should update the "available_snacks_quantity" param after a snack is dispensed
-            # and if snack is finished, it should set response.success = False and response.message = 'Snack not available'
-            self.speak(f'Sorry, {snack_wanted} is not available.')
-            self.speak(f'We will restock {snack_wanted} soon.')
+            self.speak(f'{response.message}')
+
+        return response.success
 
     def speak(self, msg_list):
         """ Text to speech generation
@@ -184,6 +197,7 @@ class VoiceAssistant(Node):
         Args:
             msg_list (list of str): list of sentences to speak
         """
+        self.gui.show_speaking()
         self.tts_engine.speak(msg_list)
 
     def look_for_keywords(self, user_input, keywords):
@@ -220,9 +234,8 @@ class VoiceAssistant(Node):
 
     def find_snack_in_input(self, user_input):
         # Find the requested snack in user_input
-        snack_options = self.get_parameter('snack_options').value
         want_snacks, snack_wanted = self.look_for_keywords(
-            user_input, snack_options)
+            user_input, self.snack_options)
         return want_snacks, snack_wanted
 
     def chat_with_user(self, user_input):
@@ -238,7 +251,7 @@ class VoiceAssistant(Node):
 
         response = completion.choices[0].message.content
         self.messages.append({"role": "assistant", "content": response})
-        print(f"\n{response}\n")
+        # print(f"\n{response}\n")
         self.conversation_handler.save_inprogress(self.messages)
 
         self.speak(f'{response}')
@@ -255,8 +268,12 @@ class VoiceAssistant(Node):
 
             if want_snacks:
                 # Request snacks from behaviour planner
-                self.request_snacks(snack_wanted)
-                self.speak(f'Would you like anything else?')
+                success = self.request_snacks(snack_wanted)
+                if success:
+                    self.speak(f'Would you like anything else?')
+                else:
+                    self.speak(
+                        f'We have {self.get_available_snacks_str()}. What would you like?')
             else:
                 self.chat_with_user(user_input)
 
@@ -272,9 +289,7 @@ class VoiceAssistant(Node):
 
             # Introduce upon reaching the human
             available_snacks = self.get_available_snacks_str()
-            intro = ['Hi! Would you like to have snacks?',
-                     f'I have {available_snacks}. What would you like?',
-                     'Or, you can ask me anything.']
+            intro = f'Hi! Would you like to have snacks? I have {available_snacks}. What would you like?'
             self.speak(intro)
 
             # Get user prompt
@@ -294,7 +309,7 @@ def main(args=None):
 
     while rclpy.ok():
         rclpy.spin_once(voice_assistant_node)
-        # Allow time for message to be published on /chat_ended topic and state to be changed
+        # Allow time for message to be published on /query_complete topic and state to be changed
         # time.sleep(1)
         voice_assistant_node.run()
 

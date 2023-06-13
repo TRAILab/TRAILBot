@@ -4,7 +4,7 @@ import speech_recognition as sr
 
 
 class SpeechRecognizer:
-    def __init__(self, mic_index, energy_threshold, timeout, phrase_time_limit, use_whisper=True, dynamic_energy_threshold=False):
+    def __init__(self, mic_index, energy_threshold, timeout, phrase_time_limit, logger, gui, use_whisper=True, dynamic_energy_threshold=False):
         self.speech_recognizer = sr.Recognizer()
         # 11 or 12: self microphone, 13: snowball
         self.mic = sr.Microphone(device_index=mic_index)
@@ -13,8 +13,15 @@ class SpeechRecognizer:
         self.use_whisper = use_whisper
         self.timeout = timeout
         self.phrase_time_limit = phrase_time_limit
+        self.logger = logger
+        self.gui = gui
+        self.logger.info(
+            f'Inside Speech Recognizer: mic in use index: {mic_index}')
 
         openai.api_key = os.environ.get('OPENAI_API_KEY')
+        with self.mic as source:
+            self.logger.info("\nAmbient noise adjust...")
+            self.speech_recognizer.adjust_for_ambient_noise(source)
 
     def whisper(self, audio):
         """Transcribe audio using openAI's whisper model 
@@ -44,30 +51,30 @@ class SpeechRecognizer:
             user_input (str): transcribed voice command
         """
         with self.mic as source:
-            print("\nAmbient noise adjust...")
-            self.speech_recognizer.adjust_for_ambient_noise(source)
-            print("\nListening...")
+            self.gui.show_listening()
+            self.logger.info("\nListening...")
             try:
                 audio = self.speech_recognizer.listen(
                     source, timeout=self.timeout, phrase_time_limit=self.phrase_time_limit)
             except Exception as ex:
-                print('Listening exception: ', ex)
+                self.logger.info(f'Listening exception: {ex}')
                 return None
 
-            print("\nTranscribing...")
+            self.gui.show_thinking()
+            self.logger.info("\nTranscribing...")
             try:
                 if self.use_whisper:
                     user_input = self.whisper(audio)
-                    print('Transcribed from whisper: ', user_input)
+                    self.logger.info(f'Transcribed from whisper: {user_input}')
                 else:
                     user_input = self.speech_recognizer.recognize_google(audio)
-                    print('Transcribed from google: ', user_input)
+                    self.logger.info(f'Transcribed from google: {user_input}')
                 if user_input == '':
                     return None
                 return user_input
             except Exception as ex:
-                print('Transcribing Failed!')
-                print(ex)
+                self.logger.info('Transcribing Failed!')
+                self.logger.info(ex)
                 return None
 
     @staticmethod

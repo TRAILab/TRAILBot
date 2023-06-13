@@ -45,6 +45,9 @@ qtcreator-*
 # Emacs
 .#*
 
+# Ignore any audio output
+*.wav
+
 # Catkin custom files
 CATKIN_IGNORE
 

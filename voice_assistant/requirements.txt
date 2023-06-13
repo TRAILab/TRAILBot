@@ -5,3 +5,4 @@ PyAudio
 elevenlabs
 elevenlabslib
 pydub
+setuptools==58.2.0
