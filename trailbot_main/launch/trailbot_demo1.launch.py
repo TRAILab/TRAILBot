@@ -39,14 +39,11 @@ def generate_launch_description():
         package_name), 'launch', 'navigation_launch.py')
     nav_params_path = os.path.join(get_package_share_directory(
         package_name), 'config', 'nav2_params_points.yaml')
-    point_params_path = os.path.join(get_package_share_directory(
-        package_name), 'config', 'follow_point.xml')
     nav_node = IncludeLaunchDescription(PythonLaunchDescriptionSource([nav_launch_path]),
                                         launch_arguments={'namespace': '',
                                                           'use_sim_time': 'true',
                                                           'autostart': 'true',
                                                           'params_file': nav_params_path,
-                                                          'default_bt_xml_filename': point_params_path,
                                                           'use_lifecycle_mgr': 'false',
                                                           'map_subscribe_transient_local': 'true'}.items())
 
@@ -59,12 +56,6 @@ def generate_launch_description():
         'velodyne_pointcloud'), 'launch', 'velodyne_convert_node-VLP16-launch.py')
     velo_launch2 = IncludeLaunchDescription(
         PythonLaunchDescriptionSource([velo_launch_path2]))
-
-    # PC2LSCAN
-    PCL2SCAN_launch_path = os.path.join(get_package_share_directory(
-        'velodyne_laserscan'), 'launch', 'velodyne_laserscan_node-launch.py')
-    PCL2SCAN = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource([PCL2SCAN_launch_path]))
 
     # rviz launch
     rviz_config_path = os.path.join(get_package_share_directory(
@@ -220,7 +211,6 @@ def generate_launch_description():
     ld.add_action(velo_launch2)
     ld.add_action(occupancy_grid)
     ld.add_action(rviz_node)
-    ld.add_action(PCL2SCAN)
     ld.add_action(ximea_node)
     ld.add_action(launch_voice_assistant)
 
