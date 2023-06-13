@@ -17,7 +17,7 @@ def generate_launch_description():
     # configuration_basename = LaunchConfiguration('configuration_basename',
     #                                              default='trailbot_lds_2d.lua')
     configuration_basename = LaunchConfiguration('configuration_basename',
-                                                  default='trailbot_lds_3d.lua')
+                                                  default='trailbot_lds_2d.lua')
 
     resolution = LaunchConfiguration('resolution', default='0.05')
     publish_period_sec = LaunchConfiguration('publish_period_sec', default='1.0')
