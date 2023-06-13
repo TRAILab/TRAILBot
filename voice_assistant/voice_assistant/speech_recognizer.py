@@ -4,7 +4,7 @@ import speech_recognition as sr
 
 
 class SpeechRecognizer:
-    def __init__(self, mic_index, energy_threshold, timeout, phrase_time_limit, logger, use_whisper=True, dynamic_energy_threshold=False):
+    def __init__(self, mic_index, energy_threshold, timeout, phrase_time_limit, logger, gui, use_whisper=True, dynamic_energy_threshold=False):
         self.speech_recognizer = sr.Recognizer()
         # 11 or 12: self microphone, 13: snowball
         self.mic = sr.Microphone(device_index=mic_index)
@@ -14,6 +14,7 @@ class SpeechRecognizer:
         self.timeout = timeout
         self.phrase_time_limit = phrase_time_limit
         self.logger = logger
+        self.gui = gui
         self.logger.info(
             f'Inside Speech Recognizer: mic in use index: {mic_index}')
 
@@ -50,6 +51,7 @@ class SpeechRecognizer:
             user_input (str): transcribed voice command
         """
         with self.mic as source:
+            self.gui.show_listening()
             self.logger.info("\nListening...")
             try:
                 audio = self.speech_recognizer.listen(
@@ -58,6 +60,7 @@ class SpeechRecognizer:
                 self.logger.info(f'Listening exception: {ex}')
                 return None
 
+            self.gui.show_thinking()
             self.logger.info("\nTranscribing...")
             try:
                 if self.use_whisper:

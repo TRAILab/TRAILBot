@@ -13,6 +13,7 @@ from trailbot_interfaces.srv import SnackWanted
 from .conversation_handler import ConversationHandler
 from .speech_recognizer import SpeechRecognizer
 from .text_to_speech_engine import ElevenLabsEngine, Pyttsx3Engine
+from .show_emojis import Emojis
 
 
 class VoiceAssistant(Node):
@@ -24,6 +25,9 @@ class VoiceAssistant(Node):
 
         """
         super().__init__('voice_assistant_node')
+
+        # Emojis gui
+        self.gui = Emojis()
 
         # Declare params
         self.declare_parameter('exit_cmd_options', [
@@ -83,8 +87,8 @@ class VoiceAssistant(Node):
                                                       'speech_recognizer.timeout').value,
                                                   phrase_time_limit=self.get_parameter(
                                                       'speech_recognizer.phrase_time_limit').value,
-                                                  dynamic_energy_threshold=False,
-                                                  logger=self.get_logger())
+                                                  logger=self.get_logger(),
+                                                  gui=self.gui)
 
         # Set-up conversation_handler to save conversations
         self.conversation_handler = ConversationHandler(
@@ -181,7 +185,7 @@ class VoiceAssistant(Node):
             f'Response of snack_wanted service request: {response.success}, {response.message}')
 
         if response.success:
-            self.speak(f'Please pick up your {snack_wanted} from my side!')
+            self.speak(f'Please pick up your {snack_wanted}.')
         else:
             self.speak(f'{response.message}')
 
@@ -193,6 +197,7 @@ class VoiceAssistant(Node):
         Args:
             msg_list (list of str): list of sentences to speak
         """
+        self.gui.show_speaking()
         self.tts_engine.speak(msg_list)
 
     def look_for_keywords(self, user_input, keywords):
