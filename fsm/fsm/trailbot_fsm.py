@@ -46,15 +46,20 @@ class ApproachState(State):
         return 'not_arrived'
 
 class WaitState(State):
-    def __init__(self, state_publisher, blackboard):
+    def __init__(self, query_publisher, state_publisher, blackboard):
         super().__init__(outcomes=['snack_dispensed', 'snack_not_dispensed'])
         self.state_publisher = state_publisher
+        self.query_publisher = query_publisher
         self.blackboard = blackboard
 
     def execute(self, blackboard):
         state_msg = String()
         state_msg.data = self.__class__.__name__
         self.state_publisher.publish(state_msg)
+        
+        query_msg = String()
+        query_msg.data = "Query"
+        self.query_publisher.publish(query_msg)
 
         if blackboard.get('snack_dispensed', False):
             return 'snack_dispensed'
@@ -86,6 +91,7 @@ class FSM(Node):
 
         self.state_publisher = self.create_publisher(String, 'trailbot_state', 10)
         self.goal_publisher = self.create_publisher(PoseStamped, 'goal_pose', 10)
+        self.query_publisher = self.create_publisher(String, 'state', 10)
 
         # Update subscriber topics to subsribe to the lidar and voice assistant nodes
         self.goal_subscriber = self.create_subscription(
@@ -101,8 +107,8 @@ class FSM(Node):
             10
         )
         self.snack_subscriber = self.create_subscription(
-            String,
-            'snack_dispenser',
+            bool,
+            'query_complete',
             self.snack_callback,
             10
         )
@@ -110,8 +116,8 @@ class FSM(Node):
         self.sm = StateMachine(outcomes=['finished'])
 
         self.sm.add_state('SEARCH', SearchState(self.state_publisher, self.blackboard), transitions={'target_found': 'APPROACH', 'target_not_found': 'SEARCH'})
-        self.sm.add_state('APPROACH', ApproachState(self.goal_publisher,self.state_publisher, self.blackboard), transitions={'arrived': 'WAIT', 'not_arrived': 'APPROACH'})
-        self.sm.add_state('WAIT', WaitState(self.state_publisher, self.blackboard), transitions={'snack_dispensed': 'DONE', 'snack_not_dispensed': 'WAIT'})
+        self.sm.add_state('APPROACH', ApproachState(self.goal_publisher, self.state_publisher, self.blackboard), transitions={'arrived': 'WAIT', 'not_arrived': 'APPROACH'})
+        self.sm.add_state('WAIT', WaitState(self.query_publisher, self.state_publisher, self.blackboard), transitions={'snack_dispensed': 'DONE', 'snack_not_dispensed': 'WAIT'})
         self.sm.add_state('DONE', DoneState(self.state_publisher, self.blackboard), transitions={'done': 'SEARCH'})
 
     def run(self):
@@ -130,7 +136,8 @@ class FSM(Node):
         self.blackboard['target_found'] = True
 
     def snack_callback(self, msg):
-        self.blackboard['snack_dispensed'] = True
+        if msg.data == True:
+            self.blackboard['snack_dispensed'] = True
 
     def update_state(self, state):
         if state != self.current_state:
