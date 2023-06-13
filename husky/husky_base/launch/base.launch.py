@@ -80,13 +80,13 @@ def generate_launch_description():
         parameters=[config]
     )
 
-    #IMU
-    IMU_node = Node(
-        package="umx_driver",
-        executable="um7_driver",
-        name="um7_node",
-        parameters=[{'port': '/dev/ttyUSB1'}]
-    )
+    # #IMU
+    # IMU_node = Node(
+    #     package="umx_driver",
+    #     executable="um7_driver",
+    #     name="um7_node",
+    #     parameters=[{'port': '/dev/ttyUSB1'}]
+    # )
 
 
     # Cartographer node
@@ -199,8 +199,8 @@ def generate_launch_description():
     ld.add_action(velo_launch2)
     ld.add_action(occupancy_grid)
     ld.add_action(rviz_node)
-    ld.add_action(IMU_node)
+    #ld.add_action(IMU_node)
     #ld.add_action(PCL2SCAN)
-    #ld.add_action(ximea_node)
+    ld.add_action(ximea_node)
 
     return ld
