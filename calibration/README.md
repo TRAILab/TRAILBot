@@ -1,18 +1,18 @@
 # Camera and lidar calibration process
 The PDF file contains the description as well as the pictures of the process. In the src folder are the two ros2 packages (camera_listener and pointcloud_listener).
 
-Run the camera and lidar driver:
+## Run the camera and lidar driver:
 1. Camera driver: ros2 launch ximea_driver ximea_driver.launch.py
 If error 45: increase the USB buffer size
 ```
 sudo tee /sys/module/usbcore/parameters/usbfs_memory_mb >/dev/null <<<0
 ```
-3. Lidar driver:
+2. Lidar driver:
 ```
 ros2 launch velodyne_driver velodyne_driver_node-VLP16-launch.py
 ros2 launch velodyne_pointcloud velodyne_convert_node-VLP16-launch.py
 ```
-Intrinsic calibration:
+## Intrinsic calibration:
 1. Use ```ros2 bag record -o ~/bags/<year-month-day>-intrinsic /camera/compressed``` to record rosbag
 2. Run the bag and camera_listener node to get the images from messages using the following commands:
 ```
@@ -24,7 +24,7 @@ ros2 run image_transport republish compressed raw --ros-args --remap in/compress
 4. Add images to the calibrator. We need at least 20 successful images.
 5. Check the auto-detected checkerboard origin and XY axis are consistent and run the calibration. Save the intrinsic matrix for later extrinsic calibration. The error should be around 0.1 pixels.
   
-Extrinsic Calibration:
+## Extrinsic Calibration:
 1. Use ```ros2 bag record -o ~/bags/<year-month-day>-extrinsic /camera/compressed /velodyne_points``` to record rosbag
 2. Use the same way to get the image and use the following commands to get the lidar points
 ```
@@ -42,6 +42,6 @@ ros2 run pointcloud2_listener pointcloud2_listener
 9. Check the reprojection error and reprojected lidar points. The error should be below 5 pixels and ideally below 2-3 pixels. To decrease the error, discard the sets in which the reprojection can’t cover the whole plane.
 10. Import and save the tform
   
-Use the transformation matrix:
+## Use the transformation matrix:
 1. The rotation matrix get from the calibrator is camera-to-lidar rotation matrix
 2. calibrationChecker.mlx can be used for visualization. The algorithm can be seen in the script as well.
