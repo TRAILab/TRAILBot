@@ -16,7 +16,6 @@ import tensorflow_hub as hub
 import time
 import urllib.request
 
-temp=""
 #config constants
 MODEL_URL = "https://tfhub.dev/google/movenet/multipose/lightning/1?tf-hub-format=compressed"
 SAVED_MODEL_PATH = "./multipose_model"
@@ -40,6 +39,7 @@ translation_vector = np.array([-0.06024059837, -0.08180891509, -0.3117851288])
 #globals 
 parser_args = tuple()
 model = None 
+debug_mode = False
 
 
 def parse_arguments():
@@ -274,7 +274,6 @@ class LidarCameraSubscriber(Node):
         message += f" person: {'YES' if self.is_there_anyone else 'NO '}"
         message += f" angle: {person0.heading_angle:<20}"
         message += f"person_coordinate: {person0.x:<22} {person0.y:<22} {person0.z:22}"
-        message+=f" {temp}"
         print_verbose_only(message)
 
         # Publish the message
@@ -366,20 +365,15 @@ def estimate_depth(x, y, np_2d_array):
     # Find the indices of the k nearest poitns
     k = 5     # Number of nearest neighbors we want
     closest_indices = np.argpartition(distances_sq, k)[:k]
-    closest_distances = distances_sq[closest_indices]
-    global temp
-    temp = closest_distances
-    pixel_distance_threshold = 3000
+    pixel_distance_threshold = 2000
 
     valid_indices = [idx for idx in closest_indices if distances_sq[idx]<=pixel_distance_threshold]
     if len(valid_indices) == 0:
         return 0.4
 
     filtered_indices = np.array(valid_indices)
-        # Get the depth value of the closest point
+    # Get the depth value of the closest point
     closest_depths = np_2d_array[2,filtered_indices]
-
-    # if there is no points close enough to target x y
 
     return np.mean(closest_depths)
 
@@ -390,7 +384,8 @@ def main(args=None):
 
     parse_global_matrix()
     parser_args = parse_arguments()
-    parser_args.verbose = True
+    if debug_mode:
+        parser_args.verbose = True
 
     if parser_args.download_model:
         print('downloading model...')
@@ -405,5 +400,6 @@ def main(args=None):
     rclpy.shutdown()
 
 if __name__ == '__main__':
+    debug_mode = True
     print("\n\nDEBUG MODE ON1\n\n")
     main()
