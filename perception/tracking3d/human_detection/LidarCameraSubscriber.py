@@ -389,5 +389,6 @@ def main(args=None):
     rclpy.shutdown()
 
 if __name__ == '__main__':
+    parser_args.verbose = True
     print("\n\nDEBUG MODE ON\n\n")
     main()
