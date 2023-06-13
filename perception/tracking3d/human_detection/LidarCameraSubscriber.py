@@ -271,7 +271,7 @@ class LidarCameraSubscriber(Node):
         message += f" person: {'YES' if self.is_there_anyone else 'NO '}"
         message += f" angle: {person0.heading_angle:<20}"
         message += f"person_coordinate: {person0.x:<22} {person0.y:<22} {person0.z:22}"
-        message+=f" {distances_sq[closest_indices]}"
+        message+=f" {temp}"
         print_verbose_only(message)
 
         # Publish the message
