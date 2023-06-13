@@ -49,7 +49,7 @@ class MinimalPublisher(Node):
                 stop_msg.angular.z = 0.0
                 self.cmd_vel_publisher.publish(stop_msg)
             
-            elif self.last_goal_status == 'WaitState' or self.last_goal_status == 'SearchState':
+            elif self.last_goal_status == 'QueryState' or self.last_goal_status == 'SearchState':
                 goal_reached_msg = String()
                 goal_reached_msg.data = 'goal_reached'
                 self.goal_status_publisher.publish(goal_reached_msg)

@@ -1,7 +1,7 @@
 #! /usr/bin/env python3
 import rclpy
 
-from std_msgs.msg import String
+from std_msgs.msg import String, Bool
 from geometry_msgs.msg import PoseStamped
 
 from simple_node import Node
@@ -45,25 +45,20 @@ class ApproachState(State):
             return 'arrived'
         return 'not_arrived'
 
-class WaitState(State):
-    def __init__(self, query_publisher, state_publisher, blackboard):
-        super().__init__(outcomes=['snack_dispensed', 'snack_not_dispensed'])
+class QueryState(State):
+    def __init__(self, state_publisher, blackboard):
+        super().__init__(outcomes=['query_complete', 'query_not_complete'])
         self.state_publisher = state_publisher
-        self.query_publisher = query_publisher
         self.blackboard = blackboard
 
     def execute(self, blackboard):
         state_msg = String()
         state_msg.data = self.__class__.__name__
         self.state_publisher.publish(state_msg)
-        
-        query_msg = String()
-        query_msg.data = "Query"
-        self.query_publisher.publish(query_msg)
 
-        if blackboard.get('snack_dispensed', False):
-            return 'snack_dispensed'
-        return 'snack_not_dispensed'
+        if blackboard.get('query_completed', False):
+            return 'query_complete'
+        return 'query_not_complete'
 
 class DoneState(State):
     def __init__(self, state_publisher, blackboard):
@@ -79,7 +74,7 @@ class DoneState(State):
         
         blackboard['target_found'] = False
         blackboard['goal_reached'] = False
-        blackboard['snack_dispensed'] = False
+        blackboard['query_completed'] = False
         return 'done'
     
 class FSM(Node):
@@ -91,7 +86,6 @@ class FSM(Node):
 
         self.state_publisher = self.create_publisher(String, 'trailbot_state', 10)
         self.goal_publisher = self.create_publisher(PoseStamped, 'goal_pose', 10)
-        self.query_publisher = self.create_publisher(String, 'state', 10)
 
         # Update subscriber topics to subsribe to the lidar and voice assistant nodes
         self.goal_subscriber = self.create_subscription(
@@ -106,18 +100,18 @@ class FSM(Node):
             self.target_callback,
             10
         )
-        self.snack_subscriber = self.create_subscription(
-            bool,
+        self.query_complete_subscriber = self.create_subscription(
+            Bool,
             'query_complete',
-            self.snack_callback,
+            self.query_complete_listener_callback,
             10
         )
 
         self.sm = StateMachine(outcomes=['finished'])
 
         self.sm.add_state('SEARCH', SearchState(self.state_publisher, self.blackboard), transitions={'target_found': 'APPROACH', 'target_not_found': 'SEARCH'})
-        self.sm.add_state('APPROACH', ApproachState(self.goal_publisher, self.state_publisher, self.blackboard), transitions={'arrived': 'WAIT', 'not_arrived': 'APPROACH'})
-        self.sm.add_state('WAIT', WaitState(self.query_publisher, self.state_publisher, self.blackboard), transitions={'snack_dispensed': 'DONE', 'snack_not_dispensed': 'WAIT'})
+        self.sm.add_state('APPROACH', ApproachState(self.goal_publisher, self.state_publisher, self.blackboard), transitions={'arrived': 'Query', 'not_arrived': 'APPROACH'})
+        self.sm.add_state('Query', QueryState(self.state_publisher, self.blackboard), transitions={'query_complete': 'DONE', 'query_not_complete': 'Query'})
         self.sm.add_state('DONE', DoneState(self.state_publisher, self.blackboard), transitions={'done': 'SEARCH'})
 
     def run(self):
@@ -135,9 +129,9 @@ class FSM(Node):
         self.blackboard['target_location'] = msg
         self.blackboard['target_found'] = True
 
-    def snack_callback(self, msg):
+    def query_complete_listener_callback(self, msg):
         if msg.data == True:
-            self.blackboard['snack_dispensed'] = True
+            self.blackboard['query_completed'] = True
 
     def update_state(self, state):
         if state != self.current_state:
