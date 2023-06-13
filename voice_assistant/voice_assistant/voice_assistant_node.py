@@ -107,7 +107,7 @@ class VoiceAssistant(Node):
         # Subscriber: to detect the state of the robot
         self.state_subscriber = self.create_subscription(
             String,
-            'state',
+            'trailbot_state',
             self.state_listener_callback,
             1)
         self.state_subscriber  # To prevent unused variable warning
