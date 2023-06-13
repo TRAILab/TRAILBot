@@ -390,5 +390,5 @@ def main(args=None):
 
 if __name__ == '__main__':
     parser_args.verbose = True
-    print("\n\nDEBUG MODE ON\n\n")
+    print("\n\nDEBUG MODE ON1\n\n")
     main()
