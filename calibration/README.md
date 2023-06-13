@@ -3,27 +3,34 @@ The PDF file contains the description as well as the pictures of the process. In
 
 Run the camera and lidar driver:
 1. Camera driver: ros2 launch ximea_driver ximea_driver.launch.py
-If error 45: increase the USB buffer size 
+If error 45: increase the USB buffer size
+```
 sudo tee /sys/module/usbcore/parameters/usbfs_memory_mb >/dev/null <<<0
-2. Lidar driver:
+```
+3. Lidar driver:
+```
 ros2 launch velodyne_driver velodyne_driver_node-VLP16-launch.py
 ros2 launch velodyne_pointcloud velodyne_convert_node-VLP16-launch.py
-
+```
 Intrinsic calibration:
-1. Use ros2 bag record -o ~/bags/<year-month-day>-intrinsic /camera/compressed to record rosbag
+1. Use ```ros2 bag record -o ~/bags/<year-month-day>-intrinsic /camera/compressed``` to record rosbag
 2. Run the bag and camera_listener node to get the images from messages using the following commands:
+```
 ros2 bag run <BagName>
 ros2 run camera_listener camera_listener
 ros2 run image_transport republish compressed raw --ros-args --remap in/compressed:=/camera/compressed --remap out:=/camera
+```
 3. The images and corresponding timestamps are in the workspace folder. Put them in another folder and use Camera Calibrator App in MATLAB to do intrinsic calibration
 4. Add images to the calibrator. We need at least 20 successful images.
 5. Check the auto-detected checkerboard origin and XY axis are consistent and run the calibration. Save the intrinsic matrix for later extrinsic calibration. The error should be around 0.1 pixels.
   
 Extrinsic Calibration:
-1. Use ros2 bag record -o ~/bags/<year-month-day>-extrinsic /camera/compressed /velodyne_points to record rosbag
+1. Use ```ros2 bag record -o ~/bags/<year-month-day>-extrinsic /camera/compressed /velodyne_points``` to record rosbag
 2. Use the same way to get the image and use the following commands to get the lidar points
+```
 ros2 bag run <BagName>
 ros2 run pointcloud2_listener pointcloud2_listener
+```
 3. Put the image data and pointcloud data into separate folders and run the timestampMatcher.py. In the Python script, change the location and index range of image files and pointcloud files. 
   The threshold is set to 5000000 nanosec and can be changed in the script as well. It would output match.txt file that contains the matching point cloud and image indices.
 4. Select the desired matching sets and visualize the min and max value of xyz positions of the checkerboard in the pointcloud either in rviz2 or in Matlab using scatterPlot.mlx
