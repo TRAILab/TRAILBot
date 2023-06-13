@@ -1,14 +1,13 @@
 import os
+
 from ament_index_python.packages import get_package_share_directory
-
-
 from launch import LaunchDescription
-from launch.actions import IncludeLaunchDescription, ExecuteProcess, TimerAction, DeclareLaunchArgument
+from launch.actions import IncludeLaunchDescription
 from launch.launch_description_sources import PythonLaunchDescriptionSource
-from launch.substitutions import Command, FindExecutable, PathJoinSubstitution
+from launch.substitutions import (Command, FindExecutable, LaunchConfiguration,
+                                  PathJoinSubstitution)
 from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
-from launch.substitutions import LaunchConfiguration, ThisLaunchFileDir
 
 
 def generate_launch_description():
@@ -194,6 +193,12 @@ def generate_launch_description():
         PythonLaunchDescriptionSource(PathJoinSubstitution(
             [FindPackageShare("voice_assistant"), 'launch', 'voice_assistant.launch.py'])))
 
+    # Launch human detection
+    human_detection_node = Node(
+        package='human_detection',
+        executable='human_detection_node'
+    )
+
     ld = LaunchDescription()
     ld.add_action(node_robot_state_publisher)
     ld.add_action(node_controller_manager)
@@ -213,5 +218,6 @@ def generate_launch_description():
     ld.add_action(rviz_node)
     ld.add_action(ximea_node)
     ld.add_action(launch_voice_assistant)
+    ld.add_action(human_detection_node)
 
     return ld

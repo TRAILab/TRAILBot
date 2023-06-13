@@ -1,6 +1,8 @@
+import os
+from glob import glob
 from setuptools import setup
 
-package_name = 'human_detection'
+package_name = 'trailbot_bringup'
 
 setup(
     name=package_name,
@@ -10,18 +12,18 @@ setup(
         ('share/ament_index/resource_index/packages',
             ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
+        # Include all launch files.
+        (os.path.join('share', package_name, 'launch'), glob('launch/*.launch.py'))
     ],
     install_requires=['setuptools'],
     zip_safe=True,
-    maintainer='zhaodong',
-    maintainer_email='zhaodong@todo.todo',
-    description='TODO: Package description',
+    maintainer='barza',
+    maintainer_email='barzanisar93@gmail.com',
+    description='Package to launch all other TRAILbot packages',
     license='TODO: License declaration',
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'human_detection = human_detection.LidarCameraSubscriber:main',
-          
         ],
     },
 )
