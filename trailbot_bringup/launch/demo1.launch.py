@@ -197,7 +197,7 @@ def generate_launch_description():
     human_detection_node = Node(
         package='human_detection',
         name='human_detection_node',
-        executable='LidarCameraSubscriber'
+        executable='human_detection_node'
     )
 
     ld = LaunchDescription()

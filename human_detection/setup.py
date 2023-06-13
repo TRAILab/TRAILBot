@@ -20,8 +20,8 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'human_detection = human_detection.LidarCameraSubscriber:main',
-          
+            'human_detection_node = human_detection.human_detection_node:main',
+
         ],
     },
 )
