@@ -288,6 +288,7 @@ class LidarCameraSubscriber(Node):
         pose_stamped_msg = PoseStamped()
         pose_stamped_msg.header.stamp = timestamp
         pose_stamped_msg.header.frame_id = "velodyne"
+        pose_stamped_msg.header.seq = 0
 
         lidar_x,lidar_y,lidar_z = convert_to_lidar_frame((person0.x,person0.y,person0.z))
         
