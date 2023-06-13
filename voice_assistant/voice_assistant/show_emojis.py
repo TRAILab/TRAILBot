@@ -6,7 +6,7 @@ import cv2
 class Emojis():
     def __init__(self, logger) -> None:
         # TODO: is there a cleaner way to get the emojis path?
-        self.emoji_path = Path('/home/trailbot/trail_ws/src/TRAILBot/voice_assistant/emojis') #Path.home() / 'trail_ws/src/TRAILBot/voice_assistant/emojis'
+        self.emoji_path = Path.home() / 'trail_ws/src/TRAILBot/voice_assistant/emojis'
         self.logger = logger
         logger.info(self.emoji_path.__str__())
         cv2.startWindowThread()
@@ -15,16 +15,21 @@ class Emojis():
 
     def show_speaking(self):
         path = self.emoji_path / 'smile_emoji.png'
-        img = cv2.imread('/home/trailbot/trail_ws/src/TRAILBot/voice_assistant/emojis/smile_emoji.png')
+        img = cv2.imread(path.__str__())
         assert img is not None, 'Image is None!'
         cv2.imshow("GUI", img)
+        cv2.waitKey(1)
 
     def show_thinking(self):
         path = self.emoji_path / 'think_emoji.png'
-        img = cv2.imread('/home/trailbot/trail_ws/src/TRAILBot/voice_assistant/emojis/think_emoji.png')
+        img = cv2.imread(path.__str__())
+        assert img is not None, 'Image is None!'
         cv2.imshow("GUI", img)
+        cv2.waitKey(1)
 
     def show_listening(self):
         path = self.emoji_path / 'listen_emoji.png'
-        img = cv2.imread('/home/trailbot/trail_ws/src/TRAILBot/voice_assistant/emojis/listen_emoji.png')
+        img = cv2.imread(path.__str__())
+        assert img is not None, 'Image is None!'
         cv2.imshow("GUI", img)
+        cv2.waitKey(1)
