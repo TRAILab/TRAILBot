@@ -139,7 +139,22 @@ ros2 param set /voice_arduino_bridge_node snack_quantity '[3, 1, 5, 6]'
 
 ## 1.7. Running with Aliases (shortcuts)
 
-### 1.7.1. Test voice interaction and servos
+### 1.7.1. Setup Aliases in bashrc
+
+1. gedit ~/.bashrc
+2. Add the following lines:
+   ```bash
+   alias voice="ros2 launch voice_assistant voice_assistant.launch.py"
+   alias query="ros2 topic pub --once /state std_msgs/msg/String '{data: "QueryState"}'"
+   alias run_agent="ros2 run micro_ros_agent micro_ros_agent serial --dev /dev/ttyACM0 -v6"
+   alias run_s1="ros2 service call /runservo trailbot_interfaces/srv/RunServo '{servo: 1}'"
+   alias run_s2="ros2 service call /runservo trailbot_interfaces/srv/RunServo '{servo: 2}'"
+   alias run_s3="ros2 service call /runservo trailbot_interfaces/srv/RunServo '{servo: 3}'"
+   alias run_s4="ros2 service call /runservo trailbot_interfaces/srv/RunServo '{servo: 4}'"
+   alias arduino="~/Downloads/arduino-ide_2.1.0_Linux_64bit/arduino-ide"
+   ```
+
+### 1.7.2. Test voice interaction and servos
 Steps to test voice interaction and servos:
 
 1. Terminal 1: run_agent
@@ -150,20 +165,25 @@ Steps to test voice interaction and servos:
 
 **Note:** If you see Audio errors on voice assistant node, you will have to set the mic index in params.yaml to the active index. 
 
-### 1.7.2. Test servos
-If you want to only test servos-> follow steps 1,2 and then in 
+### 1.7.3. Test servos only
+If you want to only test servos:
 
-   terminal 2: `run_s<servo number>`
+1. Terminal 1: run_agent
+2. Connect arduino’s usb wire to laptop
+3. Terminal 2: `run_s<servo number>`
 
+### 1.7.4. Test voice interaction only (without Arduino)
 
+1. Change `test_voice_only` param in `voice_assistant/config/params.yaml` to True
+2. Terminal 1: voice
 
 ## 1.8. Calibrating motor rotation
 While calibrating motors, you will need to reupload the new arduino code in the arduino.
 
 1. Make sure you stop microros agent!
 
-2.  Terminal: arduino (alias for starting arduino ide)
-3.  Tune the ‘delay’ parameter for each servo so that the tip of the coil rotates 360 degrees.
+2. Terminal: arduino (alias for starting arduino ide)
+3. Tune the ‘delay’ parameter for each servo so that the tip of the coil rotates 360 degrees.
 4. Upload code to arduino
 5. Terminal: run_agent
 6. Plug out and plug in arduino USB
@@ -177,7 +197,7 @@ While calibrating motors, you will need to reupload the new arduino code in the 
    ```
     assert source.stream is not None, "Audio source must be entered before adjusting, see documentation for ``AudioSource``; are you using ``source`` outside of a ``with`` statement?"
    ```
-   Before this error message, the node should print a list of all microphones connected to your laptop. In your sound settings you can check which microphone your laptop is using/is active. Set the device_index to the one corresponding to the active microphone or keep changing until the program is able to listen to you. Make sure the volume in the sound settings for your mic is high.
+   Before this error message, the node should print a list of all microphones connected to your laptop. In your sound settings you can check which microphone your laptop is using/is active. Set the `mic_device_index` in `config/params.yaml` to the one corresponding to the active microphone or keep changing until the program is able to listen to you. Make sure the volume in the sound settings for your mic is high.
 3. Always start speaking after you see `Listening…` in the output. Don’t speak when it says `Ambient noise adjust…`.
 4. If ambient noise is too high, it won’t pick up your voice. You can tune the “energy_threshold” in `params.yaml` according to the ambient noise. If it is noisy around you, set it to a high value. If it is quiet, set it to a low value. It’s value ranges from 50-5000. It will only pick up your voice if its signal’s amplitude exceeds this threshold.
 5. The OpenAI and ElevenLabs API keys are paid for use by Steve. OpenAI will charge us based on the number of words (also called tokens) present in our input sentence to chatgpt and the number of words it replies with. The pricing is $0.002 / 1K tokens for gpt 3.5 turbo we are using.
