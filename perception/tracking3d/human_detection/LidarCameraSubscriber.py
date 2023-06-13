@@ -360,8 +360,9 @@ def estimate_depth(x, y, np_2d_array):
     distances_sq = (np_2d_array[0,:] - x) ** 2 + (np_2d_array[1,:] - y) ** 2
 
     # Find the indices of the k nearest poitns
-    k = 10     # Number of nearest neighbors we want
+    k = 5     # Number of nearest neighbors we want
     closest_indices = np.argpartition(distances_sq, k)[:k]
+    print(distances_sq[closest_indices])
 
     # Get the depth value of the closest point
     closest_depths = np_2d_array[2,closest_indices]
