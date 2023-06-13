@@ -21,6 +21,7 @@ MODEL_URL = "https://tfhub.dev/google/movenet/multipose/lightning/1?tf-hub-forma
 SAVED_MODEL_PATH = "./multipose_model"
 people_detection_threshold = 0.4
 point_detection_threshold = 0.4
+distance_where_lidar_stops_working = 0.4
 image_width=1280
 image_height=1024
 camera_transformation_k = """
@@ -288,7 +289,6 @@ class LidarCameraSubscriber(Node):
         pose_stamped_msg = PoseStamped()
         pose_stamped_msg.header.stamp = timestamp
         pose_stamped_msg.header.frame_id = "velodyne"
-        pose_stamped_msg.header.seq = 0
 
         lidar_x,lidar_y,lidar_z = convert_to_lidar_frame((person0.x,person0.y,person0.z))
         
@@ -306,9 +306,9 @@ class LidarCameraSubscriber(Node):
         
         self.pose_publisher.publish(pose_stamped_msg)
 
-def read_space_seperated_matrix(string):
+def read_space_separated_matrix(string):
     """
-    convert space seperated matrix string to np matrix
+    convert space separated matrix string to np matrix
     """
     lines = string.strip().split('\n')
     matrix = []
@@ -321,8 +321,8 @@ def read_space_seperated_matrix(string):
 
 def parse_global_matrix():
     global rotation_matrix, translation_vector, camera_transformation_k
-    camera_transformation_k = read_space_seperated_matrix(camera_transformation_k)
-    rotation_matrix = read_space_seperated_matrix(rotation_matrix).T
+    camera_transformation_k = read_space_separated_matrix(camera_transformation_k)
+    rotation_matrix = read_space_separated_matrix(rotation_matrix).T
 
     global inverse_camera_transformation_k, inverse_rotation_matrix
     inverse_camera_transformation_k = np.linalg.inv(camera_transformation_k)
@@ -375,14 +375,15 @@ def estimate_depth(x, y, np_2d_array):
     # Calculate the distance between each point and the target coordinates (x, y)
     distances_sq = (np_2d_array[0,:] - x) ** 2 + (np_2d_array[1,:] - y) ** 2
 
-    # Find the indices of the k nearest poitns
+    # Find the indices of the k nearest points
     k = 5     # Number of nearest neighbors we want
     closest_indices = np.argpartition(distances_sq, k)[:k]
     pixel_distance_threshold = 2000
 
     valid_indices = [idx for idx in closest_indices if distances_sq[idx]<=pixel_distance_threshold]
     if len(valid_indices) == 0:
-        return 0.4
+        # lidar points disappears usually around 0.4m
+        return distance_where_lidar_stops_working
 
     filtered_indices = np.array(valid_indices)
     # Get the depth value of the closest point
@@ -414,5 +415,5 @@ def main(args=None):
 
 if __name__ == '__main__':
     debug_mode = True
-    print("\n\nDEBUG MODE ON1\n\n")
+    print("\n\nDEBUG MODE ON\n\n")
     main()
