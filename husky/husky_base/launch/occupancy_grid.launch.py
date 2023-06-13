@@ -39,14 +39,15 @@ def generate_launch_description():
             remappings=[('points2', '/velodyne_points'),],
             parameters=[{
                 # 'target_frame': 'base_link',
-                'target_frame': 'laser_frame',
+                # 'target_frame': 'laser_frame',
+                'target_frame': 'velodyne',
                 'transform_tolerance': 0.01,
                 #base link height max/min
                 # 'min_height': 0.1, #4 inches
                 # 'max_height': 1.0,
                 #laser_frame height max/min
                 'min_height': -0.9282, #4 inches above ground 
-                'max_height': 0.1, 
+                'max_height': 0.1,
                 'angle_min': -3.14,  #was -M_PI/2 now -PI
                 'angle_max': 3.14,  #was  M_PI/2 now PI
                 'angle_increment': 0.0087,  # M_PI/360.0

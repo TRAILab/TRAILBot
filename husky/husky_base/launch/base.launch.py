@@ -184,11 +184,11 @@ def generate_launch_description():
     ld.add_action(launch_husky_teleop_joy)
     ld.add_action(launch_husky_accessories)
     ld.add_action(cartographer_node)
-    # ld.add_action(nav_node)
+    ld.add_action(nav_node)
     ld.add_action(velo_launch1)
     ld.add_action(velo_launch2)
     ld.add_action(occupancy_grid)
-    #ld.add_action(rviz_node)
+    ld.add_action(rviz_node)
     #ld.add_action(PCL2SCAN)
     #ld.add_action(ximea_node)
 
