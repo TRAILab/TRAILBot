@@ -16,6 +16,11 @@ import tensorflow_hub as hub
 import time
 import urllib.request
 
+
+#my own imports
+from ascii_numbers import ascii_numbers 
+
+
 #config constants
 MODEL_URL = "https://tfhub.dev/google/movenet/multipose/lightning/1?tf-hub-format=compressed"
 SAVED_MODEL_PATH = "/home/trailbot/trail_ws/multipose_model"
@@ -35,6 +40,7 @@ rotation_matrix = """
     0.006366381192  -0.9999795662   -0.0005800141927
 """
 translation_vector = np.array([-0.06024059837, -0.08180891509, -0.3117851288])
+publishing_frequency = 0.5 #Hz 
 
 
 #globals 
@@ -195,7 +201,7 @@ def process_frame(image, person_array):
     is_there_anyone = is_there_person(keypoints)
     return is_there_anyone
 
-publish_counter=0
+
 class Person:
     """
     struct to store information for a detected person
@@ -207,7 +213,13 @@ class Person:
         self.on_screen = False
         self.heading_angle = 0.0
 
+
 class LidarCameraSubscriber(Node):
+    def print_and_log(self, string):
+        self.get_logger().info(string)
+        print(string)
+
+
     def __init__(self):
         #make array of 6 person
         self.person_array = [Person() for _ in range(6)]
@@ -250,11 +262,18 @@ class LidarCameraSubscriber(Node):
             PoseStamped,
             'target_location', 
             10)
+        self.timestamp = 0
+        #run the publish_message function according to publishing_frequency
+        self.create_timer(1/publishing_frequency, self.publish_message)
+        self.print_and_log('Human Detection ready...')
+        for num in ascii_numbers[-6:]:
+            self.print_and_log(f"\n{num}\n")
+            time.sleep(1)
+
+
     def state_callback(self, msg):
         self.cur_state = msg.data
 
-        self.get_logger().info('Human Detection ready...')
-        time.sleep(5)
 
     def camera_callback(self, msg):
         if self.cur_state!="SearchState":
@@ -263,16 +282,15 @@ class LidarCameraSubscriber(Node):
         cv_image = self.bridge.imgmsg_to_cv2(
             msg, desired_encoding='passthrough')
         self.is_there_anyone = process_frame(cv_image,self.person_array)
-        # if self.is_there_anyone:
-            # self.publish_message("camera",msg.header.stamp)
-        time.sleep(1)
+        self.timestamp = msg.header.stamp
+
 
     def lidar_callback(self, msg):
-        if not self.is_there_anyone:
-            return
-
         if self.cur_state!="SearchState":
             return 
+
+        if not self.is_there_anyone:
+            return
             
         # Deserialize PointCloud2 data into xyz points
         point_gen = pc2.read_points(
@@ -289,13 +307,16 @@ class LidarCameraSubscriber(Node):
                 person.z = -1.0
             else:
                 person.z = estimate_depth(person.x, person.y, points2d)
-        global publish_counter
-        if publish_counter<1:
-            publish_counter+=1
-            self.publish_message("lidar",msg.header.stamp)
-        time.sleep(1)
+        self.timestamp = msg.header.stamp
+        if not publishing_frequency>0:
+            self.publish_message("lidar")
 
-    def publish_message(self,source_str, timestamp):
+    def publish_message(self,source_str="timer"):
+        """ publish message is somebody is detected"""
+        if self.cur_state!="SearchState":
+            return 
+        if not self.is_there_anyone:
+            return
         #person0 for debugging purpse
         person0 = self.person_array[0]
         message = f"{source_str:<7}"
@@ -303,8 +324,7 @@ class LidarCameraSubscriber(Node):
         message += f" angle: {person0.heading_angle:<20}"
         message += f"person_coordinate: {person0.x:<22} {person0.y:<22} {person0.z:22}"
         print_verbose_only(message)
-        print("\n\n\n",message,"\n\n\n")
-        self.get_logger().info(message)
+        self.print_and_log(message)
 
         # Publish the message
         is_person_msg = Bool()
@@ -316,7 +336,7 @@ class LidarCameraSubscriber(Node):
         # self.angle_publisher.publish(angle_msg)
 
         pose_stamped_msg = PoseStamped()
-        pose_stamped_msg.header.stamp = timestamp
+        pose_stamped_msg.header.stamp = self.timestamp
         pose_stamped_msg.header.frame_id = "velodyne"
 
         lidar_x,lidar_y,lidar_z = convert_to_lidar_frame((person0.x,person0.y,person0.z))
