@@ -309,6 +309,7 @@ class LidarCameraSubscriber(Node):
             else:
                 person.z = estimate_depth(person.x, person.y, points2d)
         self.timestamp = msg.header.stamp
+        # if this is -1, node will publish constantly (as camera FPS)
         if not publishing_frequency>0:
             self.publish_message("lidar")
         t
