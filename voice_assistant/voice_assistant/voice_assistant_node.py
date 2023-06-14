@@ -27,7 +27,7 @@ class VoiceAssistant(Node):
         super().__init__('voice_assistant_node')
 
         # Emojis gui
-        self.gui = Emojis()
+        self.gui = Emojis(self.get_logger())
 
         # Declare params
         self.declare_parameter('exit_cmd_options', [
@@ -109,12 +109,12 @@ class VoiceAssistant(Node):
             String,
             'trailbot_state',
             self.state_listener_callback,
-            1)
+            5)
         self.state_subscriber  # To prevent unused variable warning
 
         # Publisher: to let behaviour planner know that the user has ended the chat
-        self.publisher = self.create_publisher(Bool, 'query_complete', 1)
-        timer_period = 0.5  # seconds
+        self.publisher = self.create_publisher(Bool, 'query_complete', 10)
+        timer_period = 0.1  # seconds
         self.timer = self.create_timer(
             timer_period, self.publisher_timer_callback)
 
@@ -125,6 +125,7 @@ class VoiceAssistant(Node):
             self.available_snacks_listener_callback,
             10)
         self.snacks_inventory_subscriber  # prevent unused variable warning
+        self.state = 'None'
 
     def available_snacks_listener_callback(self, msg):
         self.snack_options = msg.snacks
@@ -137,7 +138,8 @@ class VoiceAssistant(Node):
 
     def state_listener_callback(self, msg):
         # Activate chatbot if in 'QueryState'
-        if msg.data == 'QueryState':
+        if msg.data == 'QueryState' and self.state != 'QueryState':
+            self.state = msg.data
             self.in_query_state = True
             self.end_chat = False
             self.get_logger().info('State changed to: "%s"' % msg.data)
@@ -309,8 +311,9 @@ def main(args=None):
 
     while rclpy.ok():
         rclpy.spin_once(voice_assistant_node)
-        # Allow time for message to be published on /query_complete topic and state to be changed
+        # # Allow time for message to be published on /query_complete topic and state to be changed
         # time.sleep(1)
+        # rclpy.spin_once(voice_assistant_node)
         voice_assistant_node.run()
 
     voice_assistant_node.destroy_node()

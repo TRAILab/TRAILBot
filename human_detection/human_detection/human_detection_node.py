@@ -18,7 +18,7 @@ import urllib.request
 
 #config constants
 MODEL_URL = "https://tfhub.dev/google/movenet/multipose/lightning/1?tf-hub-format=compressed"
-SAVED_MODEL_PATH = "./multipose_model"
+SAVED_MODEL_PATH = "/home/trailbot/trail_ws/multipose_model"
 people_detection_threshold = 0.4
 point_detection_threshold = 0.4
 distance_where_lidar_stops_working = 0.4
@@ -58,6 +58,11 @@ def parse_arguments():
         '--download_model',
         action='store_true',
         help='Flag to download the model. This must be ran at least once')
+    parser.add_argument(
+        '-r',
+        '--ros-args',
+        action='store_true',
+        help='temp fix')
     return parser.parse_args()
 
 
@@ -248,6 +253,9 @@ class LidarCameraSubscriber(Node):
     def state_callback(self, msg):
         self.cur_state = msg.data
 
+        self.get_logger().info('Human Detection ready...')
+        time.sleep(5)
+
     def camera_callback(self, msg):
         if self.cur_state!="SearchState":
             return 
@@ -257,6 +265,7 @@ class LidarCameraSubscriber(Node):
         self.is_there_anyone = process_frame(cv_image,self.person_array)
         # if self.is_there_anyone:
             # self.publish_message("camera",msg.header.stamp)
+        time.sleep(1)
 
     def lidar_callback(self, msg):
         if not self.is_there_anyone:
@@ -284,6 +293,7 @@ class LidarCameraSubscriber(Node):
         if publish_counter<1:
             publish_counter+=1
             self.publish_message("lidar",msg.header.stamp)
+        time.sleep(1)
 
     def publish_message(self,source_str, timestamp):
         #person0 for debugging purpse
@@ -294,6 +304,7 @@ class LidarCameraSubscriber(Node):
         message += f"person_coordinate: {person0.x:<22} {person0.y:<22} {person0.z:22}"
         print_verbose_only(message)
         print("\n\n\n",message,"\n\n\n")
+        self.get_logger().info(message)
 
         # Publish the message
         is_person_msg = Bool()
@@ -424,7 +435,7 @@ def main(args=None):
         model = download_model()
     else:
         model = load_saved_model()
-    print("Human detection ready...")
+    # print("Human detection ready...")
     rclpy.init(args=args)
     subscriber = LidarCameraSubscriber()
     rclpy.spin(subscriber)
