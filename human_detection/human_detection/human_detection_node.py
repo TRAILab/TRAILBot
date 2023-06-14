@@ -40,6 +40,7 @@ rotation_matrix = """
     0.006366381192  -0.9999795662   -0.0005800141927
 """
 translation_vector = np.array([-0.06024059837, -0.08180891509, -0.3117851288])
+# if this is -1, node will publish constantly (as camera FPS)
 publishing_frequency = 0.5 #Hz 
 
 
@@ -310,7 +311,7 @@ class LidarCameraSubscriber(Node):
         self.timestamp = msg.header.stamp
         if not publishing_frequency>0:
             self.publish_message("lidar")
-
+        t
     def publish_message(self,source_str="timer"):
         """ publish message is somebody is detected"""
         if self.cur_state!="SearchState":
