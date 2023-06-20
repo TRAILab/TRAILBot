@@ -36,15 +36,15 @@ def generate_launch_description():
     # Nav node
     nav_launch_path = os.path.join(get_package_share_directory(package_name),'launch','navigation_launch.py')
     nav_params_path = os.path.join(get_package_share_directory(package_name),'config','nav2_params_points.yaml')
-    point_params_path = os.path.join(get_package_share_directory(package_name),'config','follow_point.xml')
     nav_node = IncludeLaunchDescription(PythonLaunchDescriptionSource([nav_launch_path]),
                                         launch_arguments={'namespace': '',
-                                                        'use_sim_time': 'true',
-                                                        'autostart': 'true',
+                                                        # 'use_sim_time': 'true',
+                                                         'autostart': 'true',
                                                         'params_file': nav_params_path,
-                                                        'default_bt_xml_filename': point_params_path,
-                                                        'use_lifecycle_mgr': 'false',
-                                                        'map_subscribe_transient_local': 'true'}.items())
+                                                        # 'use_lifecycle_mgr': 'false',
+                                                        #'map_subscribe_transient_local': 'true'
+                                                        }
+                                                        .items())
 
 
     #velodyne launch
@@ -201,6 +201,6 @@ def generate_launch_description():
     ld.add_action(rviz_node)
     #ld.add_action(IMU_node)
     #ld.add_action(PCL2SCAN)
-    ld.add_action(ximea_node)
+    #ld.add_action(ximea_node)
 
     return ld
