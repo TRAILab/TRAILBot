@@ -42,11 +42,12 @@ def generate_launch_description():
         package_name), 'config', 'nav2_params_points.yaml')
     nav_node = IncludeLaunchDescription(PythonLaunchDescriptionSource([nav_launch_path]),
                                         launch_arguments={'namespace': '',
-                                                          'use_sim_time': 'true',
-                                                          'autostart': 'true',
+                                                          #'use_sim_time': 'true',
+                                                          #'autostart': 'true',
                                                           'params_file': nav_params_path,
-                                                          'use_lifecycle_mgr': 'false',
-                                                          'map_subscribe_transient_local': 'true'}.items())
+                                                          #'use_lifecycle_mgr': 'false',
+                                                          #'map_subscribe_transient_local': 'true'
+                                                          }.items())
 
     # velodyne launch
     velo_launch_path1 = os.path.join(get_package_share_directory(
@@ -206,7 +207,7 @@ def generate_launch_description():
     current_time = datetime.now().time()
     formatted_time = current_time.strftime("%H:%M")
     file_logging = ExecuteProcess(
-        cmd=['ros2', 'bag', 'record', '-o', f'/home/trailbot/bags/{current_date}-{formatted_time}','-a','-x','/camera'],
+        cmd=['ros2', 'bag', 'record', '--include-hidden-topics', '-o', f'/home/trailbot/bags/{current_date}-{formatted_time}','/camera/compressed','/velodyne_points','/circle_marker','/circle_marker_array','/global_costmap/costmap','/global_costmap/costmap_updates','/parameter_events','/scan','trailbot_state','target_location'],
         output='screen'
     )
 
