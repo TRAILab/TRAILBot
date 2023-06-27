@@ -7,11 +7,6 @@ from launch.actions import IncludeLaunchDescription, ExecuteProcess, TimerAction
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch_ros.actions import Node
 
-# from launch.actions import RegisterEventHandler, DeclareLaunchArgument
-# from launch.event_handlers import OnProcessExit
-# from launch.substitutions import PathJoinSubstitution
-# from launch_ros.substitutions import FindPackageShare
-
 def generate_launch_description():
 
     package_name='trailbot_gazebo'
@@ -29,23 +24,6 @@ def generate_launch_description():
         arguments=['-d', rviz_config_path],
         output='screen')
 
-    # FSM Node
-    fsm_node = Node(
-        package='fsm',
-        executable='trailbot_fsm',
-        name='fsm',
-        output='screen'
-    )
-    
-    # Navigator Node
-    navigator_node = Node(
-        package='fsm',
-        executable='navigator_node',
-        name='test_cmd_vel_node',
-        output='screen'
-    )
-
-
     namespace = ''
     use_namespace = 'false'
     slam = 'True'
@@ -55,7 +33,6 @@ def generate_launch_description():
     autostart = 'true'
     use_composition = 'True'
     use_respawn = 'False'
-    # bringup_path = os.path.join(get_package_share_directory(package_name),'launch','bringup_launch.py')
     bringup_path = os.path.join(get_package_share_directory(package_name),'launch','bringup_cartographer_launch.py')
     bringup_cmd = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(bringup_path),
@@ -69,22 +46,10 @@ def generate_launch_description():
                           'use_composition': use_composition,
                           'use_respawn': use_respawn}.items())
 
-
-    # delayed_spawn = TimerAction(period=15.0,
-    #                 actions=[rviz_node, slam_node])
-
-    # delayed_spawn2 = TimerAction(period=20.0,
-    #                 actions=[nav_node])
-
     # Generate launch description
     ld = LaunchDescription()
     ld.add_action(gazebo_builder)
     ld.add_action(rviz_node)
-    ld.add_action(fsm_node)
-    ld.add_action(navigator_node)
-    # ld.add_action(slam_node)
-    # ld.add_action(delayed_spawn)
-    # ld.add_action(delayed_spawn2)
     ld.add_action(bringup_cmd)
 
     return ld

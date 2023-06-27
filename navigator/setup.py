@@ -1,6 +1,6 @@
 from setuptools import setup
 
-package_name = 'fsm'
+package_name = 'navigator'
 
 setup(
     name=package_name,
@@ -13,19 +13,14 @@ setup(
     ],
     install_requires=['setuptools'],
     zip_safe=True,
-    maintainer='dynamight',
+    maintainer='daniel',
     maintainer_email='danielwjkhoo@gmail.com',
     description='TODO: Package description',
     license='TODO: License declaration',
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            "trailbot_fsm = fsm.trailbot_fsm:main",
-            "navigator_node = fsm.navigator_node:main",
-            "basic_navigator = fsm.basic_navigator:main",
-            "navigator = fsm.navigator:main",
-            "test_cmd_vel_node = fsm.test_cmd_vel_node:main",
-            "test_snack_node = fsm.test_snack_node:main",
+            "basic_navigator = navigator.basic_navigator:main",
         ],
     },
 )
