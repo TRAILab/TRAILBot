@@ -109,6 +109,7 @@
     <link name="${prefix}imu_link"/>
     <joint name="${prefix}imu_joint" type="fixed">
       <origin xyz="$(optenv CPR_IMU_XYZ 0 0 0)" rpy="$(optenv CPR_IMU_RPY 0 0 0)" />
+      <!-- <origin xyz="0 -0.06 0.28" rpy="$(optenv CPR_IMU_RPY 0 0 0)" /> -->
       <parent link="${prefix}base_link" />
       <child link="${prefix}imu_link" />
     </joint>
