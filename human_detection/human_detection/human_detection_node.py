@@ -289,7 +289,7 @@ class LidarCameraSubscriber(Node):
 
 
     def camera_callback(self, msg):
-        if self.cur_state!="SearchState":
+        if self.cur_state!="SearchState" and self.cur_state!="ApproachState":
             return 
 
         cv_image = self.bridge.imgmsg_to_cv2(
@@ -299,7 +299,7 @@ class LidarCameraSubscriber(Node):
 
 
     def lidar_callback(self, msg):
-        if self.cur_state!="SearchState":
+        if self.cur_state!="SearchState" and self.cur_state!="ApproachState":
             return 
 
         if not self.is_there_anyone:
@@ -328,10 +328,10 @@ class LidarCameraSubscriber(Node):
         # if this is -1, node will publish constantly (as camera FPS)
         if not self.publishing_frequency>0:
             self.publish_message("lidar")
-        t
+
     def publish_message(self,source_str="timer"):
         """ publish message is somebody is detected"""
-        if self.cur_state!="SearchState":
+        if self.cur_state!="SearchState" and self.cur_state!="ApproachState":
             return 
         if not self.is_there_anyone:
             return
