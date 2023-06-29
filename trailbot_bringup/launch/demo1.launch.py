@@ -230,6 +230,10 @@ def generate_launch_description():
     ld.add_action(ximea_node)
     ld.add_action(launch_voice_assistant)
     ld.add_action(human_detection_node)
-    ld.add_action(file_logging)
+
+    logging = False
+    if logging:
+        ld.add_action(file_logging)
+  
 
     return ld
