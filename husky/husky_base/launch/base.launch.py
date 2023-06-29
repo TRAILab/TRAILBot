@@ -190,7 +190,7 @@ def generate_launch_description():
     current_time = datetime.now().time()
     formatted_time = current_time.strftime("%H:%M")
     file_logging = ExecuteProcess(
-        cmd=['ros2', 'bag', 'record', '--include-hidden-topics', '-o', f'/home/trailbot/bags/{current_date}-{formatted_time}','/camera/compressed','/velodyne_points','/circle_marker','/circle_marker_array','/global_costmap/costmap','/global_costmap/costmap_updates','/parameter_events','/scan','trailbot_state','target_location','imu/data'],
+        cmd=['ros2', 'bag', 'record', '--include-hidden-topics', '-o', f'/home/trailbot/bags/{current_date}-{formatted_time}','-a','-x','/camera'],
         output='screen'
     )
     
