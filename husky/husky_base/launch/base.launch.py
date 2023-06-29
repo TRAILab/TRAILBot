@@ -212,6 +212,9 @@ def generate_launch_description():
     #ld.add_action(IMU_node)
     #ld.add_action(PCL2SCAN)
     ld.add_action(ximea_node)
-    ld.add_action(file_logging)
+
+    file_logging = False
+    if file_logging:
+        ld.add_action(file_logging)
 
     return ld
