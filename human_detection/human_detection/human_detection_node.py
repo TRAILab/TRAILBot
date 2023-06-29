@@ -16,10 +16,8 @@ import tensorflow_hub as hub
 import time
 import urllib.request
 
-
 #my own imports
 from ascii_numbers import ascii_numbers 
-
 
 #config constants
 MODEL_URL = "https://tfhub.dev/google/movenet/multipose/lightning/1?tf-hub-format=compressed"
@@ -42,12 +40,6 @@ rotation_matrix = """
 translation_vector = np.array([-0.06024059837, -0.08180891509, -0.3117851288])
 # if this is -1, node will publish constantly (as camera FPS)
 publishing_frequency = 0.5 #Hz 
-
-
-#globals 
-parser_args = tuple()
-model = None 
-debug_mode = False
 
 
 def parse_arguments():
@@ -98,7 +90,7 @@ def load_saved_model():
     return model
 
 
-def print_verbose_only(*args, **kwargs):
+def print_verbose_only(parser_args,*args, **kwargs):
     """
     print only if verbose==True
     """
@@ -182,7 +174,7 @@ def get_x_y_coord(
     return x_mean * image_width, y_mean * image_height
 
 
-def process_frame(image, person_array):
+def process_frame(model, image, person_array):
     """
     process a frame. Determine keypoints and number of people and
     heading angle.
@@ -221,11 +213,13 @@ class LidarCameraSubscriber(Node):
         print(string)
 
 
-    def __init__(self):
+    def __init__(self,parser_args,model):
         #make array of 6 person
         self.person_array = [Person() for _ in range(6)]
         self.is_there_anyone = False
         self.cur_state = ""
+        self.parser_args = parser_args
+        self.model = model
 
         super().__init__('image_subscriber')
         self.camera_subscription = self.create_subscription(
@@ -282,7 +276,7 @@ class LidarCameraSubscriber(Node):
 
         cv_image = self.bridge.imgmsg_to_cv2(
             msg, desired_encoding='passthrough')
-        self.is_there_anyone = process_frame(cv_image,self.person_array)
+        self.is_there_anyone = process_frame(self.model, cv_image,self.person_array)
         self.timestamp = msg.header.stamp
 
 
@@ -325,7 +319,7 @@ class LidarCameraSubscriber(Node):
         message += f" person: {'YES' if self.is_there_anyone else 'NO '}"
         message += f" angle: {person0.heading_angle:<20}"
         message += f"person_coordinate: {person0.x:<22} {person0.y:<22} {person0.z:22}"
-        print_verbose_only(message)
+        print_verbose_only(self.parser_args, message)
         self.print_and_log(message)
 
         # Publish the message
@@ -443,10 +437,7 @@ def estimate_depth(x, y, np_2d_array):
     return np.mean(closest_depths)
 
 
-def main(args=None):
-    global parser_args
-    global model 
-
+def main(args=None, debug_mode=False):
     parse_global_matrix()
     parser_args = parse_arguments()
     if debug_mode:
@@ -459,12 +450,11 @@ def main(args=None):
         model = load_saved_model()
     # print("Human detection ready...")
     rclpy.init(args=args)
-    subscriber = LidarCameraSubscriber()
+    subscriber = LidarCameraSubscriber(parser_args,model)
     rclpy.spin(subscriber)
     subscriber.destroy_node()
     rclpy.shutdown()
 
 if __name__ == '__main__':
-    debug_mode = True
     print("\n\nDEBUG MODE ON\n\n")
-    main()
+    main(debug_mode=True)
