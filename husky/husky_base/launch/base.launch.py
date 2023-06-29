@@ -9,6 +9,8 @@ from launch.substitutions import Command, FindExecutable, PathJoinSubstitution
 from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
 from launch.substitutions import LaunchConfiguration, ThisLaunchFileDir
+from datetime import date
+from datetime import datetime
 
 def generate_launch_description():
     # Get URDF via xacro
@@ -181,7 +183,15 @@ def generate_launch_description():
         PythonLaunchDescriptionSource(PathJoinSubstitution(
         [FindPackageShare("husky_bringup"), 'launch', 'accessories.launch.py'])))
 
-
+    # Launch file logging
+    current_date = date.today()
+    current_time = datetime.now().time()
+    formatted_time = current_time.strftime("%H:%M")
+    file_logging = ExecuteProcess(
+        cmd=['ros2', 'bag', 'record', '--include-hidden-topics', '-o', f'/home/trailbot/bags/{current_date}-{formatted_time}','-a','-x','/camera'],
+        output='screen'
+    )
+    
     ld = LaunchDescription()
     ld.add_action(node_robot_state_publisher)
     ld.add_action(node_controller_manager)
@@ -199,5 +209,9 @@ def generate_launch_description():
     ld.add_action(rviz_node)
     #ld.add_action(IMU_node) commented because this is still 2D implementation 
     ld.add_action(ximea_node)
+
+    logging = False
+    if logging:
+        ld.add_action(file_logging)
 
     return ld
