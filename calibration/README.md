@@ -2,9 +2,12 @@
 The PDF file contains the description as well as the pictures of the process. In the src folder are the two ros2 packages (camera_listener and pointcloud_listener).
 
 ## Run the camera and lidar driver:
-1. Camera driver: ros2 launch ximea_driver ximea_driver.launch.py
-If error 45: increase the USB buffer size
+1. Camera driver:
 ```
+ros2 launch ximea_driver ximea_driver.launch.py
+```
+```
+# If error 45: increase the USB buffer size
 sudo tee /sys/module/usbcore/parameters/usbfs_memory_mb >/dev/null <<<0
 ```
 2. Lidar driver:
@@ -40,7 +43,7 @@ ros2 run pointcloud2_listener pointcloud2_listener
   The Cluster Threshold should be greater if the resolution of pointcloud data is low. Hit Detect once all settings are done.
 8. If some sets are still not accepted, use Select Checkerboard function to manually select the points for checkerboard and redo detection.
 9. Check the reprojection error and reprojected lidar points. The error should be below 5 pixels and ideally below 2-3 pixels. To decrease the error, discard the sets in which the reprojection can’t cover the whole plane.
-10. Import and save the tform
+10. Click the Import button in the APP to save the tform to the workspace. Right click the tform in the workspace and save it into a MATLAB file. Now the extrinsic matrix is in the file and can be copied to other places for use.
   
 ## Use the transformation matrix:
 1. The rotation matrix get from the calibrator is camera-to-lidar rotation matrix
