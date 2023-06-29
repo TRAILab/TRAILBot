@@ -1,0 +1,17 @@
+MODEL_URL: "https://tfhub.dev/google/movenet/multipose/lightning/1?tf-hub-format=compressed"
+SAVED_MODEL_PATH: "/home/trailbot/trail_ws/multipose_model"
+people_detection_threshold: 0.4
+point_detection_threshold: 0.4
+distance_where_lidar_stops_working: 0.4
+image_width: 1280
+image_height: 1024
+camera_transformation_k: |
+    628.5359544 0 676.9575694
+    0 627.7249542 532.7206716
+    0 0 1
+rotation_matrix: |
+    -0.007495781893 -0.0006277316155    0.9999717092
+    -0.9999516401   -0.006361853422 -0.007499625104
+    0.006366381192  -0.9999795662   -0.0005800141927
+translation_vector: [-0.06024059837, -0.08180891509, -0.3117851288]
+publishing_frequency: 0.5
