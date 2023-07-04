@@ -9,30 +9,14 @@ from launch.substitutions import Command, FindExecutable, PathJoinSubstitution
 from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
 from launch.substitutions import LaunchConfiguration, ThisLaunchFileDir
-from datetime import date
-from datetime import datetime
 
 def generate_launch_description():
-    # Get URDF via xacro
-    robot_description_content = Command(
-        [
-            PathJoinSubstitution([FindExecutable(name="xacro")]),
-            " ",
-            PathJoinSubstitution(
-                [FindPackageShare("husky_description"), "urdf", "husky.urdf.xacro"]
-            ),
-            " ",
-            "name:=husky",
-            " ",
-            "prefix:=''",
-            " ",
-        ]
-    )
-    robot_description = {"robot_description": robot_description_content}
+    # Husky Driving needs launch
+    driving_launch_path = os.path.join(get_package_share_directory('trailbot_bringup'),'launch','driving.launch.py')
+    driving_launch = IncludeLaunchDescription(PythonLaunchDescriptionSource([driving_launch_path]))
 
-    
+
     #the cartographer and nav configs 
-
     package_name = 'husky_base'
 
     # Nav node
@@ -55,10 +39,6 @@ def generate_launch_description():
     velo_launch_path2 = os.path.join(get_package_share_directory('velodyne_pointcloud'),'launch','velodyne_convert_node-VLP16-launch.py')
     velo_launch2 = IncludeLaunchDescription(PythonLaunchDescriptionSource([velo_launch_path2]))
     
-    # #PC2LSCAN
-    # PCL2SCAN_launch_path = os.path.join(get_package_share_directory('velodyne_laserscan'),'launch','velodyne_laserscan_node-launch.py')
-    # PCL2SCAN = IncludeLaunchDescription(PythonLaunchDescriptionSource([PCL2SCAN_launch_path]))
-
     #rviz launch
     rviz_config_path = os.path.join(get_package_share_directory(package_name),'config','rviz_config.rviz')
     rviz_node = Node(
@@ -68,6 +48,7 @@ def generate_launch_description():
         arguments=['-d', rviz_config_path],
         output='screen')
     
+
     #Ximea Camera Node (commented because no current implementation)
     ld = LaunchDescription()
     config = os.path.join(
@@ -117,90 +98,11 @@ def generate_launch_description():
         launch_arguments={'resolution':resolution,
                           'publish_period_sec': publish_period_sec}.items(),)
 
-    config_husky_velocity_controller = PathJoinSubstitution(
-        [FindPackageShare("husky_control"),
-        "config",
-        "control.yaml"],
-        # remappings=['/husky_velocity_controller/odom', '/odom']
-
-    )
-
-    node_robot_state_publisher = Node(
-        package="robot_state_publisher",
-        executable="robot_state_publisher",
-        output="screen",
-        parameters=[robot_description],
-        remappings=[('/husky_velocity_controller/odom', '/odom')],
-    )
-
-    node_controller_manager = Node(
-        package="controller_manager",
-        executable="ros2_control_node",
-        parameters=[robot_description, config_husky_velocity_controller],
-        output={
-            "stdout": "screen",
-            "stderr": "screen",
-        },
-        remappings=[('/husky_velocity_controller/odom', '/odom')],
-    )
-
-    spawn_controller = Node(
-        package="controller_manager",
-        executable="spawner",
-        arguments=["joint_state_broadcaster"],
-        output="screen",
-        remappings=[('/husky_velocity_controller/odom', '/odom')],
-    )
-
-    spawn_husky_velocity_controller = Node(
-        package="controller_manager",
-        executable="spawner",
-        arguments=["husky_velocity_controller"],
-        output="screen",
-        remappings=[('/husky_velocity_controller/odom', '/odom')],
-        
-    )
-
-    # Launch husky_control/control.launch.py which is just robot_localization.
-    launch_husky_control = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(PathJoinSubstitution(
-        [FindPackageShare("husky_control"), 'launch', 'control.launch.py'])))
-
-    # Launch husky_control/teleop_base.launch.py which is various ways to tele-op
-    # the robot but does not include the joystick. Also, has a twist mux.
-    launch_husky_teleop_base = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(PathJoinSubstitution(
-        [FindPackageShare("husky_control"), 'launch', 'teleop_base.launch.py'])))
-
-    # Launch husky_control/teleop_joy.launch.py which is tele-operation using a physical joystick.
-    launch_husky_teleop_joy = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(PathJoinSubstitution(
-        [FindPackageShare("husky_control"), 'launch', 'teleop_joy.launch.py'])))
-
-
-    # Launch husky_bringup/accessories.launch.py which is the sensors commonly used on the Husky.
-    launch_husky_accessories = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(PathJoinSubstitution(
-        [FindPackageShare("husky_bringup"), 'launch', 'accessories.launch.py'])))
-
-    # Launch file logging
-    current_date = date.today()
-    current_time = datetime.now().time()
-    formatted_time = current_time.strftime("%H:%M")
-    file_logging = ExecuteProcess(
-        cmd=['ros2', 'bag', 'record', '--include-hidden-topics', '-o', f'/home/trailbot/bags/{current_date}-{formatted_time}','-a','-x','/camera'],
-        output='screen'
-    )
     
+
+
     ld = LaunchDescription()
-    ld.add_action(node_robot_state_publisher)
-    ld.add_action(node_controller_manager)
-    ld.add_action(spawn_controller)
-    ld.add_action(spawn_husky_velocity_controller)
-    ld.add_action(launch_husky_control)
-    ld.add_action(launch_husky_teleop_base)
-    ld.add_action(launch_husky_teleop_joy)
-    ld.add_action(launch_husky_accessories)
+    ld.add_action(driving_launch)
     ld.add_action(cartographer_node)
     ld.add_action(nav_node)
     ld.add_action(velo_launch1)
@@ -209,9 +111,5 @@ def generate_launch_description():
     ld.add_action(rviz_node)
     #ld.add_action(IMU_node) commented because this is still 2D implementation 
     ld.add_action(ximea_node)
-
-    logging = False
-    if logging:
-        ld.add_action(file_logging)
 
     return ld
