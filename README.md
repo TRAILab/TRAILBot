@@ -25,7 +25,7 @@ Follow the build and package setup for the voice_assistant here:
 - [Link to Voice Assistant README](voice_assistant/README.md)
 
 Follow the build and testing setup for the human_detection here (build only if following example fully):
-- [Link to Human Detection README](human_detection/README.md)
+- [Link to Human Detection README](human_detection/readme.md)
 
 Follow the download and build instructions for the FSM here:
 - [Link to FSM README](fsm/README.md)
