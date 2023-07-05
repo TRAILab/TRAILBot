@@ -15,7 +15,7 @@ from datetime import datetime
 def generate_launch_description():
 
     # Husky Base/Navigation launch
-    nav_launch_path = os.path.join(get_package_share_directory('husky_base'),'launch','base.launch.py')
+    nav_launch_path = os.path.join(get_package_share_directory('trailbot_bringup'),'launch','nav.launch.py')
     nav_launch = IncludeLaunchDescription(PythonLaunchDescriptionSource([nav_launch_path]))
 
 
