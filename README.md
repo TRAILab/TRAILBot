@@ -1,11 +1,11 @@
-TRAILBOT
+TRAILBOT README 
 =====
 
 SETUP GUIDE
 =============
 Sensor Drivers:
 
-Clone this repo and dependending repo's
+- Clone this repo and dependending repo's
 ```
 cd ~/ros2_ws/src
 git clone https://github.com/TRAILab/TRAILBot.git
@@ -34,6 +34,7 @@ Follow the name setup for the arduino here:
 - [Link to Arduino README](Arduino/README.md)
 
 
+
 Build Everything Together After Dependencies are Installed (Everything is good as long as the build doesn't fail):
 ```
 colcon build --symlink-install
@@ -42,7 +43,6 @@ colcon build --symlink-install
 Source before launching
 ```
 . install/setup.bash
-
 ```
 
 
