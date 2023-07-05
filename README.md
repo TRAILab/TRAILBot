@@ -19,19 +19,19 @@ cd ../..
 Seperate Installations and Configurations:
 ============
 Follow the husky setup readme for nav and control installations here:
-- [Link to Target README](husky/readme.md)
+- [Link to Husky and Nav README](husky/README.md)
 
 Follow the build and package setup for the voice_assistant here:
-- [Link to Target README](voice_assistant/readme.md)
+- [Link to Voice Assistant README](voice_assistant/README.md)
 
 Follow the build and testing setup for the human_detection here (build only if following example fully):
-- [Link to Target README](human_detection/readme.md)
+- [Link to Human Detection README](human_detection/README.md)
 
-Follow the download and build instructions for the fsm here:
-- [Link to Target README](fsm/readme.md)
+Follow the download and build instructions for the FSM here:
+- [Link to FSM README](fsm/README.md)
 
 Follow the name setup for the arduino here:
-- [Link to Target README](Arduino/readme.md)
+- [Link to Arduino README](Arduino/README.md)
 
 
 Build Everything Together After Dependencies are Installed (Everything is good as long as the build doesn't fail):
