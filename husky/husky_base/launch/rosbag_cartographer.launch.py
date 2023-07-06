@@ -4,12 +4,16 @@ from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument
 from launch_ros.actions import Node
 from launch.substitutions import LaunchConfiguration
-from launch.actions import IncludeLaunchDescription
+from launch.actions import IncludeLaunchDescription, ExecuteProcess
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import ThisLaunchFileDir
 
 
+
 def generate_launch_description():
+
+    bag_filename_arg = DeclareLaunchArgument('bag_filename')
+
     use_sim_time = LaunchConfiguration('use_sim_time', default='true')
     trailbot_cartographer_prefix = get_package_share_directory('husky_base')
     cartographer_config_dir = LaunchConfiguration('cartographer_config_dir', default=os.path.join(
@@ -21,16 +25,21 @@ def generate_launch_description():
     publish_period_sec = LaunchConfiguration('publish_period_sec', default='1.0')
 
     rviz_config_dir = os.path.join(get_package_share_directory('husky_base'),
-                                   'config','rviz_config.rviz')
+                                   'config','rviz_config_no_nav.rviz')
+    ros2_bag_play_cmd = ExecuteProcess(
+        cmd = ['ros2', 'bag', 'play', LaunchConfiguration('bag_filename'), '--clock'],
+        name = 'rosbag_play',)
+  
 
     return LaunchDescription([
-
+        bag_filename_arg,
+        
         Node(
             package='cartographer_ros',
             executable='cartographer_node',
             name='cartographer_node',
             output='screen',
-            parameters=[{'use_sim_time': use_sim_time}],            
+            parameters=[{'use_sim_time': use_sim_time}],
             arguments=['-configuration_directory', cartographer_config_dir,
                        '-configuration_basename', configuration_basename],
             remappings=[('/points2', '/velodyne_points'),
@@ -40,6 +49,8 @@ def generate_launch_description():
         
         IncludeLaunchDescription(
             PythonLaunchDescriptionSource([ThisLaunchFileDir(), '/occupancy_grid.launch.py']),
+            # PythonLaunchDescriptionSource(PathJoinSubstitution(
+        # [   FindPackageShare("husky_base"), 'launch', 'occupancy_grid.launch.py'])),
             launch_arguments={'use_sim_time': use_sim_time, 'resolution': resolution,
                               'publish_period_sec': publish_period_sec}.items(),
         ),
@@ -51,4 +62,6 @@ def generate_launch_description():
             arguments=['-d', rviz_config_dir],
             parameters=[{'use_sim_time': use_sim_time}],
             output='screen'),
+
+        ros2_bag_play_cmd
     ])
