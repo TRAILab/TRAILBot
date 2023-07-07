@@ -1,13 +1,12 @@
 import os
 from ament_index_python.packages import get_package_share_directory
-from launch import LaunchDescription
+from launch import LaunchDescription, IncludeLaunchDescription, ExecuteProcess
 from launch.actions import DeclareLaunchArgument
-from launch_ros.actions import Node
-from launch.substitutions import LaunchConfiguration
-from launch.actions import IncludeLaunchDescription, ExecuteProcess
+from launch.conditions import IfCondition, UnlessCondition
+from launch_ros.actions import Node, SetRemap
+from launch.substitutions import LaunchConfiguration, FindPackageShare, ThisLaunchFileDir
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import ThisLaunchFileDir
-
 
 
 def generate_launch_description():
@@ -26,15 +25,9 @@ def generate_launch_description():
 
     rviz_config_dir = os.path.join(get_package_share_directory('husky_base'),
                                    'config','rviz_config_no_nav.rviz')
-    ros2_bag_play_cmd = ExecuteProcess(
-        cmd = ['ros2', 'bag', 'play', LaunchConfiguration('bag_filename'), '--clock'],
-        name = 'rosbag_play',)
-  
 
-    return LaunchDescription([
-        bag_filename_arg,
-        
-        Node(
+
+    cartographer_node = Node(
             package='cartographer_ros',
             executable='cartographer_node',
             name='cartographer_node',
@@ -44,24 +37,34 @@ def generate_launch_description():
                        '-configuration_basename', configuration_basename],
             remappings=[('/points2', '/velodyne_points'),
                         ('/imu', 'imu/data')
-                        ]),
-                       
-        
-        IncludeLaunchDescription(
+                        ]
+    )
+     
+    occupancy_launch = IncludeLaunchDescription(
             PythonLaunchDescriptionSource([ThisLaunchFileDir(), '/occupancy_grid.launch.py']),
-            # PythonLaunchDescriptionSource(PathJoinSubstitution(
-        # [   FindPackageShare("husky_base"), 'launch', 'occupancy_grid.launch.py'])),
             launch_arguments={'use_sim_time': use_sim_time, 'resolution': resolution,
                               'publish_period_sec': publish_period_sec}.items(),
-        ),
-
-        Node(
+    )
+    
+    rviz_node = Node(
             package='rviz2',
             executable='rviz2',
             name='rviz2',
             arguments=['-d', rviz_config_dir],
             parameters=[{'use_sim_time': use_sim_time}],
-            output='screen'),
+            output='screen'
+    )
+                   
+    ros2_bag_play_cmd = ExecuteProcess(
+        cmd = ['ros2', 'bag', 'play', LaunchConfiguration('bag_filename'), '--clock'],
+        name = 'rosbag_play',)
+  
 
+
+    return LaunchDescription([
+        bag_filename_arg,
+        cartographer_node,
+        occupancy_launch,
+	rviz_node,
         ros2_bag_play_cmd
     ])
