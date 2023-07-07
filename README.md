@@ -15,6 +15,8 @@ cd ximea-driver
 ./tools/install_sdk.sh
 cd ../..
 ```
+
+
 Seperate Installations and Configurations:
 ============
 Follow the husky setup readme for nav and control installations here:
@@ -59,6 +61,21 @@ ros2 launch trailbot_bringup nav.launch.py
 ros2 launch trailbot_bringup demo1.launch
 ```
 
+
+Aliases that can be used 
+====
+- (follow setup here: [Alias Creation](alias/README.md))
+
+| Command | Usage |
+| ------- | --------------------------- |
+| bot | Runs the full trailbot package (snack delivery) |
+| nav | Runs TRAILbot only using navigation |
+| drive | Run when only wanting to drive/move TRAILbot |
+| save_map | Use to save the map created by cartographer (requires directory ~/ros2_ws/saved_maps) |
+| run_agent | Runs micro ros agent, use for running arduino|
+| run_s* | Used to run different servo motors (* should be replaced with a number from 1-4) |
+| voice | Runs voice assistant for snacks |
+| query | Run to use querying with voice assistant |
 
 
 CONTROLLER INSTRUCTIONS
