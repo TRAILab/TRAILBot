@@ -1,10 +1,10 @@
 import os
 from ament_index_python.packages import get_package_share_directory
-from launch import LaunchDescription, IncludeLaunchDescription, ExecuteProcess
-from launch.actions import DeclareLaunchArgument
+from launch import LaunchDescription
+from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, ExecuteProcess, Shutdown
 from launch.conditions import IfCondition, UnlessCondition
 from launch_ros.actions import Node, SetRemap
-from launch.substitutions import LaunchConfiguration, FindPackageShare, ThisLaunchFileDir
+from launch.substitutions import LaunchConfiguration, ThisLaunchFileDir
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import ThisLaunchFileDir
 
@@ -24,7 +24,7 @@ def generate_launch_description():
     publish_period_sec = LaunchConfiguration('publish_period_sec', default='1.0')
 
     rviz_config_dir = os.path.join(get_package_share_directory('husky_base'),
-                                   'config','rviz_config_no_nav.rviz')
+                                   'config','rviz_config_carto_bag.rviz')
 
 
     cartographer_node = Node(
@@ -54,6 +54,7 @@ def generate_launch_description():
             parameters=[{'use_sim_time': use_sim_time}],
             output='screen'
     )
+    
                    
     ros2_bag_play_cmd = ExecuteProcess(
         cmd = ['ros2', 'bag', 'play', LaunchConfiguration('bag_filename'), '--clock'],
