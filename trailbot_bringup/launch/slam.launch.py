@@ -16,7 +16,7 @@ def generate_launch_description():
     driving_launch = IncludeLaunchDescription(PythonLaunchDescriptionSource([driving_launch_path]))
 
 
-    #the cartographer and nav configs 
+    #the cartographer configs 
     package_name = 'SLAM'
 
     #velodyne launch
