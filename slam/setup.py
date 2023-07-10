@@ -2,7 +2,7 @@ import os
 from glob import glob
 from setuptools import setup
 
-package_name = 'SLAM'
+package_name = 'slam'
 
 setup(
     name=package_name,
