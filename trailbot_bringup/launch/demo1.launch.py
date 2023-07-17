@@ -33,6 +33,20 @@ def generate_launch_description():
         output='screen'
     )
 
+    #Ximea Camera Node (commented because no current implementation)
+    ld = LaunchDescription()
+    config = os.path.join(
+        get_package_share_directory("ximea_driver"),
+        "config",
+        "params.yaml",
+    )
+    ximea_node = Node(
+        package="ximea_driver",
+        executable="ximea_driver_node",
+        name="ximea_driver_node",
+        parameters=[config]
+    )
+
     # Launch voice_assistant/voice_assistant.launch.py which is voice interaction.
     launch_voice_assistant = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(PathJoinSubstitution(
@@ -57,6 +71,7 @@ def generate_launch_description():
     ld.add_action(nav_launch)
     ld.add_action(fsm_node)
     ld.add_action(navigator_node)
+    ld.add_action(ximea_node)
     ld.add_action(launch_voice_assistant)
     ld.add_action(human_detection_node)
 
