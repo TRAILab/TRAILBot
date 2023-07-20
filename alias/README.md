@@ -49,7 +49,10 @@ save_map() {
 
 # 3 Main Launch files
 alias drive="ros2 launch trailbot_bringup driving.launch.py"
-alias nav="ros2 launch trailbot_bringup nav.launch.py"
+alias slam_2D="ros2 launch trailbot_bringup slam_2D.launch.py"
+alias slam_3D="ros2 launch trailbot_bringup slam_3D.launch.py"
+alias nav_2D="ros2 launch trailbot_bringup nav_2D.launch.py"
+alias nav_3D="ros2 launch trailbot_bringup nav_3D.launch.py"
 alias bot="ros2 launch trailbot_bringup demo1.launch.py"
 ```
 
@@ -69,7 +72,10 @@ source ~/.bashrc
 | Command | Usage |
 | ------- | --------------------------- |
 | bot | Runs the full trailbot package (snack delivery) |
-| nav | Runs TRAILbot only using navigation |
+| slam_2D | Runs TRAILbot only using slam with 2D carto|
+| slam_3D | Runs TRAILbot only using navigation with 3D carto|
+| nav_2D | Runs TRAILbot only using navigation with 2D carto|
+| nav_3D | Runs TRAILbot only using navigation with 3D carto|
 | drive | Run when only wanting to drive/move TRAILbot |
 | save_map | Use to save the map created by cartographer (requires directory ~/ros2_ws/saved_maps) |
 | run_agent | Runs micro ros agent, use for running arduino|

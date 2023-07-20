@@ -12,7 +12,7 @@ from launch_ros.actions import Node
 def generate_launch_description():
 
     # Launching SLAM (also includes driving and all other needed nodes)
-    slam_launch_path = os.path.join(get_package_share_directory('trailbot_bringup'),'launch','slam.launch.py')
+    slam_launch_path = os.path.join(get_package_share_directory('trailbot_bringup'),'launch','slam_2D.launch.py')
     slam_launch = IncludeLaunchDescription(PythonLaunchDescriptionSource([slam_launch_path]))
 
     #the nav configs 
