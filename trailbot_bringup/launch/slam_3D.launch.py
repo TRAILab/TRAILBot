@@ -39,7 +39,7 @@ def generate_launch_description():
         package="umx_driver",
         executable="um7_driver",
         name="um7_node",
-        parameters=[{'port': '/dev/ttyUSB1'}]
+        parameters=[{'port': '/dev/serial/by-id/usb-Silicon_Labs_CP2102_USB_to_UART_Bridge_Controller_0001-if00-port0', 'zero_gyros': True, 'set_mag_ref': True, 'reset_ekf': True, 'update_rate': 60, 'baud': 115200}]
     )
 
 

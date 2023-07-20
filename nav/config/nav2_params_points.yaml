@@ -203,7 +203,7 @@ global_costmap:
       global_frame: map
       robot_base_frame: base_link
       use_sim_time: True
-      robot_radius: 0.4
+      robot_radius: 0.7
       resolution: 0.05
       track_unknown_space: true
       plugins: ["static_layer", "obstacle_layer", "inflation_layer"]
@@ -218,9 +218,9 @@ global_costmap:
           marking: True
           data_type: "LaserScan"
           raytrace_max_range: 7.0
-          raytrace_min_range: 0.0
+          raytrace_min_range: 0.7
           obstacle_max_range: 6.5
-          obstacle_min_range: 0.0
+          obstacle_min_range: 0.7
       static_layer:
         plugin: "nav2_costmap_2d::StaticLayer"
         map_subscribe_transient_local: True
