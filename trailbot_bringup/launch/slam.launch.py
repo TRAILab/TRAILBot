@@ -5,10 +5,12 @@ from ament_index_python.packages import get_package_share_directory
 
 
 from launch import LaunchDescription
-from launch.actions import IncludeLaunchDescription
+from launch.actions import IncludeLaunchDescription,  ExecuteProcess, TimerAction, DeclareLaunchArgument
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch_ros.actions import Node
 from launch.substitutions import LaunchConfiguration
+
+from datetime import date, datetime
 
 def generate_launch_description():
     # Husky Driving needs launch
@@ -17,7 +19,7 @@ def generate_launch_description():
 
 
     #the cartographer configs 
-    package_name = 'SLAM'
+    package_name = 'slam'
 
     #velodyne launch
     velo_launch_path1 = os.path.join(get_package_share_directory('velodyne_driver'),'launch','velodyne_driver_node-VLP16-launch.py')
@@ -69,6 +71,14 @@ def generate_launch_description():
         launch_arguments={'resolution':resolution,
                           'publish_period_sec': publish_period_sec}.items(),)
 
+    # Launch file logging
+    current_date = date.today()
+    current_time = datetime.now().time()
+    formatted_time = current_time.strftime("%H:%M")
+    file_logging = ExecuteProcess(
+        cmd=['ros2', 'bag', 'record', '--include-hidden-topics', '-o', f'/home/trailbot/bags/{current_date}-{formatted_time}','-a','-x','/camera'],
+        output='screen'
+    )
     
 
 
@@ -78,7 +88,10 @@ def generate_launch_description():
     ld.add_action(velo_launch1)
     ld.add_action(velo_launch2)
     ld.add_action(occupancy_grid)
-    ld.add_action(rviz_node)
+    #ld.add_action(rviz_node)
     #ld.add_action(IMU_node) commented because this is still 2D implementation 
+    logging = True
+    if logging:
+        ld.add_action(file_logging)
 
     return ld

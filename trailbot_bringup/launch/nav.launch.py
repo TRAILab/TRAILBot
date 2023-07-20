@@ -32,18 +32,18 @@ def generate_launch_description():
                                                         .items())
     
     #rviz launch
-    rviz_config_path = os.path.join(get_package_share_directory(package_name),'config','rviz_config.rviz')
-    rviz_node = Node(
-        package='rviz2',
-        executable='rviz2',
-        name='rviz2',
-        arguments=['-d', rviz_config_path],
-        output='screen')
+    #rviz_config_path = os.path.join(get_package_share_directory(package_name),'config','rviz_config.rviz')
+    # rviz_node = Node(
+    #     package='rviz2',
+    #     executable='rviz2',
+    #     name='rviz2',
+    #     arguments=['-d', rviz_config_path],
+    #     output='screen')
 
 
     ld = LaunchDescription()
     ld.add_action(slam_launch)
     ld.add_action(nav_node)
-    ld.add_action(rviz_node)
+    #ld.add_action(rviz_node)
 
     return ld

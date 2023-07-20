@@ -16,7 +16,9 @@
   <xacro:arg name="robot_namespace" default="/" />
   <xacro:arg name="is_sim" default="false" />
   <xacro:arg name="urdf_extras" default="$(optenv CPR_URDF_EXTRAS empty.urdf)" />
-  <xacro:arg name="serial_port" default="$(optenv HUSKY_SERIAL_PORT /dev/ttyUSB0)" />
+  <!-- <xacro:arg name="serial_port" default="$(optenv HUSKY_SERIAL_PORT /dev/ttyUSB0)" /> -->
+  <xacro:arg name="serial_port" default="$(optenv HUSKY_SERIAL_PORT /dev/serial/by-id/usb-Prolific_Technology_Inc._USB-Serial_Controller_D-if00-port0
+)" /> 
 
   <!-- Included URDF/XACRO Files -->
   <xacro:include filename="$(find husky_description)/urdf/decorations.urdf.xacro" />
