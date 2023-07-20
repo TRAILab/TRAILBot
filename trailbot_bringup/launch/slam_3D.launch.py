@@ -17,7 +17,7 @@ def generate_launch_description():
 
 
     #the cartographer configs 
-    package_name = 'SLAM'
+    package_name = 'slam'
 
     #velodyne launch
     velo_launch_path1 = os.path.join(get_package_share_directory('velodyne_driver'),'launch','velodyne_driver_node-VLP16-launch.py')
