@@ -46,15 +46,23 @@ Source before launching
 
 Different Launch Options for TRAILBOT
 =============
-There are 3 different launch modes you can choose to use:
+There are 4 different launch modes you can choose to use:
 - Make sure that the husky is turned on and everything is plugged in when doing so! 
 1. Driving only mode:
 ```
 ros2 launch trailbot_bringup driving.launch.py
 ```
-2. Navigation only mode:
+2. SLAM/CARTO only mode:
 ```
-ros2 launch trailbot_bringup nav.launch.py
+ros2 launch trailbot_bringup slam_2D.launch.py
+OR
+ros2 launch trailbot_bringup slam_3D.launch.py
+```
+3. Navigation only mode:
+```
+ros2 launch trailbot_bringup nav_2D.launch.py
+OR
+ros2 launch trailbot_bringup nav_3D.launch.py
 ```
 3. Full TRAILBOT (snack delivery) mode:
 ```
@@ -69,7 +77,10 @@ Aliases that can be used
 | Command | Usage |
 | ------- | --------------------------- |
 | bot | Runs the full trailbot package (snack delivery) |
-| nav | Runs TRAILbot only using navigation |
+| slam_2D | Runs TRAILbot only using slam with 2D carto|
+| slam_3D | Runs TRAILbot only using navigation with 3D carto|
+| nav_2D | Runs TRAILbot only using navigation with 2D carto|
+| nav_3D | Runs TRAILbot only using navigation with 3D carto|
 | drive | Run when only wanting to drive/move TRAILbot |
 | save_map | Use to save the map created by cartographer (requires directory ~/ros2_ws/saved_maps) |
 | run_agent | Runs micro ros agent, use for running arduino|
