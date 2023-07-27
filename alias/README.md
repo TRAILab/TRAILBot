@@ -35,8 +35,8 @@ alias run_s4="ros2 service call /runservo trailbot_interfaces/srv/RunServo '{ser
 alias voice="ros2 launch voice_assistant voice_assistant.launch.py"
 alias query="ros2 topic pub --once /trailbot_state std_msgs/msg/String '{data: 'QueryState'}'"
 
-export ELEVENLABS_API_KEY="16e32e74342feed90fe7b638da80dc8d"
-export OPENAI_API_KEY="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"
+export ELEVENLABS_API_KEY="______________________"
+export OPENAI_API_KEY="______________________"
 
 #sudo tee /sys/module/usbcore/parameters/usbfs_memory_mb >/dev/null <<<0
 
