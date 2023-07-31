@@ -1,0 +1,5 @@
+python detect_or_track.py --weights yolov7.pt  --view-img --nosave  --show-fps --track --show-track --unique-track-color --classes 0 --source Media1.mp4
+
+python main.py --weights yolov7.pt  --view-img --show-fps --track --show-track --unique-track-color --classes 0 --source video.mp4
+
+python main.py --weights-file yolov7.pt --nosave  --view-img --show-fps --track --show-track-lines --classes 0 --no-trace --source video.mp4 
