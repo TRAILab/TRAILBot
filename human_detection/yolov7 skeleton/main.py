@@ -6,16 +6,12 @@ import torch
 import numpy as np
 
 from models.experimental import attempt_load
-from utils.datasets import LoadStreams, LoadImages
-from utils.general import check_img_size, check_requirements, \
-                check_imshow, non_max_suppression, apply_classifier, \
-                scale_coords, xyxy2xywh, strip_optimizer, set_logging, \
-                increment_path
-from utils.plots import plot_one_box
-from utils.torch_utils import select_device, load_classifier, time_synchronized, TracedModel
+from utils.datasets import LoadImages
+from utils.general import check_img_size, non_max_suppression, scale_coords, set_logging, increment_path
+from utils.torch_utils import select_device, TracedModel
 import sort
 
-"""Function to Draw Bounding boxes"""
+"""Function to draw bounding boxes"""
 def draw_boxes(img, bbox, identities=None, categories=None, confidences = None, names=None, colors = None):
     for i, box in enumerate(bbox):
         x1, y1, x2, y2 = [int(i) for i in box]
@@ -40,7 +36,7 @@ def draw_boxes(img, bbox, identities=None, categories=None, confidences = None, 
 
     return img
 
-
+"""Function to draw tracking lines"""
 def draw_track_lines(im0, tracks, sort_tracker, thickness):
     for t, track in enumerate(tracks): # loop over tracks
         track_color = sort_tracker.color_list[t] # Get the color for the current track from the color_list of sort_tracker
@@ -74,14 +70,7 @@ class Yolo_sort_tracker:
         # Set Dataloader
         source = opt.source 
         self.vid_path, self.vid_writer = None, None
-        self.webcam = source.isnumeric() or source.endswith('.txt') or source.lower().startswith(
-            ('rtsp://', 'rtmp://', 'http://', 'https://'))
-        if self.webcam:
-            opt.view_img = check_imshow()
-            torch.backends.cudnn.benchmark = True  # set True to speed up constant image size inference
-            self.dataset = LoadStreams(source, img_size=self.imgsize, stride=self.stride)
-        else:
-            self.dataset = LoadImages(source, img_size=self.imgsize, stride=self.stride)
+        torch.backends.cudnn.benchmark = True  # set True to speed up constant image size inference
 
         # defining option flags
         self.save_img = not opt.nosave and not source.endswith('.txt')  # save inference images
@@ -89,70 +78,52 @@ class Yolo_sort_tracker:
         if not opt.nosave:  
             self.save_dir.mkdir(parents=True)  # make dir
 
-        # # Second-stage classifier. 
-        # # This is commented because we are just detecting people, and we don't need to classify the detected stuffs
-        # classify = False
-        # if classify:
-        #     modelc = load_classifier(name='resnet101', n=2)  # initialize
-        #     modelc.load_state_dict(torch.load('weights/resnet101.pt', map_location=device)['model']).to(device).eval()
+        # Names and colors of the detected objects' classes
         self.names = self.model.module.names if hasattr(self.model, 'module') else self.model.names
         self.colors = [[np.random.randint(0, 255) for _ in range(3)] for _ in self.names]
 
 
     def process_video_file(self):
-        # Get names and colors 
-        for path, img, im0s, vid_cap in self.dataset:
-            self.detect(img, self.imgsize, im0s, path, vid_cap)
-    def process_frame(self, image_frame):
-        im0s = np.array(image_frame)
-        image_frame = cv2.resize(image_frame, (576,640))        
-        img = np.array(image_frame).transpose(2, 0, 1)
-        self.detect(img, self.imgsize, image_frame)
-    def detect(self, img, imgsize, im0s, path=None, vid_cap=False):
-        old_img_w = old_img_h = imgsize
-        old_img_b = 1 ### idk what is this . need to understand later
+        self.dataset = LoadImages(opt.source, img_size=self.imgsize, stride=self.stride)
+        for path, img, img_original, vid_cap in self.dataset:
+            self.detect(img, self.imgsize, img_original, path, vid_cap)
 
-        startTime = 0
+
+    def process_frame(self, image_frame):
+        img_original = np.array(image_frame)
+        img = cv2.resize(image_frame, (576,640))        
+        img = np.array(img).transpose(2, 0, 1)
+        return self.detect(img, self.imgsize, img_original)
+
+
+    def detect(self, img, imgsize, im0, path=None, vid_cap=False):
+        startTime = time.time()
         img = torch.from_numpy(img).to(self.device)
         img = img.half() if self.use_half_precision else img.float()  # uint8 to FP16 or FP32
         img /= 255.0  # 0~255 to 0.0~1.0
         if img.ndimension() == 3:
             img = img.unsqueeze(0)
 
-        # Warmup. Not sure why or even if this is necessary. ### to be tested
-        if self.device.type != 'cpu' and (old_img_b != img.shape[0] or old_img_h != img.shape[2] or old_img_w != img.shape[3]):
-            old_img_b = img.shape[0]
-            old_img_h = img.shape[2]
-            old_img_w = img.shape[3]
+        # Warmup. Not sure why or even if this is necessary. ### to be tested. ### maybe a flag should be added to avoid multiple warmups
+        if self.device.type != 'cpu' and (img.shape[0]!=1 or imgsize != img.shape[2] or imgsize != img.shape[3]):
             for i in range(3):
                 self.model(img, augment=opt.augment)[0]
 
         # Inference
-        time1 = time_synchronized()
         pred = self.model(img, augment=opt.augment)[0]
-        time2 = time_synchronized()
 
         # Apply NMS
         pred = non_max_suppression(pred, opt.conf_thres, opt.iou_thres, classes=opt.classes, agnostic=opt.agnostic_nms)
-        time3 = time_synchronized()
-
-        # # Apply second-stage classifier
-        # if classify:
-        #     pred = apply_classifier(pred, modelc, img, im0s)
 
         #TESTING ###to be removed
         if len(pred)!=1:
-            print("\n",len(pred))
+            print("\n WARNING IN YOLOV7: if len(pred)!=1: ",len(pred))
             exit()
 
         # Process detections
         for i, det in enumerate(pred):  # detections per image
-            if self.webcam:  # batch_size >= 1
-                p, output_string, im0, frame = path[i], '%g: ' % i, im0s[i].copy(), self.dataset.count
-            else:
-                p, output_string, im0, frame = path, '', im0s, getattr(self.dataset, 'frame', 0)
+            output_string = ''
 
-            gn = torch.tensor(im0.shape)[[1, 0, 1, 0]]  # normalization gain whwh
             if len(det)!=0:
                 # Rescale boxes from img_size to im0 size
                 det[:, :4] = scale_coords(img.shape[2:], det[:, :4], im0.shape).round()
@@ -192,17 +163,16 @@ class Yolo_sort_tracker:
                 for c in det[:, -1].unique():
                     n = (det[:, -1] == c).sum()  # detections per class
                     output_string += f"{n} {self.names[int(c)]}, "  # add to string
+            else:
+                bbox_xyxy=None
 
-            # Print time
-            print(f'{output_string}Done. ({(1E3 * (time2 - time1)):.1f}ms) Inference, ({(1E3 * (time3 - time2)):.1f}ms) NMS')
-
+            print(f'[INFO] {output_string}')
 
             # Show result on live cv2 window view: FPS
-            if opt.show_fps and self.dataset.mode != 'image' :
+            if opt.show_fps :
                 currentTime = time.time()
                 fps = 1/(currentTime - startTime)
-                startTime = currentTime
-                cv2.putText(im0, "FPS: " + str(round(fps, 3)), (20, 70), cv2.FONT_HERSHEY_PLAIN, 2, (0,255,0),2)
+                cv2.putText(im0, "FPS: " + str(round(fps, 4)), (20, 70), cv2.FONT_HERSHEY_PLAIN, 2, (0,255,0),2)
             # Show result on live cv2 window view: image
             if opt.view_img:
                 cv2.imshow("yolov7 preview", im0)
@@ -210,26 +180,27 @@ class Yolo_sort_tracker:
 
 
             # Save results (image with detections) to local file.
-            if self.save_img:
-                p = Path(p)  # to Path
-                save_path = str(self.save_dir / p.name)  # img.jpg
-                if self.dataset.mode == 'image':
-                    cv2.imwrite(save_path, im0)
-                    print(f" The image with the result is saved in: {save_path}")
-                else:  # 'video' or 'stream'
-                    if self.vid_path != save_path:  # new video
-                        self.vid_path = save_path
-                        if isinstance(self.vid_writer, cv2.VideoWriter):
-                            self.vid_writer.release()  # release previous video writer
-                        if vid_cap:  # video
-                            fps = vid_cap.get(cv2.CAP_PROP_FPS)
-                            w = int(vid_cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-                            h = int(vid_cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-                        else:  # stream
-                            fps, w, h = 30, im0.shape[1], im0.shape[0]
-                            save_path += '.mp4'
-                        self.vid_writer = cv2.VideoWriter(save_path, cv2.VideoWriter_fourcc(*'mp4v'), fps, (w, h))
-                    self.vid_writer.write(im0)
+            if self.save_img and path!=None:
+                path = Path(path)  # to Path
+                save_path = str(self.save_dir / path.name)  # img.jpg
+                # if self.dataset.mode == 'image':
+                #     cv2.imwrite(save_path, im0)
+                #     print(f" The image with the result is saved in: {save_path}")
+                # else:  # 'video' or 'stream'
+                if self.vid_path != save_path:  # new video
+                    self.vid_path = save_path
+                    if isinstance(self.vid_writer, cv2.VideoWriter):
+                        self.vid_writer.release()  # release previous video writer
+                    if vid_cap:  # video
+                        fps = vid_cap.get(cv2.CAP_PROP_FPS)
+                        w = int(vid_cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+                        h = int(vid_cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+                    else:  # stream
+                        fps, w, h = 30, im0.shape[1], im0.shape[0]
+                        save_path += '.mp4'
+                    self.vid_writer = cv2.VideoWriter(save_path, cv2.VideoWriter_fourcc(*'mp4v'), fps, (w, h))
+                self.vid_writer.write(im0)
+        return bbox_xyxy
 
 
 if __name__ == '__main__':
@@ -275,7 +246,7 @@ if __name__ == '__main__':
     with torch.no_grad(): #deactivate the autograd engine to save memory and speed up computations. On cpu, the speed is 15% faster with this
         yolo_sort_tracker=Yolo_sort_tracker() 
 
-        if webcam:=1:#opt.source.isnumeric():
+        if webcam:=opt.source.isnumeric():
             mywebcam = cv2.VideoCapture(0)
             while 1:
                 _, image_frame  = mywebcam.read()
