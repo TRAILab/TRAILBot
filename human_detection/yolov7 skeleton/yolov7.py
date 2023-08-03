@@ -90,6 +90,8 @@ class Yolo_sort_tracker:
         self.names = self.model.module.names if hasattr(self.model, 'module') else self.model.names
         self.colors = [[np.random.randint(0, 255) for _ in range(3)] for _ in self.names]
 
+        # Initialize SORT tracker
+        self.sort_tracker = sort.Sort(max_age=5, min_hits=2, iou_threshold=0.2) 
 
     def process_video_file(self,opt):
         self.dataset = LoadImages(opt.source, img_size=self.imgsize, stride=self.stride)
@@ -172,15 +174,15 @@ class Yolo_sort_tracker:
                     dets_to_sort = np.vstack((dets_to_sort, np.array([x1, y1, x2, y2, conf, detclass])))
 
                 if not disable_tracking:
-                    tracked_dets = sort_tracker.update(dets_to_sort, unique_color=True)
-                    tracks =sort_tracker.getTrackers()
+                    tracked_dets = self.sort_tracker.update(dets_to_sort, unique_color=True)
+                    tracks =self.sort_tracker.getTrackers()
                     if len(tracked_dets)>0:
                         bbox_xyxy = tracked_dets[:,:4]
                         identities = tracked_dets[:, 8]
                         categories = tracked_dets[:, 4]
                         confidences = None
                         if show_track_lines:
-                            draw_track_lines(im0, tracks, sort_tracker, line_thickness)
+                            draw_track_lines(im0, tracks, self.sort_tracker, line_thickness)
                     else:
                         ### not sure if this is possible
                         bbox_xyxy = dets_to_sort[:,:4]
@@ -275,10 +277,6 @@ if __name__ == '__main__':
 
     opt = parser.parse_args()
 
-    # define the SORT tracker
-    sort_tracker = sort.Sort(max_age=5,
-                       min_hits=2,
-                       iou_threshold=0.2) 
 
     with torch.no_grad(): #deactivate the autograd engine to save memory and speed up computations. On cpu, the speed is 15% faster with this
         yolo_sort_tracker=Yolo_sort_tracker(
