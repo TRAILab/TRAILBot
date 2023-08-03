@@ -22,7 +22,7 @@ from ascii_numbers import ascii_numbers
 
 
 #config constants
-MODEL_URL = "https://tfhub.dev/google/movenet/multipose/lightning/1?tf-hub-format=compressed"
+MODEL_URL = "https://github.com/WongKinYiu/yolov7/releases/download/v0.1/yolov7.pt"
 SAVED_MODEL_PATH = "/home/trailbot/trail_ws/multipose_model"
 people_detection_threshold = 0.4
 point_detection_threshold = 0.4
@@ -106,36 +106,6 @@ def print_verbose_only(*args, **kwargs):
         print(*args, **kwargs)
 
 
-def movenet(input_image, model):
-    """
-    movenet model:
-    Gets input image and outputs array of keypoints with certainty score
-    downloaded from #https://tfhub.dev/google/movenet/multipose/lightning/1
-    """
-    # SavedModel format expects tensor type of int32.
-    input_image = tf.cast(input_image, dtype=tf.int32)
-    outputs = model(input_image)  # Output is a [1, 6, 56] tensor.
-
-    # The first 17 * 3 elements are the keypoint locations and scores in the
-    # format: [y_0, x_0, s_0, y_1, x_1, s_1, …, y_16, x_16, s_16], where y_i,
-    # x_i, s_i are the yx-coordinates (normalized to image frame, e.g. range
-    # in [0.0, 1.0]) and confidence scores of the i-th joint correspondingly.
-    # The order of the 17 keypoint joints is: [nose, left eye, right eye, left
-    # ear, right ear, left shoulder, right shoulder, left elbow, right elbow,
-    # left wrist, right wrist, left hip, right hip, left knee, right knee,
-    # left ankle, right ankle]. The remaining 5 elements [ymin, xmin, ymax,
-    # xmax, score] represent the region of the bounding box (in normalized
-    # coordinates) and the confidence score of the instance
-    keypoints = outputs['output_0'].numpy()
-
-    count_of_people = np.sum(keypoints[0, :, -1] > people_detection_threshold )
-    # print_verbose_only("count_of_people", count_of_people)
-
-    # there are 6 people
-    # there are 17 body points and therefore 3*17=51 numbers per person
-    return keypoints[:, :, :51].reshape((6, 17, 3))[0]
-
-
 def is_there_person(points):
     """
     return True/False of whether there is a person
@@ -156,23 +126,6 @@ def is_person_facing_camera(points):
     return visible_joints_face >= 3 and facing_forward
 
 
-def get_heading_angle(
-        points,
-        fov=90,
-        image_width=1,
-        offset=0,
-        scaling=1):
-    """
-    get the heading angle from the camera's perspective to the person,
-     in degree, relative to the center of the field of view
-    """
-    visible_points = points[points[:, -1] > point_detection_threshold]
-    x_mean = np.mean(visible_points[:, 1])
-    x_angle_radian = math.atan(
-        (x_mean - (image_width / 2)) / (image_width / 2) * math.tan(math.radians(fov / 2)))
-    return offset + scaling * math.degrees(x_angle_radian)
-
-
 def get_x_y_coord(
         points,
     ):
@@ -182,25 +135,48 @@ def get_x_y_coord(
     return x_mean * image_width, y_mean * image_height
 
 
-def process_frame(image, person_array):
+import yolov7
+import torch
+import cv2
+with torch.no_grad():
+    yolo_sort_tracker=yolov7.Yolo_sort_tracker() 
+def xyxy_to_centroid(xyxy):
+    x1, y1, x2, y2 = xyxy
+    centroid_x = (x1 + x2) / 2
+    centroid_y = (y1 + y2) / 2
+    return (centroid_x, centroid_y)
+
+def get_heading_angle(
+        centroid,
+        fov=90,
+        image_width=1,
+        offset=0,
+        scaling=1):
+    """
+    get the heading angle from the camera's perspective to the person,
+     in degree, relative to the center of the field of view
+    """
+    centroid_x, centroid_y = centroid
+    x_angle_radian = math.atan(
+        (centroid_x - (image_width / 2)) / (image_width / 2) * math.tan(math.radians(fov / 2)))
+    return offset + scaling * math.degrees(x_angle_radian)
+def process_frame(image):
     """
     process a frame. Determine keypoints and number of people and
     heading angle.
     """
-
-    input_size = 256
-    input_image = tf.expand_dims(image, axis=0)
-    input_image = tf.image.resize_with_pad(input_image, input_size, input_size)
-
     # Run model inference
-    keypoints = movenet(input_image, model)
-
-    person_array[0].heading_angle = get_heading_angle(keypoints)
-    person_array[0].x, person_array[0].y = get_x_y_coord(keypoints)
-    person_array[0].on_screen =  is_there_person(keypoints) 
-
-    is_there_anyone = is_there_person(keypoints)
-    return is_there_anyone
+    person_array = []
+    bounding_boxes, identities, confidences=yolo_sort_tracker.process_frame(image,view_img=False)
+    for i in range(len(bounding_boxes)):
+        p = Person()
+        centroid = xyxy_to_centroid(bounding_boxes[i])
+        p.heading_angle = get_heading_angle(centroid)
+        p.x, p.y = centroid 
+        p.on_screen=True
+        p.id = identities[i]
+        person_array.append(p)
+    return person_array
 
 
 class Person:
@@ -213,6 +189,7 @@ class Person:
         self.z = -1.0
         self.on_screen = False
         self.heading_angle = 0.0
+        self.id = 0
 
 
 class LidarCameraSubscriber(Node):
@@ -223,7 +200,7 @@ class LidarCameraSubscriber(Node):
 
     def __init__(self):
         #make array of 6 person
-        self.person_array = [Person() for _ in range(6)]
+        self.person_array = []
         self.is_there_anyone = False
         self.cur_state = ""
 
@@ -282,7 +259,8 @@ class LidarCameraSubscriber(Node):
 
         cv_image = self.bridge.imgmsg_to_cv2(
             msg, desired_encoding='passthrough')
-        self.is_there_anyone = process_frame(cv_image,self.person_array)
+        self.person_array = process_frame(cv_image)
+        self.is_there_anyone = len(self.person_array)>0
         self.timestamp = msg.header.stamp
 
 
@@ -312,7 +290,7 @@ class LidarCameraSubscriber(Node):
         # if this is -1, node will publish constantly (as camera FPS)
         if not publishing_frequency>0:
             self.publish_message("lidar")
-        t
+        
     def publish_message(self,source_str="timer"):
         """ publish message is somebody is detected"""
         if self.cur_state!="SearchState":
@@ -336,6 +314,7 @@ class LidarCameraSubscriber(Node):
         # angle_msg = Float32()
         # angle_msg.data = angle
         # self.angle_publisher.publish(angle_msg)
+
 
         pose_stamped_msg = PoseStamped()
         pose_stamped_msg.header.stamp = self.timestamp
