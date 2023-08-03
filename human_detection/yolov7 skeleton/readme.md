@@ -4,6 +4,10 @@
 
 Usage:
 1. download the model and test video here: https://utoronto-my.sharepoint.com/:f:/r/personal/nathan_hung_mail_utoronto_ca/Documents/yolov7?csf=1&web=1&e=pSSspq
-2. run ```python yolov7.py --weights-file yolov7.pt --nosave  --view-img --show-fps --show-track-lines --classes 0 --no-trace --source video.mp4 ``` to run inference on __video.mp4__
+2. run ```
+python yolov7.py --weights-file yolov7.pt --nosave  --view-img --show-fps --show-track-lines --classes 0 --no-trace --source video.mp4
+``` to run inference on __video.mp4__
 
-to run inference on webcam, use ```python yolov7.py --weights-file yolov7.pt --nosave  --view-img --show-fps --show-track-lines --classes 0 --no-trace --source webcam```
+to run inference on webcam, use ```
+python yolov7.py --weights-file yolov7.pt --nosave  --view-img --show-fps --show-track-lines --classes 0 --no-trace --source webcam
+```
