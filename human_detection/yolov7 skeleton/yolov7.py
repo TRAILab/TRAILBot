@@ -113,24 +113,24 @@ class Yolo_sort_tracker:
                 enable_agnostic_nms=opt.agnostic_nms)
 
 
-    def process_frame(self, image_frame):
+    def process_frame(self, image_frame, view_img=False):
         img_original = np.array(image_frame)
         img = cv2.resize(image_frame, (576,640))        
         img = np.array(img).transpose(2, 0, 1)
-        return self.detect(img, self.imgsize, img_original)
+        return self.detect(img, self.imgsize, img_original,view_img=view_img)
 
 
     def detect(self, 
         img, imgsize, im0, 
-        path=None, 
-        vid_cap=False, 
-        show_fps=True, 
-        view_img=True, 
-        show_track_lines=True,
-        line_thickness=2,
-        disable_tracking=False,
-        hide_bounding_box=False,
-        hide_labels=False,
+        path=None, # for saving result
+        vid_cap=False, # for saving result
+        show_fps=True, # for viewing result
+        view_img=True, # for viewing result
+        show_track_lines=True, # for viewin result
+        line_thickness=2, # for viewing result
+        disable_tracking=False, 
+        hide_bounding_box=False, # for viewing result
+        hide_labels=False, # for viewing result
         enable_augment=True,
         conf_thres=0.25,
         iou_thres=0.45,
@@ -294,7 +294,7 @@ if __name__ == '__main__':
             mywebcam = cv2.VideoCapture(0)
             while 1:
                 _, image_frame  = mywebcam.read()
-                bounding_boxes=yolo_sort_tracker.process_frame(image_frame)
+                bounding_boxes=yolo_sort_tracker.process_frame(image_frame,view_img=True)
                 print(bounding_boxes)
         else:
             yolo_sort_tracker.process_video_file(opt) 
