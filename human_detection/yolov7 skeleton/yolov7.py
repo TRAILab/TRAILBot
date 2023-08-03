@@ -96,7 +96,7 @@ class Yolo_sort_tracker:
     def process_video_file(self,opt):
         self.dataset = LoadImages(opt.source, img_size=self.imgsize, stride=self.stride)
         for path, img, img_original, vid_cap in self.dataset:
-            self.detect(img, self.imgsize, img_original, 
+            results = self.detect(img, self.imgsize, img_original, 
                 path=path, 
                 vid_cap=vid_cap,
                 show_fps=opt.show_fps, 
@@ -111,27 +111,28 @@ class Yolo_sort_tracker:
                 iou_thres=opt.iou_thres,
                 detection_object_classes=opt.classes,
                 enable_agnostic_nms=opt.agnostic_nms)
+            print(results)
 
 
     def process_frame(self, image_frame, view_img=False):
         img_original = np.array(image_frame)
         img = cv2.resize(image_frame, (576,640))        
         img = np.array(img).transpose(2, 0, 1)
-        return self.detect(img, self.imgsize, img_original,view_img=view_img)
+        return self.detect(img, self.imgsize, img_original,view_img=view_img,show_fps=view_img)
 
 
     def detect(self, 
         img, imgsize, im0, 
         path=None, # for saving result
         vid_cap=False, # for saving result
-        show_fps=True, # for viewing result
-        view_img=True, # for viewing result
+        show_fps=False, # for viewing result
+        view_img=False, # for viewing result
         show_track_lines=True, # for viewin result
         line_thickness=2, # for viewing result
         disable_tracking=False, 
         hide_bounding_box=False, # for viewing result
         hide_labels=False, # for viewing result
-        enable_augment=True,
+        enable_augment=False,
         conf_thres=0.25,
         iou_thres=0.45,
         detection_object_classes=[0,],
@@ -180,7 +181,7 @@ class Yolo_sort_tracker:
                         bbox_xyxy = tracked_dets[:,:4]
                         identities = tracked_dets[:, 8]
                         categories = tracked_dets[:, 4]
-                        confidences = None
+                        confidences = None ###dets_to_sort[:, 4]
                         if show_track_lines:
                             draw_track_lines(im0, tracks, self.sort_tracker, line_thickness)
                     else:
@@ -204,7 +205,7 @@ class Yolo_sort_tracker:
                     n = (det[:, -1] == c).sum()  # detections per class
                     output_string += f"{n} {self.names[int(c)]}, "  # add to string
             else:
-                bbox_xyxy=None
+                bbox_xyxy=identities=confidences=None
 
             print(f'[INFO] {output_string}')
 
@@ -240,7 +241,7 @@ class Yolo_sort_tracker:
                         save_path += '.mp4'
                     self.vid_writer = cv2.VideoWriter(save_path, cv2.VideoWriter_fourcc(*'mp4v'), fps, (w, h))
                 self.vid_writer.write(im0)
-        return bbox_xyxy
+        return bbox_xyxy, identities, confidences
 
 
 if __name__ == '__main__':
@@ -267,7 +268,7 @@ if __name__ == '__main__':
     parser.add_argument('--agnostic-nms', action='store_true', help='class-agnostic NMS')
     parser.add_argument('--augment', action='store_true', help='augmented inference')
     # SORT tracking options
-    parser.add_argument('--disable-tracking', action='store_false', help='disable tracking')
+    parser.add_argument('--disable-tracking', action='store_true', help='disable tracking')
     # Appearance option (what to display on screen or output video)
     parser.add_argument('--show-track-lines', action='store_true', help='show tracked path')
     parser.add_argument('--show-fps', action='store_true', help='show fps')
@@ -294,7 +295,7 @@ if __name__ == '__main__':
             mywebcam = cv2.VideoCapture(0)
             while 1:
                 _, image_frame  = mywebcam.read()
-                bounding_boxes=yolo_sort_tracker.process_frame(image_frame,view_img=True)
+                bounding_boxes, identities, confidences=yolo_sort_tracker.process_frame(image_frame,view_img=True)
                 print(bounding_boxes)
         else:
             yolo_sort_tracker.process_video_file(opt) 
