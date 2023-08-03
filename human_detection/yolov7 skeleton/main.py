@@ -12,10 +12,10 @@ from utils.torch_utils import select_device, TracedModel
 import sort
 
 """Function to draw bounding boxes"""
-def draw_boxes(img, bbox, identities=None, categories=None, confidences = None, names=None, colors = None):
+def draw_boxes(img, bbox, identities=None, categories=None, confidences=None, names=None, colors=None, thickness=2, hide_bounding_box=False,hide_labels=False):
     for i, box in enumerate(bbox):
         x1, y1, x2, y2 = [int(i) for i in box]
-        tl = opt.thickness or round(0.002 * (img.shape[0] + img.shape[1]) / 2) + 1  # line/font thickness
+        tl = thickness or round(0.002 * (img.shape[0] + img.shape[1]) / 2) + 1  # line/font thickness
 
         cat = int(categories[i]) if categories is not None else 0
         id = int(identities[i]) if identities is not None else 0
@@ -23,10 +23,10 @@ def draw_boxes(img, bbox, identities=None, categories=None, confidences = None, 
 
         color = colors[cat]
         
-        if not opt.nobbox:
+        if not hide_bounding_box:
             cv2.rectangle(img, (x1, y1), (x2, y2), color, tl)
 
-        if not opt.nolabel:
+        if not hide_labels:
             label = str(id) + ":"+ names[cat] if identities is not None else  f'{names[cat]} {confidences[i]:.2f}'
             tf = max(tl - 1, 1)  # font thickness
             t_size = cv2.getTextSize(label, 0, fontScale=tl / 3, thickness=tf)[0]
@@ -48,18 +48,27 @@ def draw_track_lines(im0, tracks, sort_tracker, thickness):
             cv2.line(im0, current_point, next_point, track_color, thickness=thickness)
             
 class Yolo_sort_tracker:
-    def __init__(self):
+    def __init__(self,
+        device='cpu',
+        weights_file='yolov7.pt',
+        img_size=640,
+        traced_model_already_exists=True,
+        source='webcam',
+        save_result=False,
+        output_folder='/',
+        output_file_name='yolov7results.mp4'
+        ):
         # Initialize
         set_logging()
-        self.device = select_device(opt.device)
+        self.device = select_device(device)
         self.use_half_precision = self.device.type != 'cpu'  # enable half precision if on GPU (only supported on CUDA)
 
         # Load model
-        self.model = attempt_load(opt.weights_file, map_location=self.device)  # load FP32 model
+        self.model = attempt_load(weights_file, map_location=self.device)  # load FP32 model
         self.stride = int(self.model.stride.max())  # model stride, which is the step size or the number of units the sliding window moves when performing operations like convolution or pooling
-        self.imgsize = check_img_size(opt.img_size, s=self.stride)  # check img_size
-        if not opt.no_trace:
-            self.model = TracedModel(self.model, self.device, opt.img_size)
+        self.imgsize = check_img_size(img_size, s=self.stride)  # check img_size
+        if not traced_model_already_exists:
+            self.model = TracedModel(self.model, self.device, img_size)
         if self.use_half_precision:
             self.model.half()  # to FP16
 
@@ -68,14 +77,13 @@ class Yolo_sort_tracker:
             self.model(torch.zeros(1, 3, self.imgsize, self.imgsize).to(self.device).type_as(next(self.model.parameters())))
 
         # Set Dataloader
-        source = opt.source 
         self.vid_path, self.vid_writer = None, None
         torch.backends.cudnn.benchmark = True  # set True to speed up constant image size inference
 
         # defining option flags
-        self.save_img = not opt.nosave and not source.endswith('.txt')  # save inference images
-        self.save_dir = Path(increment_path(Path(opt.project) / opt.name))  # increment run
-        if not opt.nosave:  
+        self.save_dir = Path(increment_path(Path(output_folder) / output_file_name))  # increment run
+        self.save_result=save_result
+        if save_result:
             self.save_dir.mkdir(parents=True)  # make dir
 
         # Names and colors of the detected objects' classes
@@ -83,10 +91,24 @@ class Yolo_sort_tracker:
         self.colors = [[np.random.randint(0, 255) for _ in range(3)] for _ in self.names]
 
 
-    def process_video_file(self):
+    def process_video_file(self,opt):
         self.dataset = LoadImages(opt.source, img_size=self.imgsize, stride=self.stride)
         for path, img, img_original, vid_cap in self.dataset:
-            self.detect(img, self.imgsize, img_original, path, vid_cap)
+            self.detect(img, self.imgsize, img_original, 
+                path=path, 
+                vid_cap=vid_cap,
+                show_fps=opt.show_fps, 
+                view_img=opt.view_img, 
+                show_track_lines=opt.show_track_lines,
+                line_thickness=opt.thickness,
+                disable_tracking=opt.disable_tracking,
+                hide_bounding_box=opt.nobbox,
+                hide_labels=opt.nolabel,
+                enable_augment=opt.augment,
+                conf_thres=opt.conf_thres,
+                iou_thres=opt.iou_thres,
+                detection_object_classes=opt.classes,
+                enable_agnostic_nms=opt.agnostic_nms)
 
 
     def process_frame(self, image_frame):
@@ -96,7 +118,23 @@ class Yolo_sort_tracker:
         return self.detect(img, self.imgsize, img_original)
 
 
-    def detect(self, img, imgsize, im0, path=None, vid_cap=False):
+    def detect(self, 
+        img, imgsize, im0, 
+        path=None, 
+        vid_cap=False, 
+        show_fps=True, 
+        view_img=True, 
+        show_track_lines=True,
+        line_thickness=2,
+        disable_tracking=False,
+        hide_bounding_box=False,
+        hide_labels=False,
+        enable_augment=True,
+        conf_thres=0.25,
+        iou_thres=0.45,
+        detection_object_classes=[0,],
+        enable_agnostic_nms=True
+        ):
         startTime = time.time()
         img = torch.from_numpy(img).to(self.device)
         img = img.half() if self.use_half_precision else img.float()  # uint8 to FP16 or FP32
@@ -107,13 +145,13 @@ class Yolo_sort_tracker:
         # Warmup. Not sure why or even if this is necessary. ### to be tested. ### maybe a flag should be added to avoid multiple warmups
         if self.device.type != 'cpu' and (img.shape[0]!=1 or imgsize != img.shape[2] or imgsize != img.shape[3]):
             for i in range(3):
-                self.model(img, augment=opt.augment)[0]
+                self.model(img, augment=enable_augment)[0]
 
         # Inference
-        pred = self.model(img, augment=opt.augment)[0]
+        pred = self.model(img, augment=enable_augment)[0]
 
         # Apply NMS
-        pred = non_max_suppression(pred, opt.conf_thres, opt.iou_thres, classes=opt.classes, agnostic=opt.agnostic_nms)
+        pred = non_max_suppression(pred, conf_thres, iou_thres, classes=detection_object_classes, agnostic=enable_agnostic_nms)
 
         #TESTING ###to be removed
         if len(pred)!=1:
@@ -133,7 +171,7 @@ class Yolo_sort_tracker:
                 for x1,y1,x2,y2,conf,detclass in det.cpu().detach().numpy():
                     dets_to_sort = np.vstack((dets_to_sort, np.array([x1, y1, x2, y2, conf, detclass])))
 
-                if opt.track:
+                if not disable_tracking:
                     tracked_dets = sort_tracker.update(dets_to_sort, unique_color=True)
                     tracks =sort_tracker.getTrackers()
                     if len(tracked_dets)>0:
@@ -141,8 +179,8 @@ class Yolo_sort_tracker:
                         identities = tracked_dets[:, 8]
                         categories = tracked_dets[:, 4]
                         confidences = None
-                        if opt.show_track_lines:
-                            draw_track_lines(im0, tracks, sort_tracker, opt.thickness)
+                        if show_track_lines:
+                            draw_track_lines(im0, tracks, sort_tracker, line_thickness)
                     else:
                         ### not sure if this is possible
                         bbox_xyxy = dets_to_sort[:,:4]
@@ -157,7 +195,7 @@ class Yolo_sort_tracker:
                     categories = dets_to_sort[:, 5]
                     confidences = dets_to_sort[:, 4]
                 # draw bounding boxes for visualization
-                im0 = draw_boxes(im0, bbox_xyxy, identities, categories, confidences, self.names, self.colors)
+                im0 = draw_boxes(im0, bbox_xyxy, identities, categories, confidences, self.names, self.colors, line_thickness,hide_bounding_box,hide_labels)
 
                 # prepare print results
                 for c in det[:, -1].unique():
@@ -169,18 +207,18 @@ class Yolo_sort_tracker:
             print(f'[INFO] {output_string}')
 
             # Show result on live cv2 window view: FPS
-            if opt.show_fps :
+            if show_fps :
                 currentTime = time.time()
                 fps = 1/(currentTime - startTime)
                 cv2.putText(im0, "FPS: " + str(round(fps, 4)), (20, 70), cv2.FONT_HERSHEY_PLAIN, 2, (0,255,0),2)
             # Show result on live cv2 window view: image
-            if opt.view_img:
+            if view_img:
                 cv2.imshow("yolov7 preview", im0)
                 cv2.waitKey(1)  # 1 millisecond
 
 
             # Save results (image with detections) to local file.
-            if self.save_img and path!=None:
+            if self.save_result and path!=None:
                 path = Path(path)  # to Path
                 save_path = str(self.save_dir / path.name)  # img.jpg
                 # if self.dataset.mode == 'image':
@@ -209,8 +247,8 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     # Files and devices:
     parser.add_argument('--weights-file', nargs='+', type=str, default='yolov7.pt', help='model.pt path(s)')
-    parser.add_argument('--no-trace', action='store_true', help='don`t trace model (if traced_model.pt already exist this can save time)')
-    parser.add_argument('--source', type=str, default='inference/images', help='video source to process')  # mp4 file/folder, 0 for webcam
+    parser.add_argument('--no-trace', action='store_true', help='don`t trace model (if traced_model.pt already exist this can save time)') # Model tracing determines all the operations that are executed when a model parses input data through its linear layers. Just like downloading a model, it only needs to run once. Once the traced_model.pt is generated, this operation is no longer needed
+    parser.add_argument('--source', type=str, default='inference/images', help='video source to process')  # mp4 file/folder, 'webcam' for webcam
     parser.add_argument('--device', default='', help='cuda device, i.e. 0 or 0,1,2,3 or cpu')
     # Hyperparameters:
     parser.add_argument('--img-size', type=int, default=640, help='inference size (pixels)')
@@ -227,7 +265,7 @@ if __name__ == '__main__':
     parser.add_argument('--agnostic-nms', action='store_true', help='class-agnostic NMS')
     parser.add_argument('--augment', action='store_true', help='augmented inference')
     # SORT tracking options
-    parser.add_argument('--track', action='store_true', help='run tracking')
+    parser.add_argument('--disable-tracking', action='store_false', help='disable tracking')
     # Appearance option (what to display on screen or output video)
     parser.add_argument('--show-track-lines', action='store_true', help='show tracked path')
     parser.add_argument('--show-fps', action='store_true', help='show fps')
@@ -236,23 +274,31 @@ if __name__ == '__main__':
     parser.add_argument('--nolabel', action='store_true', help='don`t show label')
 
     opt = parser.parse_args()
-    print(opt)
-    
+
     # define the SORT tracker
     sort_tracker = sort.Sort(max_age=5,
                        min_hits=2,
                        iou_threshold=0.2) 
 
     with torch.no_grad(): #deactivate the autograd engine to save memory and speed up computations. On cpu, the speed is 15% faster with this
-        yolo_sort_tracker=Yolo_sort_tracker() 
+        yolo_sort_tracker=Yolo_sort_tracker(
+            device=opt.device,
+            weights_file=opt.weights_file,
+            img_size=opt.img_size,
+            traced_model_already_exists=opt.no_trace,
+            source=opt.source,
+            save_result=not opt.nosave,
+            output_folder=opt.project,
+            output_file_name=opt.name
+            ) 
 
-        if webcam:=opt.source.isnumeric():
+        if opt.source=='webcam':
             mywebcam = cv2.VideoCapture(0)
             while 1:
                 _, image_frame  = mywebcam.read()
                 bounding_boxes=yolo_sort_tracker.process_frame(image_frame)
                 print(bounding_boxes)
         else:
-            yolo_sort_tracker.process_video_file() 
+            yolo_sort_tracker.process_video_file(opt) 
 
 ### fix up file specific stuffs
