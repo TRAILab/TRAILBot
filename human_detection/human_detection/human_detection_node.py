@@ -15,40 +15,7 @@ import tensorflow as tf
 import tensorflow_hub as hub
 import time
 import urllib.request
-
-
-#my own imports
-from ascii_numbers import ascii_numbers 
-
-
-#config constants
-MODEL_URL = "https://tfhub.dev/google/movenet/multipose/lightning/1?tf-hub-format=compressed"
-SAVED_MODEL_PATH = "/home/trailbot/trail_ws/multipose_model"
-people_detection_threshold = 0.4
-point_detection_threshold = 0.4
-distance_where_lidar_stops_working = 0.4
-image_width=1280
-image_height=1024
-camera_transformation_k = """
-    628.5359544 0 676.9575694
-    0 627.7249542 532.7206716
-    0 0 1
-"""
-rotation_matrix = """
-    -0.007495781893 -0.0006277316155    0.9999717092
-    -0.9999516401   -0.006361853422 -0.007499625104
-    0.006366381192  -0.9999795662   -0.0005800141927
-"""
-translation_vector = np.array([-0.06024059837, -0.08180891509, -0.3117851288])
-# if this is -1, node will publish constantly (as camera FPS)
-publishing_frequency = 0.5 #Hz 
-
-
-#globals 
-parser_args = tuple()
-model = None 
-debug_mode = False
-
+import yaml
 
 def parse_arguments():
     """
@@ -73,7 +40,7 @@ def parse_arguments():
     return parser.parse_args()
 
 
-def download_model():
+def download_model(SAVED_MODEL_PATH,MODEL_URL):
     # Create the directory if it doesn't exist
     os.makedirs(os.path.dirname(SAVED_MODEL_PATH), exist_ok=True)
 
@@ -88,7 +55,7 @@ def download_model():
     return model
 
 
-def load_saved_model():
+def load_saved_model(SAVED_MODEL_PATH):
     """
     load the saved model from SAVED_MODEL_PATH
     """
@@ -98,7 +65,7 @@ def load_saved_model():
     return model
 
 
-def print_verbose_only(*args, **kwargs):
+def print_verbose_only(parser_args,*args, **kwargs):
     """
     print only if verbose==True
     """
@@ -106,7 +73,7 @@ def print_verbose_only(*args, **kwargs):
         print(*args, **kwargs)
 
 
-def movenet(input_image, model):
+def movenet(input_image, model,configs):
     """
     movenet model:
     Gets input image and outputs array of keypoints with certainty score
@@ -128,7 +95,7 @@ def movenet(input_image, model):
     # coordinates) and the confidence score of the instance
     keypoints = outputs['output_0'].numpy()
 
-    count_of_people = np.sum(keypoints[0, :, -1] > people_detection_threshold )
+    count_of_people = np.sum(keypoints[0, :, -1] > configs['people_detection_threshold'] )
     # print_verbose_only("count_of_people", count_of_people)
 
     # there are 6 people
@@ -136,28 +103,29 @@ def movenet(input_image, model):
     return keypoints[:, :, :51].reshape((6, 17, 3))[0]
 
 
-def is_there_person(points):
+def is_there_person(points, configs):
     """
     return True/False of whether there is a person
     """
-    visible_joints = np.sum(points[:, -1] > point_detection_threshold)
+    visible_joints = np.sum(points[:, -1] > configs['point_detection_threshold'])
     return visible_joints >= 3
 
 
-def is_person_facing_camera(points):
+def is_person_facing_camera(points, configs):
     """
     return True/False depending on if the person is facing camera or not
     """
     LEFT_EYE = 1
     NOSE = 0
     RIGHT_EYE = 2
-    visible_joints_face = np.sum(points[:5, -1] > point_detection_threshold)
+    visible_joints_face = np.sum(points[:5, -1] > configs['point_detection_threshold'])
     facing_forward = points[LEFT_EYE][1] > points[NOSE][1] > points[RIGHT_EYE][1]
     return visible_joints_face >= 3 and facing_forward
 
 
 def get_heading_angle(
         points,
+        configs,
         fov=90,
         image_width=1,
         offset=0,
@@ -166,7 +134,7 @@ def get_heading_angle(
     get the heading angle from the camera's perspective to the person,
      in degree, relative to the center of the field of view
     """
-    visible_points = points[points[:, -1] > point_detection_threshold]
+    visible_points = points[points[:, -1] > configs['point_detection_threshold']]
     x_mean = np.mean(visible_points[:, 1])
     x_angle_radian = math.atan(
         (x_mean - (image_width / 2)) / (image_width / 2) * math.tan(math.radians(fov / 2)))
@@ -175,14 +143,17 @@ def get_heading_angle(
 
 def get_x_y_coord(
         points,
+        configs
     ):
-    visible_points = points[points[:, -1] > point_detection_threshold]
+    image_width = configs['image_width']
+    image_height = configs['image_height']
+    visible_points = points[points[:, -1] > configs['point_detection_threshold']]
     x_mean = np.mean(visible_points[:, 1])
     y_mean = np.mean(visible_points[:, 0])
     return x_mean * image_width, y_mean * image_height
 
 
-def process_frame(image, person_array):
+def process_frame(model, image, person_array,configs):
     """
     process a frame. Determine keypoints and number of people and
     heading angle.
@@ -193,13 +164,12 @@ def process_frame(image, person_array):
     input_image = tf.image.resize_with_pad(input_image, input_size, input_size)
 
     # Run model inference
-    keypoints = movenet(input_image, model)
+    keypoints = movenet(input_image, model,configs)
 
-    person_array[0].heading_angle = get_heading_angle(keypoints)
-    person_array[0].x, person_array[0].y = get_x_y_coord(keypoints)
-    person_array[0].on_screen =  is_there_person(keypoints) 
-
-    is_there_anyone = is_there_person(keypoints)
+    person_array[0].heading_angle = get_heading_angle(keypoints,configs)
+    person_array[0].x, person_array[0].y = get_x_y_coord(keypoints,configs)
+    person_array[0].on_screen =  is_there_person(keypoints, configs) 
+    is_there_anyone = is_there_person(keypoints, configs)
     return is_there_anyone
 
 
@@ -221,11 +191,22 @@ class LidarCameraSubscriber(Node):
         print(string)
 
 
-    def __init__(self):
+    def __init__(self,parser_args,model,configs):
         #make array of 6 person
         self.person_array = [Person() for _ in range(6)]
         self.is_there_anyone = False
         self.cur_state = ""
+        self.parser_args = parser_args
+        self.model = model
+        self.configs=configs
+
+        camera_transformation_k = configs['camera_transformation_k']
+        self.camera_transformation_k = read_space_separated_matrix(camera_transformation_k)
+        rotation_matrix = configs['rotation_matrix']
+        self.rotation_matrix = read_space_separated_matrix(rotation_matrix).T
+        self.translation_vector = np.array(configs['translation_vector'])
+        self.inverse_camera_transformation_k = np.linalg.inv(self.camera_transformation_k)
+        self.inverse_rotation_matrix = np.linalg.inv(self.rotation_matrix)
 
         super().__init__('image_subscriber')
         self.camera_subscription = self.create_subscription(
@@ -264,9 +245,40 @@ class LidarCameraSubscriber(Node):
             'target_location', 
             10)
         self.timestamp = 0
+
+        # if this is -1, node will publish constantly (as camera FPS)
+        self.publishing_frequency = configs['publishing_frequency']
+
         #run the publish_message function according to publishing_frequency
-        self.create_timer(1/publishing_frequency, self.publish_message)
+        self.create_timer(1/self.publishing_frequency, self.publish_message)
         self.print_and_log('Human Detection ready...')
+        
+        ascii_numbers = r"""
+        ____ _ _  _ ____                 
+        |___ | |  | |___                 
+        |    |  \/  |___                 
+
+        ____ ____ _  _ ____              
+        |___ |  | |  | |__/              
+        |    |__| |__| |  \              
+
+        ___ _  _ ____ ____ ____          
+         |  |__| |__/ |___ |___          
+         |  |  | |  \ |___ |___          
+
+        ___ _ _ _ ____                   
+         |  | | | |  |                   
+         |  |_|_| |__|                   
+
+        ____ _  _ ____                   
+        |  | |\ | |___                   
+        |__| | \| |___                   
+
+        ____ ___ ____ ____ ___ ____ ___  
+        [__   |  |__| |__/  |  |___ |  \  |
+        ___]  |  |  | |  \  |  |___ |__/  .
+        """.strip().split('\n\n')
+
         for num in ascii_numbers[-6:]:
             self.print_and_log(f"\n{num}\n")
             time.sleep(1)
@@ -277,17 +289,17 @@ class LidarCameraSubscriber(Node):
 
 
     def camera_callback(self, msg):
-        if self.cur_state!="SearchState":
+        if self.cur_state!="SearchState" and self.cur_state!="ApproachState":
             return 
 
         cv_image = self.bridge.imgmsg_to_cv2(
             msg, desired_encoding='passthrough')
-        self.is_there_anyone = process_frame(cv_image,self.person_array)
+        self.is_there_anyone = process_frame(self.model, cv_image,self.person_array, self.configs)
         self.timestamp = msg.header.stamp
 
 
     def lidar_callback(self, msg):
-        if self.cur_state!="SearchState":
+        if self.cur_state!="SearchState" and self.cur_state!="ApproachState":
             return 
 
         if not self.is_there_anyone:
@@ -300,22 +312,26 @@ class LidarCameraSubscriber(Node):
         # points = np.array(list(point_gen))
         points = [[x, y, z] for x, y, z in point_gen]
         points = np.array(points)
-        points2d = convert_to_camera_frame(points)
+        points2d = convert_to_camera_frame(
+            points,
+            self.camera_transformation_k,
+            self.rotation_matrix,
+            self.translation_vector)
 
         #update depth for every person
         for person in self.person_array:
             if not person.on_screen:
                 person.z = -1.0
             else:
-                person.z = estimate_depth(person.x, person.y, points2d)
+                person.z = estimate_depth(person.x, person.y, points2d,self.configs)
         self.timestamp = msg.header.stamp
         # if this is -1, node will publish constantly (as camera FPS)
-        if not publishing_frequency>0:
+        if not self.publishing_frequency>0:
             self.publish_message("lidar")
-        t
+
     def publish_message(self,source_str="timer"):
         """ publish message is somebody is detected"""
-        if self.cur_state!="SearchState":
+        if self.cur_state!="SearchState" and self.cur_state!="ApproachState":
             return 
         if not self.is_there_anyone:
             return
@@ -325,7 +341,7 @@ class LidarCameraSubscriber(Node):
         message += f" person: {'YES' if self.is_there_anyone else 'NO '}"
         message += f" angle: {person0.heading_angle:<20}"
         message += f"person_coordinate: {person0.x:<22} {person0.y:<22} {person0.z:22}"
-        print_verbose_only(message)
+        print_verbose_only(self.parser_args, message)
         self.print_and_log(message)
 
         # Publish the message
@@ -341,7 +357,11 @@ class LidarCameraSubscriber(Node):
         pose_stamped_msg.header.stamp = self.timestamp
         pose_stamped_msg.header.frame_id = "velodyne"
 
-        lidar_x,lidar_y,lidar_z = convert_to_lidar_frame((person0.x,person0.y,person0.z))
+        lidar_x,lidar_y,lidar_z = convert_to_lidar_frame(
+            (person0.x,person0.y,person0.z),
+            self.inverse_camera_transformation_k,
+            self.inverse_rotation_matrix,
+            self.translation_vector)
         
         #position
         pose_stamped_msg.pose.position.x = lidar_x  
@@ -370,17 +390,11 @@ def read_space_separated_matrix(string):
     return numpy_matrix
 
 
-def parse_global_matrix():
-    global rotation_matrix, translation_vector, camera_transformation_k
-    camera_transformation_k = read_space_separated_matrix(camera_transformation_k)
-    rotation_matrix = read_space_separated_matrix(rotation_matrix).T
-
-    global inverse_camera_transformation_k, inverse_rotation_matrix
-    inverse_camera_transformation_k = np.linalg.inv(camera_transformation_k)
-    inverse_rotation_matrix = np.linalg.inv(rotation_matrix)
-
-
-def convert_to_lidar_frame(uv_coordinate):
+def convert_to_lidar_frame(
+    uv_coordinate, 
+    inverse_camera_transformation_k,
+    inverse_rotation_matrix,
+    translation_vector):
     """
     convert 2d camera coordinate + depth into 3d lidar frame
     """
@@ -394,7 +408,11 @@ def convert_to_lidar_frame(uv_coordinate):
     return point_cloud
 
 
-def convert_to_camera_frame(point_cloud):
+def convert_to_camera_frame(
+    point_cloud,
+    camera_transformation_k,
+    rotation_matrix,
+    translation_vector):
     """
     convert 3d lidar data into 2d coordinate of the camera frame + depth
     """
@@ -419,7 +437,7 @@ def convert_to_camera_frame(point_cloud):
     return filtered_uv_coordinate
 
 
-def estimate_depth(x, y, np_2d_array):
+def estimate_depth(x, y, np_2d_array,configs):
     """
     estimate the depth by finding points closest to x,y from thhe 2d array
     """
@@ -434,6 +452,7 @@ def estimate_depth(x, y, np_2d_array):
     valid_indices = [idx for idx in closest_indices if distances_sq[idx]<=pixel_distance_threshold]
     if len(valid_indices) == 0:
         # lidar points disappears usually around 0.4m
+        distance_where_lidar_stops_working = configs['distance_where_lidar_stops_working']
         return distance_where_lidar_stops_working
 
     filtered_indices = np.array(valid_indices)
@@ -443,28 +462,29 @@ def estimate_depth(x, y, np_2d_array):
     return np.mean(closest_depths)
 
 
-def main(args=None):
-    global parser_args
-    global model 
+def main(args=None, debug_mode=False):
 
-    parse_global_matrix()
+    with open('configs.yaml', 'r') as file:
+        configs = yaml.safe_load(file)
+    MODEL_URL = configs['MODEL_URL']
+    SAVED_MODEL_PATH = configs['SAVED_MODEL_PATH']
+
     parser_args = parse_arguments()
     if debug_mode:
         parser_args.verbose = True
 
     if parser_args.download_model:
         print('downloading model...')
-        model = download_model()
+        model = download_model(SAVED_MODEL_PATH,MODEL_URL)
     else:
-        model = load_saved_model()
+        model = load_saved_model(SAVED_MODEL_PATH)
     # print("Human detection ready...")
     rclpy.init(args=args)
-    subscriber = LidarCameraSubscriber()
+    subscriber = LidarCameraSubscriber(parser_args,model,configs)
     rclpy.spin(subscriber)
     subscriber.destroy_node()
     rclpy.shutdown()
 
 if __name__ == '__main__':
-    debug_mode = True
     print("\n\nDEBUG MODE ON\n\n")
-    main()
+    main(debug_mode=True)
