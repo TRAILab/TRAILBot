@@ -17,6 +17,6 @@ while 1:
     with torch.no_grad():
         image_frame = mywebcam.read()[1]
         bounding_boxes, identities, confidences=yolo_sort_tracker.process_frame(image_frame,view_img=False)
-        print(bounding_boxes)
-        print(identities)
+        print("bounding_boxes:",bounding_boxes)
+        print("identities:",identities)
         print("\n")
