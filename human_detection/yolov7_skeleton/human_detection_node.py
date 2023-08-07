@@ -4,18 +4,18 @@ from geometry_msgs.msg import Point
 from geometry_msgs.msg import PoseStamped
 import math
 import numpy as np
-import os
 import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import Image, PointCloud2
 import sensor_msgs_py.point_cloud2 as pc2
 from std_msgs.msg import Bool, Float32, String
-import tarfile
-import tensorflow as tf
-import tensorflow_hub as hub
+# import tensorflow as tf
+# import tensorflow_hub as hub
 import time
-import urllib.request
 import yaml
+
+import yolov7
+import torch
 
 def parse_arguments():
     """
@@ -40,29 +40,11 @@ def parse_arguments():
     return parser.parse_args()
 
 
-def download_model(SAVED_MODEL_PATH,MODEL_URL):
-    # Create the directory if it doesn't exist
-    os.makedirs(os.path.dirname(SAVED_MODEL_PATH), exist_ok=True)
+# def download_model(SAVED_MODEL_PATH,MODEL_URL):
+#     # Create the directory if it doesn't exist
+#     os.makedirs(os.path.dirname(SAVED_MODEL_PATH), exist_ok=True)
 
-    # Download the compressed model from the URL
-    model_path, _ = urllib.request.urlretrieve(MODEL_URL)
-
-    # Extract the compressed model to the specified path
-    with tarfile.open(model_path, "r:gz") as tar:
-        tar.extractall(SAVED_MODEL_PATH)
-
-    model = hub.load(SAVED_MODEL_PATH).signatures['serving_default']
-    return model
-
-
-def load_saved_model(SAVED_MODEL_PATH):
-    """
-    load the saved model from SAVED_MODEL_PATH
-    """
-    if not os.path.exists(SAVED_MODEL_PATH):
-        raise FileNotFoundError(f"Model not found at {SAVED_MODEL_PATH}")
-    model = hub.load(SAVED_MODEL_PATH).signatures['serving_default']
-    return model
+#     ### to be finished
 
 
 def print_verbose_only(parser_args,*args, **kwargs):
@@ -73,34 +55,34 @@ def print_verbose_only(parser_args,*args, **kwargs):
         print(*args, **kwargs)
 
 
-def movenet(input_image, model,configs):
-    """
-    movenet model:
-    Gets input image and outputs array of keypoints with certainty score
-    downloaded from #https://tfhub.dev/google/movenet/multipose/lightning/1
-    """
-    # SavedModel format expects tensor type of int32.
-    input_image = tf.cast(input_image, dtype=tf.int32)
-    outputs = model(input_image)  # Output is a [1, 6, 56] tensor.
+# def movenet(input_image, model,configs):
+#     """
+#     movenet model:
+#     Gets input image and outputs array of keypoints with certainty score
+#     downloaded from #https://tfhub.dev/google/movenet/multipose/lightning/1
+#     """
+#     # SavedModel format expects tensor type of int32.
+#     input_image = tf.cast(input_image, dtype=tf.int32)
+#     outputs = model(input_image)  # Output is a [1, 6, 56] tensor.
 
-    # The first 17 * 3 elements are the keypoint locations and scores in the
-    # format: [y_0, x_0, s_0, y_1, x_1, s_1, …, y_16, x_16, s_16], where y_i,
-    # x_i, s_i are the yx-coordinates (normalized to image frame, e.g. range
-    # in [0.0, 1.0]) and confidence scores of the i-th joint correspondingly.
-    # The order of the 17 keypoint joints is: [nose, left eye, right eye, left
-    # ear, right ear, left shoulder, right shoulder, left elbow, right elbow,
-    # left wrist, right wrist, left hip, right hip, left knee, right knee,
-    # left ankle, right ankle]. The remaining 5 elements [ymin, xmin, ymax,
-    # xmax, score] represent the region of the bounding box (in normalized
-    # coordinates) and the confidence score of the instance
-    keypoints = outputs['output_0'].numpy()
+#     # The first 17 * 3 elements are the keypoint locations and scores in the
+#     # format: [y_0, x_0, s_0, y_1, x_1, s_1, …, y_16, x_16, s_16], where y_i,
+#     # x_i, s_i are the yx-coordinates (normalized to image frame, e.g. range
+#     # in [0.0, 1.0]) and confidence scores of the i-th joint correspondingly.
+#     # The order of the 17 keypoint joints is: [nose, left eye, right eye, left
+#     # ear, right ear, left shoulder, right shoulder, left elbow, right elbow,
+#     # left wrist, right wrist, left hip, right hip, left knee, right knee,
+#     # left ankle, right ankle]. The remaining 5 elements [ymin, xmin, ymax,
+#     # xmax, score] represent the region of the bounding box (in normalized
+#     # coordinates) and the confidence score of the instance
+#     keypoints = outputs['output_0'].numpy()
 
-    count_of_people = np.sum(keypoints[0, :, -1] > configs['people_detection_threshold'] )
-    # print_verbose_only("count_of_people", count_of_people)
+#     count_of_people = np.sum(keypoints[0, :, -1] > configs['people_detection_threshold'] )
+#     # print_verbose_only("count_of_people", count_of_people)
 
-    # there are 6 people
-    # there are 17 body points and therefore 3*17=51 numbers per person
-    return keypoints[:, :, :51].reshape((6, 17, 3))[0]
+#     # there are 6 people
+#     # there are 17 body points and therefore 3*17=51 numbers per person
+#     return keypoints[:, :, :51].reshape((6, 17, 3))[0]
 
 
 def is_there_person(points, configs):
@@ -123,24 +105,6 @@ def is_person_facing_camera(points, configs):
     return visible_joints_face >= 3 and facing_forward
 
 
-def get_heading_angle(
-        points,
-        configs,
-        fov=90,
-        image_width=1,
-        offset=0,
-        scaling=1):
-    """
-    get the heading angle from the camera's perspective to the person,
-     in degree, relative to the center of the field of view
-    """
-    visible_points = points[points[:, -1] > configs['point_detection_threshold']]
-    x_mean = np.mean(visible_points[:, 1])
-    x_angle_radian = math.atan(
-        (x_mean - (image_width / 2)) / (image_width / 2) * math.tan(math.radians(fov / 2)))
-    return offset + scaling * math.degrees(x_angle_radian)
-
-
 def get_x_y_coord(
         points,
         configs
@@ -153,24 +117,42 @@ def get_x_y_coord(
     return x_mean * image_width, y_mean * image_height
 
 
-def process_frame(model, image, person_array,configs):
+def xyxy_to_centroid(xyxy):
+    x1, y1, x2, y2 = xyxy
+    centroid_x = (x1 + x2) / 2
+    centroid_y = (y1 + y2) / 2
+    return (centroid_x, centroid_y)
+def get_heading_angle(
+        centroid,
+        fov=90,
+        image_width=1,
+        offset=0,
+        scaling=1):
+    """
+    get the heading angle from the camera's perspective to the person,
+     in degree, relative to the center of the field of view
+    """
+    centroid_x, centroid_y = centroid
+    x_angle_radian = math.atan(
+        (centroid_x - (image_width / 2)) / (image_width / 2) * math.tan(math.radians(fov / 2)))
+    return offset + scaling * math.degrees(x_angle_radian)
+def process_frame(model,image,configs):
     """
     process a frame. Determine keypoints and number of people and
     heading angle.
     """
-
-    input_size = 256
-    input_image = tf.expand_dims(image, axis=0)
-    input_image = tf.image.resize_with_pad(input_image, input_size, input_size)
-
     # Run model inference
-    keypoints = movenet(input_image, model,configs)
-
-    person_array[0].heading_angle = get_heading_angle(keypoints,configs)
-    person_array[0].x, person_array[0].y = get_x_y_coord(keypoints,configs)
-    person_array[0].on_screen =  is_there_person(keypoints, configs) 
-    is_there_anyone = is_there_person(keypoints, configs)
-    return is_there_anyone
+    person_array = []
+    bounding_boxes, identities, confidences=model.process_frame(image,view_img=False)
+    for i in range(len(bounding_boxes)):
+        person = Person()
+        centroid = xyxy_to_centroid(bounding_boxes[i])
+        person.heading_angle = get_heading_angle(centroid)
+        person.x, person.y = centroid 
+        person.on_screen=True
+        person.id = identities[i]
+        person_array.append(person)
+    return person_array
 
 
 class Person:
@@ -183,6 +165,7 @@ class Person:
         self.z = -1.0
         self.on_screen = False
         self.heading_angle = 0.0
+        self.id = 0
 
 
 class LidarCameraSubscriber(Node):
@@ -193,7 +176,7 @@ class LidarCameraSubscriber(Node):
 
     def __init__(self,parser_args,model,configs):
         #make array of 6 person
-        self.person_array = [Person() for _ in range(6)]
+        self.person_array = []
         self.is_there_anyone = False
         self.cur_state = "SearchState" # initial state
         self.parser_args = parser_args
@@ -294,7 +277,8 @@ class LidarCameraSubscriber(Node):
 
         cv_image = self.bridge.imgmsg_to_cv2(
             msg, desired_encoding='passthrough')
-        self.is_there_anyone = process_frame(self.model, cv_image,self.person_array, self.configs)
+        self.person_array = process_frame(self.model, cv_image, self.configs)
+        self.is_there_anyone = len(self.person_array)>0
         self.timestamp = msg.header.stamp
 
 
@@ -481,14 +465,15 @@ def main(args=None, debug_mode=False):
     if debug_mode:
         parser_args.verbose = True
 
-    if parser_args.download_model:
-        print('downloading model...')
-        model = download_model(SAVED_MODEL_PATH,MODEL_URL)
-    else:
-        model = load_saved_model(SAVED_MODEL_PATH)
-    # print("Human detection ready...")
+    # if parser_args.download_model:
+    #     print('downloading model...')
+    #     download_model(SAVED_MODEL_PATH,MODEL_URL)
+
+    with torch.no_grad():
+        yolo_sort_tracker=yolov7.Yolo_sort_tracker(save_result=False) 
+
     rclpy.init(args=args)
-    subscriber = LidarCameraSubscriber(parser_args,model,configs)
+    subscriber = LidarCameraSubscriber(parser_args,yolo_sort_tracker,configs)
     rclpy.spin(subscriber)
     subscriber.destroy_node()
     rclpy.shutdown()
