@@ -1,6 +1,6 @@
-`main.py ` is taken from https://github.com/haroonshakeel/yolov7-object-tracking/blob/main/detect_or_track.py and modified
+`yolov7.py ` is the yolov7 class for human tracking. It is taken from https://github.com/haroonshakeel/yolov7-object-tracking/blob/main/detect_or_track.py and modified
 
-`models/` `utils/` `sort.py` is downloaded from https://github.com/WongKinYiu/yolov7 (with no modification)
+`models/`, `utils/`, `sort.py` are yolov7 helper files, downloaded from https://github.com/WongKinYiu/yolov7 (with no modification)
 
 Usage:
 1. download the model and test video here: https://utoronto-my.sharepoint.com/:f:/r/personal/nathan_hung_mail_utoronto_ca/Documents/yolov7?csf=1&web=1&e=pSSspq
