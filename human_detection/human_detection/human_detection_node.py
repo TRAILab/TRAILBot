@@ -195,7 +195,7 @@ class LidarCameraSubscriber(Node):
         #make array of 6 person
         self.person_array = [Person() for _ in range(6)]
         self.is_there_anyone = False
-        self.cur_state = ""
+        self.cur_state = "SearchState" # initial state
         self.parser_args = parser_args
         self.model = model
         self.configs=configs
@@ -316,7 +316,8 @@ class LidarCameraSubscriber(Node):
             points,
             self.camera_transformation_k,
             self.rotation_matrix,
-            self.translation_vector)
+            self.translation_vector,
+            self.configs)
 
         #update depth for every person
         for person in self.person_array:
@@ -361,7 +362,8 @@ class LidarCameraSubscriber(Node):
             (person0.x,person0.y,person0.z),
             self.inverse_camera_transformation_k,
             self.inverse_rotation_matrix,
-            self.translation_vector)
+            self.translation_vector,
+            self.configs)
         
         #position
         pose_stamped_msg.pose.position.x = lidar_x  
@@ -394,10 +396,13 @@ def convert_to_lidar_frame(
     uv_coordinate, 
     inverse_camera_transformation_k,
     inverse_rotation_matrix,
-    translation_vector):
+    translation_vector,
+    configs):
     """
     convert 2d camera coordinate + depth into 3d lidar frame
     """
+    image_height = configs['image_height']
+
     point_cloud = np.empty( (3,) , dtype=float)
     point_cloud[2] = uv_coordinate[2]
     point_cloud[1] = ( image_height - uv_coordinate[1] )*point_cloud[2]
@@ -412,10 +417,13 @@ def convert_to_camera_frame(
     point_cloud,
     camera_transformation_k,
     rotation_matrix,
-    translation_vector):
+    translation_vector,
+    configs):
     """
     convert 3d lidar data into 2d coordinate of the camera frame + depth
     """
+    image_height = configs['image_height']
+
     length = point_cloud.shape[0]
     translation = np.tile(translation_vector, (length, 1)).T
     
