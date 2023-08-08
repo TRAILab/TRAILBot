@@ -72,6 +72,15 @@ def generate_launch_description():
                                                         }
                                                         .items())
     
+    map_transform_publisher = Node(
+        package='tf_transform',
+        executable='tf_transform_node',
+        name='tf_transform_node',
+        output='screen',
+        parameters=[{'use_sim_time': use_sim_time}],
+        remappings=[('/points2', '/velodyne_points'),
+                    ('/imu', 'imu/data')],
+    )
                    
     ros2_bag_play_cmd = ExecuteProcess(
         cmd = ['ros2', 'bag', 'play', LaunchConfiguration('bag_filename'), '--clock', '--rate', '2.0'],
@@ -86,5 +95,6 @@ def generate_launch_description():
         occupancy_grid,
         nav_node,
 	    rviz_node,
-        ros2_bag_play_cmd
+        ros2_bag_play_cmd,
+        map_transform_publisher
     ])
