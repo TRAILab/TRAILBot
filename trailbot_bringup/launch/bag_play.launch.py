@@ -68,8 +68,8 @@ def generate_launch_description():
 
     return LaunchDescription([
         bag_filename_arg,
-        cartographer_node,
-        occupancy_grid,
+        # cartographer_node,
+        # occupancy_grid,
 	    rviz_node,
         ros2_bag_play_cmd
     ])

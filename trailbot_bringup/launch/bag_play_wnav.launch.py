@@ -51,7 +51,8 @@ def generate_launch_description():
         arguments=['-configuration_directory', cartographer_config_dir,
                    '-configuration_basename', configuration_basename],
         remappings=[('/points2', '/velodyne_points'),
-                    ('/imu', 'imu/data')],
+                    ('/imu', 'imu/data'),
+                    ('/odom', 'odometry/filtered')],
     )
 
     occupancy_grid = IncludeLaunchDescription(
@@ -73,8 +74,10 @@ def generate_launch_description():
                                                         .items())
     
                    
+                           
     ros2_bag_play_cmd = ExecuteProcess(
-        cmd = ['ros2', 'bag', 'play', LaunchConfiguration('bag_filename'), '--clock'],
+        # cmd = ['ros2', 'bag', 'play', LaunchConfiguration('bag_filename'), '--clock', '--rate', '2.0', '--start-offset', '120.00'],
+        cmd = ['ros2', 'bag', 'play', LaunchConfiguration('bag_filename'), '--clock', '--rate', '2.0',],
         name = 'rosbag_play',)
     
   
