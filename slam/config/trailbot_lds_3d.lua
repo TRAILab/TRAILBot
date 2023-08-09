@@ -28,26 +28,28 @@ options = {
   landmarks_sampling_ratio = 1.,
 }
 
-TRAJECTORY_BUILDER_3D.num_accumulated_range_data = 1
-TRAJECTORY_BUILDER_3D.ceres_scan_matcher.translation_weight = 30
-TRAJECTORY_BUILDER_3D.ceres_scan_matcher.rotation_weight = 30
+--ALL mentioned original values are from the files at /opt/ros/humble/share/cartographer/configuration_files
+--SOME non-documented changes were made before as this was adapted from the backpack_3d.lua file
+
+TRAJECTORY_BUILDER_3D.num_accumulated_range_data = 1 --originally 1
+TRAJECTORY_BUILDER_3D.ceres_scan_matcher.translation_weight = 30 --originally 5
+TRAJECTORY_BUILDER_3D.ceres_scan_matcher.rotation_weight = 30 --originally 400
 
 --These resolutions made the map a lot more clear 
-TRAJECTORY_BUILDER_3D.submaps.high_resolution = 0.05 --normally 0.1 
-TRAJECTORY_BUILDER_3D.submaps.low_resolution = 0.2 --normally 0.45
+TRAJECTORY_BUILDER_3D.submaps.high_resolution = 0.05 --originally 0.1 
+TRAJECTORY_BUILDER_3D.submaps.low_resolution = 0.2 --originally 0.45
 
+MAP_BUILDER.use_trajectory_builder_3d = true --originally false
+MAP_BUILDER.num_background_threads = 4 --originally 4
 
-MAP_BUILDER.use_trajectory_builder_3d = true
-MAP_BUILDER.num_background_threads = 4
+POSE_GRAPH.optimization_problem.huber_scale = 5e2 --originally 100 
+POSE_GRAPH.optimize_every_n_nodes = 90 --originally 90
+-- POSE_GRAPH.optimize_every_n_nodes = 0 --only replace as zero when wanting to turn off global slam (good for testing different settings)
+POSE_GRAPH.constraint_builder.sampling_ratio = 0.03 --originally 0.3
 
-POSE_GRAPH.optimization_problem.huber_scale = 5e2
-POSE_GRAPH.optimize_every_n_nodes = 90
--- POSE_GRAPH.optimize_every_n_nodes = 0
-POSE_GRAPH.constraint_builder.sampling_ratio = 0.03
+POSE_GRAPH.optimization_problem.ceres_solver_options.max_num_iterations = 10 --oroiginally 200
 
-POSE_GRAPH.optimization_problem.ceres_solver_options.max_num_iterations = 10
-
-POSE_GRAPH.constraint_builder.min_score = 0.62
-POSE_GRAPH.constraint_builder.global_localization_min_score = 0.66
+POSE_GRAPH.constraint_builder.min_score = 0.62 --originally 0.55
+POSE_GRAPH.constraint_builder.global_localization_min_score = 0.66 --originally 0.6
 
 return options
