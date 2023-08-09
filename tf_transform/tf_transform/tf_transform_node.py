@@ -24,7 +24,9 @@ class TFTransformNode(Node):
             
             # Set the desired translation by keeping the x and y components from "map"
             # and using the z component from "base_link"
-            desired_translation = gm.Vector3(x=translation_map.x, y=translation_map.y, z=translation_base.z)
+            #This results in the frame staying at the z of map and the x and y of base link for some reason
+            #The added +0.30 is to allow the pointcloud converter some adjustment room for angles 
+            desired_translation = gm.Vector3(x=translation_map.x, y=translation_map.y, z=(translation_base.z + 0.30))
             
             new_trans = gm.TransformStamped()
             new_trans.header.stamp = self.get_clock().now().to_msg()
