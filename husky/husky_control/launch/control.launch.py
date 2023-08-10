@@ -8,20 +8,23 @@ def generate_launch_description():
     lc = LaunchContext()
     ld = LaunchDescription()
 
-    config_husky_ekf = PathJoinSubstitution(
-        [FindPackageShare('husky_control'),
-        'config',
-        'localization.yaml'],
-    )
+    #Husky ekf files are commented out because the ekf publishes a second odom frame that leads to cartographer issues
+    #further clarification of correct frames could allow the ekf to be used, but localization was stable without it
 
-    node_ekf = Node(
-        package='robot_localization',
-        executable='ekf_node',
-        name='ekf_node',
-        output='screen',
-        parameters=[config_husky_ekf],
-        )
-    ld.add_action(node_ekf)
+    # config_husky_ekf = PathJoinSubstitution(
+    #     [FindPackageShare('husky_control'),
+    #     'config',
+    #     'localization.yaml'],
+    # )
+
+    # node_ekf = Node(
+    #     package='robot_localization',
+    #     executable='ekf_node',
+    #     name='ekf_node',
+    #     output='screen',
+    #     parameters=[config_husky_ekf],
+    #     )
+    # ld.add_action(node_ekf)
 
     primary_imu_enable = EnvironmentVariable('CPR_IMU', default_value='false')
 
