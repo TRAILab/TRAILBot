@@ -8,11 +8,14 @@ def generate_launch_description():
     lc = LaunchContext()
     ld = LaunchDescription()
 
-    config_husky_ekf = PathJoinSubstitution(
-        [FindPackageShare('husky_control'),
-        'config',
-        'localization.yaml'],
-    )
+    #Husky ekf files are commented out because the ekf publishes a second odom frame that leads to cartographer issues
+    #further clarification of correct frames could allow the ekf to be used, but localization was stable without it
+
+    # config_husky_ekf = PathJoinSubstitution(
+    #     [FindPackageShare('husky_control'),
+    #     'config',
+    #     'localization.yaml'],
+    # )
 
     # node_ekf = Node(
     #     package='robot_localization',
