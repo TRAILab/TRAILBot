@@ -51,8 +51,8 @@ def generate_launch_description():
                 # 'max_height': 0.1,
                 'min_height': -100.0, #4 inches above ground 
                 'max_height': 100.0,
-                'angle_min': -3.14/2,  #was -M_PI/2 
-                'angle_max': 3.14/2,  #was  M_PI/2 
+                'angle_min': -3.14,  #was -M_PI/2 
+                'angle_max': 3.14,  #was  M_PI/2 
                 'angle_increment': 0.0087,  # M_PI/360.0
                 'scan_time': 0.1, #10 hz (was at .3333)
                 'range_min': 0.45,
