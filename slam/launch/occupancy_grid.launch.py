@@ -39,7 +39,7 @@ def generate_launch_description():
             remappings=[('points2', '/velodyne_points'),],
             parameters=[{
                 # 'target_frame': 'velodyne',
-                'target_frame': 'map_adjusted',
+                'target_frame': 'robot_adjusted',
                 'transform_tolerance': 0.01,
 
                 #velodyne frame height max/min
