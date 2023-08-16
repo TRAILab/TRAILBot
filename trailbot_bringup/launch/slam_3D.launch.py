@@ -87,6 +87,15 @@ def generate_launch_description():
         }]
     )
 
+    #node to create tf frame following robots position at map elevation
+    robot_transform_publisher = Node(
+        package='tf_transform',
+        executable='tf_transform_node',
+        name='tf_transform_node',
+        output='screen',
+        parameters=[{'use_sim_time': 'false'}],
+    )   
+
 
     ld = LaunchDescription()
     ld.add_action(driving_launch)
@@ -96,5 +105,6 @@ def generate_launch_description():
     ld.add_action(occupancy_grid)
     ld.add_action(rviz_node)
     ld.add_action(IMU_node) 
-    ld.add_action(gps_driver_node)
+    #ld.add_action(gps_driver_node)
+    ld.add_action(robot_transform_publisher)
     return ld

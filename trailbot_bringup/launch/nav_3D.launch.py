@@ -14,16 +14,7 @@ def generate_launch_description():
     # Launching SLAM (also includes driving and all other needed nodes)
     slam_launch_path = os.path.join(get_package_share_directory('trailbot_bringup'),'launch','slam_3D.launch.py')
     slam_launch = IncludeLaunchDescription(PythonLaunchDescriptionSource([slam_launch_path]))
-
-    #node to create tf frame following robots position at map elevation
-    robot_transform_publisher = Node(
-        package='tf_transform',
-        executable='tf_transform_node',
-        name='tf_transform_node',
-        output='screen',
-        parameters=[{'use_sim_time': 'true'}],
-    )             
-
+     
     #the nav configs 
     package_name = 'nav'
 
@@ -43,7 +34,6 @@ def generate_launch_description():
 
     ld = LaunchDescription()
     ld.add_action(slam_launch)
-    ld.add_action(robot_transform_publisher)
     ld.add_action(nav_node)
 
     return ld

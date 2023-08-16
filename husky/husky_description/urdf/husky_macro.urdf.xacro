@@ -116,7 +116,7 @@
     <!-- GPS Link from base-->
     <!-- Was 43cm back (x) from lidar, 20cm right (y) from lidar, and 17cm (z) higher-->
     <!-- Can be modified with environment variables in /etc/ros/setup.bash -->
-    <link name="${prefix}gps_link">
+    <link name="${prefix}gps">
       <inertial>
         <mass value="5.0" />
         <origin xyz="-0.00065 -0.035 0.042" />
@@ -127,7 +127,7 @@
     <joint name="${prefix}gps_joint" type="fixed">
       <origin xyz="-0.194 -0.20 1.20" rpy="0 0 0" />
       <parent link="${prefix}base_link" />
-      <child link="${prefix}gps_link" />
+      <child link="${prefix}gps" />
     </joint>
 
 
