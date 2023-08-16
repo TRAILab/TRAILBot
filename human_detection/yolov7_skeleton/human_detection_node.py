@@ -1,3 +1,5 @@
+
+from vision_msgs.msg import Detection2D, Detection2DArray, Detection3DArray, Detection3D # sudo apt-get install ros-humble-vision-msgs
 import argparse
 from cv_bridge import CvBridge
 from geometry_msgs.msg import Point
@@ -83,38 +85,6 @@ def print_verbose_only(parser_args,*args, **kwargs):
 #     # there are 6 people
 #     # there are 17 body points and therefore 3*17=51 numbers per person
 #     return keypoints[:, :, :51].reshape((6, 17, 3))[0]
-
-
-def is_there_person(points, configs):
-    """
-    return True/False of whether there is a person
-    """
-    visible_joints = np.sum(points[:, -1] > configs['point_detection_threshold'])
-    return visible_joints >= 3
-
-
-def is_person_facing_camera(points, configs):
-    """
-    return True/False depending on if the person is facing camera or not
-    """
-    LEFT_EYE = 1
-    NOSE = 0
-    RIGHT_EYE = 2
-    visible_joints_face = np.sum(points[:5, -1] > configs['point_detection_threshold'])
-    facing_forward = points[LEFT_EYE][1] > points[NOSE][1] > points[RIGHT_EYE][1]
-    return visible_joints_face >= 3 and facing_forward
-
-
-def get_x_y_coord(
-        points,
-        configs
-    ):
-    image_width = configs['image_width']
-    image_height = configs['image_height']
-    visible_points = points[points[:, -1] > configs['point_detection_threshold']]
-    x_mean = np.mean(visible_points[:, 1])
-    y_mean = np.mean(visible_points[:, 0])
-    return x_mean * image_width, y_mean * image_height
 
 
 def xyxy_to_centroid(xyxy):
