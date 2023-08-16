@@ -73,14 +73,14 @@ def generate_launch_description():
                                                         }
                                                         .items())  
 
-    #uncomment when tf_transform is in main
-    # map_transform_publisher = Node(
-    #     package='tf_transform',
-    #     executable='tf_transform_node',
-    #     name='tf_transform_node',
-    #     output='screen',
-    #     parameters=[{'use_sim_time': use_sim_time}],
-    # )             
+    #node to create tf frame following robots position at map elevation
+    robot_transform_publisher = Node(
+        package='tf_transform',
+        executable='tf_transform_node',
+        name='tf_transform_node',
+        output='screen',
+        parameters=[{'use_sim_time': use_sim_time}],
+    )             
                            
     ros2_bag_play_cmd = ExecuteProcess(
         cmd = ['ros2', 'bag', 'play', LaunchConfiguration('bag_filename'), '--clock', '--rate', '2.0',],
@@ -92,7 +92,7 @@ def generate_launch_description():
         cartographer_node,
         occupancy_grid,
         nav_node,
-        # map_transform_publisher,
+        robot_transform_publisher,
 	    rviz_node,
         ros2_bag_play_cmd
     ])
