@@ -9,6 +9,7 @@ from launch.actions import IncludeLaunchDescription
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch_ros.actions import Node
 from launch.substitutions import LaunchConfiguration
+from launch_ros import actions
 
 def generate_launch_description():
     # Husky Driving needs launch
@@ -65,20 +66,26 @@ def generate_launch_description():
                     ('/imu', 'imu/data')],
     )
 
-    map_transform_publisher = Node(
-        package='tf_transform',
-        executable='tf_transform_node',
-        name='tf_transform_node',
-        output='screen',
-        parameters=[{'use_sim_time': use_sim_time}],
-    )
-
     occupancy_grid = IncludeLaunchDescription(
         PythonLaunchDescriptionSource([os.path.join(get_package_share_directory(package_name), 'launch', 'occupancy_grid.launch.py')]),
         launch_arguments={'resolution':resolution,
                           'publish_period_sec': publish_period_sec}.items(),)
 
-    
+      # GPS NODE
+    #"""Generate a launch description for a single serial driver."""
+    #config_file = os.path.join(get_package_share_directory("nmea_navsat_driver"), "config", "nmea_serial_driver.yaml")
+    gps_driver_node = actions.Node(
+        package='nmea_navsat_driver',
+        executable='nmea_serial_driver',
+        output='screen',
+        parameters=[{
+            'port': '/dev/serial/by-id/usb-Emlid_ReachM2_82438ED0F4EC80DD-if02',
+            'baud': 115200,
+            'frame_id': "gps",
+            'time_ref_source': "gps",
+            'useRMC': False
+        }]
+    )
 
 
     ld = LaunchDescription()
@@ -89,5 +96,5 @@ def generate_launch_description():
     ld.add_action(occupancy_grid)
     ld.add_action(rviz_node)
     ld.add_action(IMU_node) 
-    ld.add_action(map_transform_publisher)
+    ld.add_action(gps_driver_node)
     return ld
