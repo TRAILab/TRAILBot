@@ -8,21 +8,6 @@ def generate_launch_description():
     lc = LaunchContext()
     ld = LaunchDescription()
 
-    config_husky_ekf = PathJoinSubstitution(
-        [FindPackageShare('husky_control'),
-        'config',
-        'localization.yaml'],
-    )
-
-    node_ekf = Node(
-        package='robot_localization',
-        executable='ekf_node',
-        name='ekf_node',
-        output='screen',
-        parameters=[config_husky_ekf],
-        )
-    ld.add_action(node_ekf)
-
     primary_imu_enable = EnvironmentVariable('CPR_IMU', default_value='false')
 
     if (primary_imu_enable.perform(lc)) == 'true':
