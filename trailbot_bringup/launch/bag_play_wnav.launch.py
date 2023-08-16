@@ -78,12 +78,12 @@ def generate_launch_description():
         name='tf_transform_node',
         output='screen',
         parameters=[{'use_sim_time': use_sim_time}],
-        remappings=[('/points2', '/velodyne_points'),
-                    ('/imu', 'imu/data')],
+        #remappings=[('/points2', '/velodyne_points'),
+        #            ('/imu', 'imu/data')],
     )
                    
     ros2_bag_play_cmd = ExecuteProcess(
-        cmd = ['ros2', 'bag', 'play', LaunchConfiguration('bag_filename'), '--clock', '--rate', '2.0'],
+        cmd = ['ros2', 'bag', 'play', LaunchConfiguration('bag_filename'), '--clock', '--rate', '0.75'],
         name = 'rosbag_play',)
     
   

@@ -65,6 +65,14 @@ def generate_launch_description():
                     ('/imu', 'imu/data')],
     )
 
+    map_transform_publisher = Node(
+        package='tf_transform',
+        executable='tf_transform_node',
+        name='tf_transform_node',
+        output='screen',
+        parameters=[{'use_sim_time': use_sim_time}],
+    )
+
     occupancy_grid = IncludeLaunchDescription(
         PythonLaunchDescriptionSource([os.path.join(get_package_share_directory(package_name), 'launch', 'occupancy_grid.launch.py')]),
         launch_arguments={'resolution':resolution,
@@ -81,5 +89,5 @@ def generate_launch_description():
     ld.add_action(occupancy_grid)
     ld.add_action(rviz_node)
     ld.add_action(IMU_node) 
-
+    ld.add_action(map_transform_publisher)
     return ld
