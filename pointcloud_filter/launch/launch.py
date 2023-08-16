@@ -6,12 +6,12 @@ from launch_ros.actions import Node
 def generate_launch_description():
     return LaunchDescription([
         Node(
-            package='pointcloud_filer',
-            executable='pointcloud_filer_node',
-            name='pointcloud_filer_node',
+            package='pointcloud_filter',
+            executable='pointcloud_filter_node',
+            name='pointcloud_filter_node',
             parameters= [
-            {'frame_id': 'lidar'},
-            {'topic_pointcloud_in': 'bf_lidar/point_cloud_out'},
-            {'topic_pointcloud_out': 'bf_lidar/point_cloud_pcl_example'}],
+            {'frame_id': 'velodyne'},
+            {'topic_pointcloud_in': '/velodyne_points'},
+            {'topic_pointcloud_out': '/pointcloud_filtered'}],
         )
     ])
