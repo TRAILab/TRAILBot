@@ -307,31 +307,53 @@ class LidarCameraSubscriber(Node):
         # angle_msg = Float32()
         # angle_msg.data = angle
         # self.angle_publisher.publish(angle_msg)
+        detection_array = Detection3DArray()
 
-        pose_stamped_msg = PoseStamped()
-        pose_stamped_msg.header.stamp = self.timestamp
-        pose_stamped_msg.header.frame_id = "velodyne"
+        for person in self.person_array:
+            new_object = Detection3D()
+            lidar_x,lidar_y,lidar_z = convert_to_lidar_frame(
+                (person.x,person.y,person.z),
+                self.inverse_camera_transformation_k,
+                self.inverse_rotation_matrix,
+                self.translation_vector,
+                self.configs)
 
-        lidar_x,lidar_y,lidar_z = convert_to_lidar_frame(
-            (person0.x,person0.y,person0.z),
-            self.inverse_camera_transformation_k,
-            self.inverse_rotation_matrix,
-            self.translation_vector,
-            self.configs)
+            new_object.bbox.center.position.x = lidar_x
+            new_object.bbox.center.position.y = lidar_y
+            new_object.bbox.center.position.z = lidar_z
+            new_object.bbox.size.x = 0
+            new_object.bbox.size.y = 0 
+            new_object.bbox.center.orientation.w = 0
+
+            detection_array.detections.append(new_object)
+
+        self.pose_publisher.publish(detection_array)
+
+
+        # pose_stamped_msg = PoseStamped()
+        # pose_stamped_msg.header.stamp = self.timestamp
+        # pose_stamped_msg.header.frame_id = "velodyne"
+
+        # lidar_x,lidar_y,lidar_z = convert_to_lidar_frame(
+        #     (person0.x,person0.y,person0.z),
+        #     self.inverse_camera_transformation_k,
+        #     self.inverse_rotation_matrix,
+        #     self.translation_vector,
+        #     self.configs)
         
-        #position
-        pose_stamped_msg.pose.position.x = lidar_x  
-        pose_stamped_msg.pose.position.y = lidar_y
-        pose_stamped_msg.pose.position.z = lidar_z
+        # #position
+        # pose_stamped_msg.pose.position.x = lidar_x  
+        # pose_stamped_msg.pose.position.y = lidar_y
+        # pose_stamped_msg.pose.position.z = lidar_z
 
-        #orientation
-        yaw = math.atan2(lidar_y, lidar_x)
-        pose_stamped_msg.pose.orientation.x = 0.0  
-        pose_stamped_msg.pose.orientation.y = 0.0 
-        pose_stamped_msg.pose.orientation.z = math.sin(yaw/2)
-        pose_stamped_msg.pose.orientation.w = math.cos(yaw / 2)
+        # #orientation
+        # yaw = math.atan2(lidar_y, lidar_x)
+        # pose_stamped_msg.pose.orientation.x = 0.0  
+        # pose_stamped_msg.pose.orientation.y = 0.0 
+        # pose_stamped_msg.pose.orientation.z = math.sin(yaw/2)
+        # pose_stamped_msg.pose.orientation.w = math.cos(yaw / 2)
         
-        self.pose_publisher.publish(pose_stamped_msg)
+        # self.pose_publisher.publish(pose_stamped_msg)
 
 def read_space_separated_matrix(string):
     """
