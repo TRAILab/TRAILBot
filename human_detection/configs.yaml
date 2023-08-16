@@ -1,5 +1,5 @@
 MODEL_URL: "https://tfhub.dev/google/movenet/multipose/lightning/1?tf-hub-format=compressed"
-SAVED_MODEL_PATH: "/home/trailbot/trail_ws/multipose_model"
+SAVED_MODEL_PATH: "/mnt/c/Users/nathan/Documents/gits/TRAILBot/human_detection/multipose"
 people_detection_threshold: 0.4
 point_detection_threshold: 0.4
 distance_where_lidar_stops_working: 0.4
