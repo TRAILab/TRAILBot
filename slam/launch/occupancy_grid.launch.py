@@ -50,7 +50,7 @@ def generate_launch_description():
 
                 # min and max height should be defined from pointcloud frame_id (velodyne) not robot_adjusted, 
                 # because same tf transform between frames is being applied to these values now
-                'min_height': -1.0, #Take all points
+                'min_height': -0.8, #Take all points
                 'max_height': 1.0,
                 'angle_min': -3.14,  #was -M_PI/2 
                 'angle_max': 3.14,  #was  M_PI/2 
