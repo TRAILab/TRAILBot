@@ -82,19 +82,19 @@ def generate_launch_description():
         parameters=[{'use_sim_time': use_sim_time}],
     )             
 
-    #velodyne filter
-    velodyne_filter = Node(
-        package='pointcloud_filter',
-        executable='pointcloud_filter_node',
-        name='pointcloud_filter_node',
-        parameters= [
-        {'frame_id': 'velodyne'},
-        {'topic_pointcloud_in': '/velodyne_points'},
-        {'topic_pointcloud_out': '/pointcloud_filtered'}],
-    )
+    # #velodyne filter
+    # velodyne_filter = Node(
+    #     package='pointcloud_filter',
+    #     executable='pointcloud_filter_node',
+    #     name='pointcloud_filter_node',
+    #     parameters= [
+    #     {'frame_id': 'velodyne'},
+    #     {'topic_pointcloud_in': '/velodyne_points'},
+    #     {'topic_pointcloud_out': '/pointcloud_filtered'}],
+    # )
                            
     ros2_bag_play_cmd = ExecuteProcess(
-        cmd = ['ros2', 'bag', 'play', LaunchConfiguration('bag_filename'), '--clock', '--rate', '2.0',],
+        cmd = ['ros2', 'bag', 'play', LaunchConfiguration('bag_filename'), '--clock', '--rate', '1.0',],
         name = 'rosbag_play',)
     
     # #velodyne filter 
@@ -110,5 +110,5 @@ def generate_launch_description():
         robot_transform_publisher,
 	    rviz_node,
         ros2_bag_play_cmd,
-        velodyne_filter,
+        #velodyne_filter,
     ])
