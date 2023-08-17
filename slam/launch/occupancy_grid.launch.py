@@ -48,9 +48,10 @@ def generate_launch_description():
                 # 'angle_min': -3.14,  #was -M_PI/2 now -PI
                 # 'angle_max': 3.14,  #was  M_PI/2 now PI
 
-                # map_adjusted height max/min
-                'min_height': -100.0, #Take all points
-                'max_height': 100.0,
+                # min and max height should be defined from pointcloud frame_id (velodyne) not robot_adjusted, 
+                # because same tf transform between frames is being applied to these values now
+                'min_height': -1.0, #Take all points
+                'max_height': 1.0,
                 'angle_min': -3.14,  #was -M_PI/2 
                 'angle_max': 3.14,  #was  M_PI/2 
                 'angle_increment': 0.0087,  # M_PI/360.0
