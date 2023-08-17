@@ -94,7 +94,7 @@ def generate_launch_description():
     # )
                            
     ros2_bag_play_cmd = ExecuteProcess(
-        cmd = ['ros2', 'bag', 'play', LaunchConfiguration('bag_filename'), '--clock', '--rate', '1.0',],
+        cmd = ['ros2', 'bag', 'play', LaunchConfiguration('bag_filename'), '--clock', '--rate', '1.5',],
         name = 'rosbag_play',)
     
     # #velodyne filter 
