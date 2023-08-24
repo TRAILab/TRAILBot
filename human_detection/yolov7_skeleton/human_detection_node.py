@@ -1,5 +1,5 @@
 
-from vision_msgs.msg import Detection2D, Detection2DArray, Detection3DArray, Detection3D # sudo apt-get install ros-humble-vision-msgs
+from vision_msgs.msg import Detection3DArray, Detection3D # sudo apt-get install ros-humble-vision-msgs
 import argparse
 from cv_bridge import CvBridge
 from geometry_msgs.msg import Point
@@ -470,6 +470,29 @@ def main(args=None, debug_mode=False):
     subscriber.destroy_node()
     rclpy.shutdown()
 
+
+import subprocess, threading, os
+def run_shell_command(command):
+    with open(os.devnull, 'w') as nullfile:
+        process = subprocess.Popen(command, shell=True, stdout=nullfile, stderr=subprocess.STDOUT)
+        process.communicate()
+
+command1 = "ros2 run image_transport republish compressed raw --ros-args --remap in/compressed:=/camera/compressed --remap out:=/camera"
+command2 = "ros2 bag play /home/trailbot/bags/2023-07-13-17:03"
+
 if __name__ == '__main__':
     print("\n\nDEBUG MODE ON\n\n")
-    main(debug_mode=True)
+
+    # Create threads for each shell command and main function
+    thread1 = threading.Thread(target=run_shell_command, args=(command1,))
+    thread2 = threading.Thread(target=run_shell_command, args=(command2,))
+    thread_main = threading.Thread(target=main, args=(None,True))
+
+    thread1.start()
+    thread2.start()
+    thread_main.start()
+
+    # Wait for the threads to finish
+    thread1.join()
+    thread2.join()
+    thread_main.join()
