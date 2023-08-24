@@ -38,18 +38,21 @@ def generate_launch_description():
             package='pointcloud_to_laserscan_converter', executable='pointcloud_to_laserscan_node',
             remappings=[('points2', '/velodyne_points'),],
             parameters=[{
-                # 'target_frame': 'base_link',
-                # 'target_frame': 'laser_frame',
-                'target_frame': 'velodyne',
+                # 'target_frame': 'velodyne',
+                'target_frame': 'robot_adjusted',
                 'transform_tolerance': 0.01,
-                #base link height max/min
-                # 'min_height': 0.1, #4 inches
-                # 'max_height': 1.0,
-                #laser_frame height max/min
-                'min_height': -0.9282, #4 inches above ground 
-                'max_height': 0.1,
-                'angle_min': -3.14,  #was -M_PI/2 now -PI
-                'angle_max': 3.14,  #was  M_PI/2 now PI
+
+                #velodyne frame height max/min
+                # 'min_height': -0.9282, #4 inches above ground 
+                # 'max_height': 0.1,
+                # 'angle_min': -3.14,  #was -M_PI/2 now -PI
+                # 'angle_max': 3.14,  #was  M_PI/2 now PI
+
+                # map_adjusted height max/min
+                'min_height': -100.0, #Take all points
+                'max_height': 100.0,
+                'angle_min': -3.14,  #was -M_PI/2 
+                'angle_max': 3.14,  #was  M_PI/2 
                 'angle_increment': 0.0087,  # M_PI/360.0
                 'scan_time': 0.1, #10 hz (was at .3333)
                 'range_min': 0.45,
