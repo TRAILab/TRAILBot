@@ -53,3 +53,6 @@ CATKIN_IGNORE
 
 #vscode
 .vscode
+human_detection/multipose/saved_model.pb
+human_detection/multipose/variables/variables.data-00000-of-00001
+human_detection/multipose/variables/variables.index

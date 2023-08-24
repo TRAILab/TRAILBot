@@ -10,6 +10,7 @@ from utils.datasets import LoadImages
 from utils.general import check_img_size, non_max_suppression, scale_coords, set_logging, increment_path
 from utils.torch_utils import select_device, TracedModel
 import sort
+import os 
 
 """Function to draw bounding boxes"""
 def draw_boxes(img, bbox, identities=None, categories=None, confidences=None, names=None, colors=None, thickness=2, hide_bounding_box=False,hide_labels=False):
@@ -64,10 +65,13 @@ class Yolo_sort_tracker:
         self.use_half_precision = self.device.type != 'cpu'  # enable half precision if on GPU (only supported on CUDA)
 
         # Load model
+        if not os.path.exists(weights_file):
+            raise FileNotFoundError(f"The file '{weights_file}' does not exist.")
+
         self.model = attempt_load(weights_file, map_location=self.device)  # load FP32 model
         self.stride = int(self.model.stride.max())  # model stride, which is the step size or the number of units the sliding window moves when performing operations like convolution or pooling
         self.imgsize = check_img_size(img_size, s=self.stride)  # check img_size
-        if not traced_model_already_exists:
+        if not os.path.exists("traced_model.pt")  or  not traced_model_already_exists:
             self.model = TracedModel(self.model, self.device, img_size)
         if self.use_half_precision:
             self.model.half()  # to FP16
