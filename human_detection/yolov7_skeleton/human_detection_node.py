@@ -239,6 +239,7 @@ class LidarCameraSubscriber(Node):
             time.sleep(1)
     def visualize_camera(self,show_image_window=True):
         if show_image_window:
+            print("CAMERA")
             try:
                 # Create a copy of the image to draw the red dots on
                 image_with_dots = self.cv_image.copy()
