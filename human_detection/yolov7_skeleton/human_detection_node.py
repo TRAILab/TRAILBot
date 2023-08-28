@@ -237,6 +237,10 @@ class LidarCameraSubscriber(Node):
         for num in ascii_numbers[-6:]:
             self.print_and_log(f"\n{num}\n")
             time.sleep(1)
+        show_image_window = True 
+        if show_image_window:
+            cv2.namedWindow("Camera Image", cv2.WINDOW_NORMAL)
+
     def visualize_camera(self,show_image_window=True):
         if show_image_window:
             print("CAMERA")
@@ -491,9 +495,6 @@ def run_shell_command(command):
 
 
 if __name__ == '__main__':
-    show_image_window = True 
-    if show_image_window:
-        cv2.namedWindow("Camera Image", cv2.WINDOW_NORMAL)
 
     print("\n\nDEBUG MODE ON\n\n")
     command1 = "ros2 run image_transport republish compressed raw --ros-args --remap in/compressed:=/camera/compressed --remap out:=/camera"
