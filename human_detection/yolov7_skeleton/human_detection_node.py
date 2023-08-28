@@ -143,7 +143,7 @@ class Person:
 class LidarCameraSubscriber(Node):
     def print_and_log(self, string):
         self.get_logger().info(string)
-        print_verbose_only(string)
+        print_verbose_only(self.parser_args,string)
 
 
     def __init__(self,parser_args,model,configs):
