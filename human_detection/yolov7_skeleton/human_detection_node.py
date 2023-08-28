@@ -253,7 +253,7 @@ class LidarCameraSubscriber(Node):
                 # Draw red dots on the image at specified xy coordinates
                 for person in self.person_array:
                     cv2.circle(image_with_dots, (int(person.x), int(person.y)), 5, (0, 0, 255), -1)  # Draw a red circle at (x, y)
-                    cv2.putText(image_with_dots, str(person.id), (person.x,person.y), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2) 
+                    cv2.putText(image_with_dots, str(person.id),  (int(person.x), int(person.y)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2) 
 
                 
                 cv2.imshow("Camera Image", image_with_dots)
