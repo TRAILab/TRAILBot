@@ -240,7 +240,7 @@ class LidarCameraSubscriber(Node):
         show_image_window = True 
         if show_image_window:
             cv2.namedWindow("Camera Image", cv2.WINDOW_NORMAL)
-            cv2.setWindowProperty("Camera Image", cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
+            # cv2.setWindowProperty("Camera Image", cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
 
     def visualize_camera(self,show_image_window=True):
         if show_image_window:
@@ -328,7 +328,7 @@ class LidarCameraSubscriber(Node):
 
         for person in self.person_array:
 
-            message = f"coord: {round(person.x,2)},{round(person.y,2)},{round(person.z,2)}"
+            message = f"id {person.id} coord: {round(person.x,2)},{round(person.y,2)},{round(person.z,2)}"
             # print_verbose_only(self.parser_args, message)
             self.print_and_log(message)
 
