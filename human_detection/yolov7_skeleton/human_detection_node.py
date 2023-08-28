@@ -2,7 +2,6 @@
 from vision_msgs.msg import Detection3DArray, Detection3D # sudo apt-get install ros-humble-vision-msgs
 import argparse
 from cv_bridge import CvBridge
-from geometry_msgs.msg import Point
 from geometry_msgs.msg import PoseStamped
 import math
 import numpy as np
@@ -189,14 +188,15 @@ class LidarCameraSubscriber(Node):
             Bool,
             'is_person_topic',
             10)
-        # self.angle_publisher = self.create_publisher(
-        #     Float32,
-        #     'angle_topic',
+        # self.pose_publisher = self.create_publisher(
+        #     PoseStamped,
+        #     'target_location', 
         #     10)
-        self.pose_publisher = self.create_publisher(
-            PoseStamped,
-            'target_location', 
+        self.detection3DArray_publisher = self.create_publisher(
+            Detection3DArray,
+            'detection_location', 
             10)
+
         self.timestamp = 0
 
         # if this is -1, node will publish constantly (as camera FPS)
@@ -321,13 +321,13 @@ class LidarCameraSubscriber(Node):
             new_object.bbox.center.position.x = float(lidar_x)
             new_object.bbox.center.position.y = float(lidar_y)
             new_object.bbox.center.position.z = float(lidar_z)
-            new_object.bbox.size.x = float(0)
-            new_object.bbox.size.y = float(0) 
-            new_object.bbox.center.orientation.w = float(0)
+            # new_object.bbox.size.x = float(0)
+            # new_object.bbox.size.y = float(0) 
+            # new_object.bbox.center.orientation.w = float(0)
 
             detection_array.detections.append(new_object)
 
-        self.pose_publisher.publish(detection_array)
+        self.detection3DArray_publisher.publish(detection_array)
 
 
         # pose_stamped_msg = PoseStamped()
