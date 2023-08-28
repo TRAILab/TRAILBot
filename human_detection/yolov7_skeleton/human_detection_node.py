@@ -114,7 +114,7 @@ def process_frame(model,image,configs):
     # Run model inference
     person_array = []
     bounding_boxes, identities, confidences=model.process_frame(image,view_img=False)
-    if identities==None:
+    if identities is None:
         return []
     for i in range(len(bounding_boxes)):
         person = Person()
