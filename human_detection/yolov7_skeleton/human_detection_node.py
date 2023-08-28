@@ -242,9 +242,10 @@ class LidarCameraSubscriber(Node):
 
 
     def camera_callback(self, msg):
+
         if self.cur_state!="SearchState" and self.cur_state!="ApproachState":
             return 
-
+        print("\nCAMERA!\n")
         cv_image = self.bridge.imgmsg_to_cv2(
             msg, desired_encoding='passthrough')
         self.person_array = process_frame(self.model, cv_image, self.configs)
@@ -290,6 +291,7 @@ class LidarCameraSubscriber(Node):
             return 
         if not self.is_there_anyone:
             return
+
         #person0 for debugging purpse
         person0 = self.person_array[0]
         message = f"{source_str:<7}"
@@ -304,9 +306,6 @@ class LidarCameraSubscriber(Node):
         is_person_msg.data = bool(self.is_there_anyone)
         self.is_person_publisher.publish(is_person_msg)
 
-        # angle_msg = Float32()
-        # angle_msg.data = angle
-        # self.angle_publisher.publish(angle_msg)
         detection_array = Detection3DArray()
 
         for person in self.person_array:
@@ -450,8 +449,6 @@ def main(args=None, debug_mode=False):
 
     with open('configs.yaml', 'r') as file:
         configs = yaml.safe_load(file)
-    MODEL_URL = configs['MODEL_URL']
-    SAVED_MODEL_PATH = configs['SAVED_MODEL_PATH']
 
     parser_args = parse_arguments()
     if debug_mode:
@@ -477,11 +474,11 @@ def run_shell_command(command):
         process = subprocess.Popen(command, shell=True, stdout=nullfile, stderr=subprocess.STDOUT)
         process.communicate()
 
-command1 = "ros2 run image_transport republish compressed raw --ros-args --remap in/compressed:=/camera/compressed --remap out:=/camera"
-command2 = "ros2 bag play /home/trailbot/bags/2023-07-13-17:03"
 
 if __name__ == '__main__':
     print("\n\nDEBUG MODE ON\n\n")
+    command1 = "ros2 run image_transport republish compressed raw --ros-args --remap in/compressed:=/camera/compressed --remap out:=/camera"
+    command2 = "ros2 bag play /home/trailbot/bags/2023-07-13-17:03"
 
     # Create threads for each shell command and main function
     thread1 = threading.Thread(target=run_shell_command, args=(command1,))
