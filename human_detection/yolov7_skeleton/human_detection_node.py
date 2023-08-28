@@ -485,7 +485,7 @@ def run_shell_command(command):
 if __name__ == '__main__':
     print("\n\nDEBUG MODE ON\n\n")
     command1 = "ros2 run image_transport republish compressed raw --ros-args --remap in/compressed:=/camera/compressed --remap out:=/camera"
-    command2 = ""#"ros2 bag play /home/trailbot/bags/2023-07-13-17:03"
+    command2 = "ros2 bag play /home/trailbot/bags/human_tracking/"
 
     # Create threads for each shell command and main function
     thread1 = threading.Thread(target=run_shell_command, args=(command1,))
