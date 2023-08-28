@@ -252,7 +252,7 @@ class LidarCameraSubscriber(Node):
         self.person_array = process_frame(self.model, cv_image, self.configs)
         self.is_there_anyone = len(self.person_array)>0
         self.timestamp = msg.header.stamp
-        if show_image_window:=True:
+        if show_image_window:=False:
             print("CAMERA!")
             cv2.imshow("Camera Image", cv_image)
             cv2.waitKey(0)  # Wait for a key press
