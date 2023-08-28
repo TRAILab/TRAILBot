@@ -143,7 +143,7 @@ class Person:
 class LidarCameraSubscriber(Node):
     def print_and_log(self, string):
         self.get_logger().info(string)
-        print(string)
+        print_verbose_only(string)
 
 
     def __init__(self,parser_args,model,configs):
@@ -240,9 +240,15 @@ class LidarCameraSubscriber(Node):
             time.sleep(1)
     def visualize_camera(self,show_image_window=True):
         if show_image_window:
-            print("CAMERA!")
             try:
-                cv2.imshow("Camera Image", self.cv_image)
+                # Create a copy of the image to draw the red dots on
+                image_with_dots = self.cv_image.copy()
+                
+                # Draw red dots on the image at specified xy coordinates
+                for person in self.person_array:
+                    cv2.circle(image_with_dots, (int(person.x), int(person.y)), 5, (0, 0, 255), -1)  # Draw a red circle at (x, y)
+                
+                cv2.imshow("Camera Image", image_with_dots)
                 cv2.waitKey(0)  # Wait for a key press
                 cv2.destroyAllWindows()  # Close all OpenCV windows
             except:
@@ -313,8 +319,7 @@ class LidarCameraSubscriber(Node):
 
         for person in self.person_array:
 
-            message = f" angle: {round(person.heading_angle,2)}"
-            message += f"coord: {round(person.x,2)},{round(person.y,2)},{round(person.z,2)}"
+            message = f"coord: {round(person.x,2)},{round(person.y,2)},{round(person.z,2)}"
             # print_verbose_only(self.parser_args, message)
             self.print_and_log(message)
 
