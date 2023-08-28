@@ -318,12 +318,12 @@ class LidarCameraSubscriber(Node):
                 self.translation_vector,
                 self.configs)
 
-            new_object.bbox.center.position.x = lidar_x
-            new_object.bbox.center.position.y = lidar_y
-            new_object.bbox.center.position.z = lidar_z
-            new_object.bbox.size.x = 0
-            new_object.bbox.size.y = 0 
-            new_object.bbox.center.orientation.w = 0
+            new_object.bbox.center.position.x = float(lidar_x)
+            new_object.bbox.center.position.y = float(lidar_y)
+            new_object.bbox.center.position.z = float(lidar_z)
+            new_object.bbox.size.x = float(0)
+            new_object.bbox.size.y = float(0) 
+            new_object.bbox.center.orientation.w = float(0)
 
             detection_array.detections.append(new_object)
 
