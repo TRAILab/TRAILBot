@@ -253,6 +253,7 @@ class LidarCameraSubscriber(Node):
         self.is_there_anyone = len(self.person_array)>0
         self.timestamp = msg.header.stamp
         if show_image_window:=True:
+            print("CAMERA!")
             cv2.imshow("Camera Image", cv_image)
             cv2.waitKey(0)  # Wait for a key press
             cv2.destroyAllWindows()  # Close all OpenCV windows
