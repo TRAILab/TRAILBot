@@ -2,6 +2,7 @@
 from vision_msgs.msg import Detection3DArray, Detection3D # sudo apt-get install ros-humble-vision-msgs
 import argparse
 from cv_bridge import CvBridge
+import cv2
 from geometry_msgs.msg import PoseStamped
 import math
 import numpy as np
@@ -245,12 +246,17 @@ class LidarCameraSubscriber(Node):
 
         if self.cur_state!="SearchState" and self.cur_state!="ApproachState":
             return 
-        print("\nCAMERA!\n")
+
         cv_image = self.bridge.imgmsg_to_cv2(
             msg, desired_encoding='passthrough')
         self.person_array = process_frame(self.model, cv_image, self.configs)
         self.is_there_anyone = len(self.person_array)>0
         self.timestamp = msg.header.stamp
+        if show_image_window:=True:
+            cv2.imshow("Camera Image", cv_image)
+            cv2.waitKey(0)  # Wait for a key press
+            cv2.destroyAllWindows()  # Close all OpenCV windows
+
 
 
     def lidar_callback(self, msg):
