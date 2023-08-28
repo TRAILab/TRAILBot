@@ -241,6 +241,7 @@ class LidarCameraSubscriber(Node):
         if show_image_window:
             print("CAMERA")
             try:
+                cv2.imshow("Camera Image", self.cv_image)
                 # Create a copy of the image to draw the red dots on
                 image_with_dots = self.cv_image.copy()
                 
