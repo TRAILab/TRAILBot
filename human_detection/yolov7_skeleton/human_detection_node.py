@@ -238,7 +238,15 @@ class LidarCameraSubscriber(Node):
         for num in ascii_numbers[-6:]:
             self.print_and_log(f"\n{num}\n")
             time.sleep(1)
-
+    def visualize_camera(self,show_image_window=True):
+        if show_image_window:
+            print("CAMERA!")
+            try:
+                cv2.imshow("Camera Image", self.cv_image)
+                cv2.waitKey(0)  # Wait for a key press
+                cv2.destroyAllWindows()  # Close all OpenCV windows
+            except:
+                pass
 
     def state_callback(self, msg):
         self.cur_state = msg.data
@@ -249,16 +257,11 @@ class LidarCameraSubscriber(Node):
         if self.cur_state!="SearchState" and self.cur_state!="ApproachState":
             return 
 
-        cv_image = self.bridge.imgmsg_to_cv2(
+        self.cv_image = self.bridge.imgmsg_to_cv2(
             msg, desired_encoding='passthrough')
-        self.person_array = process_frame(self.model, cv_image, self.configs)
+        self.person_array = process_frame(self.model, self.cv_image, self.configs)
         self.is_there_anyone = len(self.person_array)>0
         self.timestamp = msg.header.stamp
-        if show_image_window:=False:
-            print("CAMERA!")
-            cv2.imshow("Camera Image", cv_image)
-            cv2.waitKey(0)  # Wait for a key press
-            cv2.destroyAllWindows()  # Close all OpenCV windows
 
 
 
@@ -331,7 +334,8 @@ class LidarCameraSubscriber(Node):
             # new_object.bbox.center.orientation.w = float(0)
 
             detection_array.detections.append(new_object)
-
+        if len(self.person_array)>=3:
+            self.visualize_camera()
         self.detection3DArray_publisher.publish(detection_array)
 
 
