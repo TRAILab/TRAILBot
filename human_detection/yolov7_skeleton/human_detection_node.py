@@ -114,6 +114,8 @@ def process_frame(model,image,configs):
     # Run model inference
     person_array = []
     bounding_boxes, identities, confidences=model.process_frame(image,view_img=False)
+    if identities==None:
+        return []
     for i in range(len(bounding_boxes)):
         person = Person()
         centroid = xyxy_to_centroid(bounding_boxes[i])
@@ -299,15 +301,6 @@ class LidarCameraSubscriber(Node):
         if not self.is_there_anyone:
             return
 
-        #person0 for debugging purpse
-        person0 = self.person_array[0]
-        message = f"{source_str:<7}"
-        message += f" person: {'YES' if self.is_there_anyone else 'NO '}"
-        message += f" angle: {person0.heading_angle:<20}"
-        message += f"person_coordinate: {person0.x:<22} {person0.y:<22} {person0.z:22}"
-        print_verbose_only(self.parser_args, message)
-        self.print_and_log(message)
-
         # Publish the message
         is_person_msg = Bool()
         is_person_msg.data = bool(self.is_there_anyone)
@@ -316,6 +309,12 @@ class LidarCameraSubscriber(Node):
         detection_array = Detection3DArray()
 
         for person in self.person_array:
+
+            message = f" angle: {round(person.heading_angle,2)}"
+            message += f"coord: {round(person.x,2)},{round(person.y,2)},{round(person.z,2)}"
+            # print_verbose_only(self.parser_args, message)
+            self.print_and_log(message)
+
             new_object = Detection3D()
             lidar_x,lidar_y,lidar_z = convert_to_lidar_frame(
                 (person.x,person.y,person.z),
