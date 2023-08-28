@@ -3,7 +3,7 @@ from vision_msgs.msg import Detection3DArray, Detection3D # sudo apt-get install
 import argparse
 from cv_bridge import CvBridge
 import cv2
-from geometry_msgs.msg import PoseStamped
+# from geometry_msgs.msg import PoseStamped
 import math
 import numpy as np
 import rclpy
@@ -249,9 +249,12 @@ class LidarCameraSubscriber(Node):
                 # Create a copy of the image to draw the red dots on
                 image_with_dots = self.cv_image.copy()
                 
+
                 # Draw red dots on the image at specified xy coordinates
                 for person in self.person_array:
                     cv2.circle(image_with_dots, (int(person.x), int(person.y)), 5, (0, 0, 255), -1)  # Draw a red circle at (x, y)
+                    cv2.putText(image_with_dots, str(person.id), (person.x,person.y), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2) 
+
                 
                 cv2.imshow("Camera Image", image_with_dots)
                 # Check for the 'q' key press to exit the loop
@@ -329,7 +332,7 @@ class LidarCameraSubscriber(Node):
             # print_verbose_only(self.parser_args, message)
             self.print_and_log(message)
 
-            new_object = Detection3D()
+            detection3d = Detection3D()
             lidar_x,lidar_y,lidar_z = convert_to_lidar_frame(
                 (person.x,person.y,person.z),
                 self.inverse_camera_transformation_k,
@@ -337,14 +340,15 @@ class LidarCameraSubscriber(Node):
                 self.translation_vector,
                 self.configs)
 
-            new_object.bbox.center.position.x = float(lidar_x)
-            new_object.bbox.center.position.y = float(lidar_y)
-            new_object.bbox.center.position.z = float(lidar_z)
-            # new_object.bbox.size.x = float(0)
-            # new_object.bbox.size.y = float(0) 
-            # new_object.bbox.center.orientation.w = float(0)
+            detection3d.bbox.center.position.x = float(lidar_x)
+            detection3d.bbox.center.position.y = float(lidar_y)
+            detection3d.bbox.center.position.z = float(lidar_z)
+            detection3d.id = str(person.id)
+            # detection3d.bbox.size.x = float(0)
+            # detection3d.bbox.size.y = float(0) 
+            # detection3d.bbox.center.orientation.w = float(0)
 
-            detection_array.detections.append(new_object)
+            detection_array.detections.append(detection3d)
         self.visualize_camera()
         self.detection3DArray_publisher.publish(detection_array)
 
