@@ -251,6 +251,7 @@ class LidarCameraSubscriber(Node):
                 
                 cv2.imshow("Camera Image", image_with_dots)
                 cv2.waitKey(1)
+                cv2.destroyAllWindows()
             except:
                 pass
 
@@ -492,7 +493,8 @@ def run_shell_command(command):
 if __name__ == '__main__':
     show_image_window = True 
     if show_image_window:
-        cv2.namedWindow("Camera Image", cv2.WINDOW_NORMAL)
+        pass
+        # cv2.namedWindow(cv2.WINDOW_NORMAL)
 
     print("\n\nDEBUG MODE ON\n\n")
     command1 = "ros2 run image_transport republish compressed raw --ros-args --remap in/compressed:=/camera/compressed --remap out:=/camera"
