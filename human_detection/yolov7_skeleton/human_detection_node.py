@@ -337,8 +337,7 @@ class LidarCameraSubscriber(Node):
             # new_object.bbox.center.orientation.w = float(0)
 
             detection_array.detections.append(new_object)
-        if len(self.person_array)>=3:
-            self.visualize_camera()
+        self.visualize_camera()
         self.detection3DArray_publisher.publish(detection_array)
 
 
