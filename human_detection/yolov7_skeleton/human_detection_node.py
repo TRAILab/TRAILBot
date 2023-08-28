@@ -240,6 +240,7 @@ class LidarCameraSubscriber(Node):
         show_image_window = True 
         if show_image_window:
             cv2.namedWindow("Camera Image", cv2.WINDOW_NORMAL)
+            cv2.setWindowProperty("Camera Image", cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
 
     def visualize_camera(self,show_image_window=True):
         if show_image_window:
