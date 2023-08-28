@@ -248,7 +248,7 @@ class LidarCameraSubscriber(Node):
                     cv2.circle(image_with_dots, (int(person.x), int(person.y)), 5, (0, 0, 255), -1)  # Draw a red circle at (x, y)
                 
                 cv2.imshow("Camera Image", image_with_dots)
-                cv2.destroyAllWindows()  # Close all OpenCV windows
+                cv2.waitKey(1)
             except:
                 pass
 
@@ -489,6 +489,10 @@ def run_shell_command(command):
 
 
 if __name__ == '__main__':
+    show_image_window = True 
+    if show_image_window:
+        cv2.namedWindow("Camera Image", cv2.WINDOW_NORMAL)
+
     print("\n\nDEBUG MODE ON\n\n")
     command1 = "ros2 run image_transport republish compressed raw --ros-args --remap in/compressed:=/camera/compressed --remap out:=/camera"
     command2 = "ros2 bag play /home/trailbot/bags/human_tracking/"
