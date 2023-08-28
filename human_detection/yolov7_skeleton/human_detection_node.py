@@ -147,7 +147,6 @@ class LidarCameraSubscriber(Node):
 
 
     def __init__(self,parser_args,model,configs):
-        #make array of 6 person
         self.person_array = []
         self.is_there_anyone = False
         self.cur_state = "SearchState" # initial state
@@ -249,7 +248,6 @@ class LidarCameraSubscriber(Node):
                     cv2.circle(image_with_dots, (int(person.x), int(person.y)), 5, (0, 0, 255), -1)  # Draw a red circle at (x, y)
                 
                 cv2.imshow("Camera Image", image_with_dots)
-                cv2.waitKey(0)  # Wait for a key press
                 cv2.destroyAllWindows()  # Close all OpenCV windows
             except:
                 pass
