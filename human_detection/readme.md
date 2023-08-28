@@ -1,3 +1,10 @@
+## Configs (see `configs.yaml`)
+- camera_transformation_k:
+- rotation_matrix:
+- translation_vector: 
+- publishing_frequency: frequency to publish the detection location messages. If this is -1, the node will publish constantly (as camera FPS)
+
+
 
 ## Arguments
 
