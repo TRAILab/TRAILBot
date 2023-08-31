@@ -61,7 +61,7 @@ class Yolo_sort_tracker:
     def __init__(self,
         # device='cpu',
         device='0',
-        weights_file='yolov7.pt',
+        weights_file='/home/trailbot/trail_ws/src/TRAILBot/human_detection/human_detection/yolov7.pt',
         # weights_file='/home/trailbot/trail_ws/src/TRAILBot/human_detection/yolov7_skeleton/yolov7.pt',
         img_size=640,
         traced_model_already_exists=True,
