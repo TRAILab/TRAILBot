@@ -16,8 +16,16 @@ from std_msgs.msg import Bool, Float32, String
 import time
 import yaml
 
-import yolov7
 import torch
+
+import sys
+import os
+# Get the current directory of the main.py file
+current_directory = os.path.dirname(os.path.abspath(__file__))
+# Add the current directory to the Python path
+sys.path.append(current_directory)
+
+import yolov7
 
 def parse_arguments():
     """

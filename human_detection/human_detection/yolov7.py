@@ -1,9 +1,18 @@
+
+
 import argparse
 import time
 from pathlib import Path
 import cv2
 import torch
 import numpy as np
+
+import sys
+import os
+# Get the current directory of the main.py file
+current_directory = os.path.dirname(os.path.abspath(__file__))
+# Add the current directory to the Python path
+sys.path.append(current_directory)
 
 from models.experimental import attempt_load
 from utils.datasets import LoadImages
