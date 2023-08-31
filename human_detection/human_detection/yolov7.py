@@ -61,7 +61,7 @@ class Yolo_sort_tracker:
     def __init__(self,
         # device='cpu',
         device='0',
-        weights_file='yolov7.pt',
+        weights_file='/home/trailbot/trail_ws/src/TRAILBot/human_detection/human_detection/yolov7.pt',
         # weights_file='/home/trailbot/trail_ws/src/TRAILBot/human_detection/yolov7_skeleton/yolov7.pt',
         img_size=640,
         traced_model_already_exists=True,
@@ -265,7 +265,7 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
     # Files and devices:
-    parser.add_argument('--weights-file', nargs='+', type=str, default='/home/trailbot/trail_ws/src/TRAILBot/human_detection/human_detection/yolov7.pt', help='model.pt path(s)')
+    parser.add_argument('--weights-file', nargs='+', type=str, default='yolov7.pt', help='model.pt path(s)')
     parser.add_argument('--no-trace', action='store_true', help='don`t trace model (if traced_model.pt already exist this can save time)') # Model tracing determines all the operations that are executed when a model parses input data through its linear layers. Just like downloading a model, it only needs to run once. Once the traced_model.pt is generated, this operation is no longer needed
     parser.add_argument('--source', type=str, default='inference/images', help='video source to process')  # mp4 file/folder, 'webcam' for webcam
     parser.add_argument('--device', default='', help='cuda device, i.e. 0 or 0,1,2,3 or cpu')
