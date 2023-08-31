@@ -521,7 +521,7 @@ def estimate_depth(x, y, np_2d_array,configs):
 
 def main(args=None, debug_mode=False):
 
-    with open('configs.yaml', 'r') as file:
+    with open('/home/trailbot/trail_ws/src/TRAILBot/human_detection/configs.yaml', 'r') as file:
         configs = yaml.safe_load(file)
 
     parser_args = parse_arguments()
