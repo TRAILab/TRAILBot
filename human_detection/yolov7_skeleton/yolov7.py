@@ -50,8 +50,10 @@ def draw_track_lines(im0, tracks, sort_tracker, thickness):
             
 class Yolo_sort_tracker:
     def __init__(self,
-        device='cpu',
+        # device='cpu',
+        device='0',
         weights_file='yolov7.pt',
+        # weights_file='/home/trailbot/trail_ws/src/TRAILBot/human_detection/yolov7_skeleton/yolov7.pt',
         img_size=640,
         traced_model_already_exists=True,
         source='webcam',
@@ -158,7 +160,8 @@ class Yolo_sort_tracker:
         pred = self.model(img, augment=enable_augment)[0]
 
         # Apply NMS
-        pred = non_max_suppression(pred, conf_thres, iou_thres, classes=detection_object_classes, agnostic=enable_agnostic_nms)
+        with torch.no_grad():
+            pred = non_max_suppression(pred, conf_thres, iou_thres, classes=detection_object_classes, agnostic=enable_agnostic_nms)
 
         #TESTING ###to be removed
         if len(pred)!=1:
