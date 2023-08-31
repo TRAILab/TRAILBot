@@ -1,5 +1,5 @@
 import torch
-from .model_loader import FCN8s, FCN32s
+from .model_loader import FCN8s, FCN32s, PSPNet
 from PIL import Image as ImagePIL
 from torchvision import transforms
 import cv2
@@ -99,14 +99,20 @@ def estimate_depth(x, y, np_2d_array):
     return np.mean(closest_depths)
 
 def load_model(device):
-    model = FCN32s(nclass=2, backbone='vgg16', pretrained_base=True, pretrained=True)
+    # model = FCN32s(nclass=2, backbone='vgg16', pretrained_base=True, pretrained=True)
+    model = PSPNet(nclass=2, backbone='resnet50', pretrained_base=True)
+
     # model_location = '32s_batch8/fcn32s_vgg16_pascal_voc_best_model.pth'
-    model_location = '500epoch/fcn32s_vgg16_pascal_voc.pth'
+    # model_location = '32s_self_labelled/fcn32s_vgg16_pascal_voc_best_model.pth'
+    model_location = 'psp2/psp_resnet50_pascal_voc_best_model.pth'
+
     if os.path.isfile(f'src/trail_detection_node/trail_detection_node/model/{model_location}'):
         model.load_state_dict(torch.load(f'src/trail_detection_node/trail_detection_node/model/{model_location}',map_location=torch.device('cuda:0')))
     else:
         model.load_state_dict(torch.load(f'trail_detection_node/model/{model_location}',map_location=torch.device('cuda:0')))
     model = model.to(device)
+    
+    model.eval()
     print('Finished loading model!')
 
     return model
@@ -169,7 +175,7 @@ def equalize_hist_rgb(img):
 class trailDetector(Node):
     def __init__(self, model, device):
         super().__init__('trail_detector')
-        self.only_camera_mode = True
+        self.only_camera_mode = False
         self.bridge = CvBridge()
 
         # load model and device
@@ -239,13 +245,19 @@ class trailDetector(Node):
         filtered_route_indices = []
         for index in route_indices:
             point = []
-            point.append(index[0])
-            point.append(index[1])
-            point.append(estimate_depth(index[0], index[1], points2d))
+            u = index[1]
+            v = image_height - index[0]
+            point.append(u)
+            point.append(v)
+            point.append(estimate_depth(u, v, points2d))
             if point[2] == -1:
                 continue
             else:
                 filtered_route_indices.append(point)
+
+        if not filtered_route_indices:
+            print("No usable centerline found!")
+            return
 
         # find the corresponding lidar points using the center line pixels
         filtered_3dPoints = []
@@ -273,27 +285,35 @@ class trailDetector(Node):
         # visualize after-pocessed image
         visualize_cv_image = cv_image
         print(f"{visualize_cv_image.shape[0]}")
-        circle_x = route_indices[smallest_index][0]
-        circle_y = route_indices[smallest_index][1]
+        circle_y = route_indices[smallest_index][0]
+        circle_x = route_indices[smallest_index][1]
         
-        # # visualize the lidar points in image
-        # uv_x, uv_y, uv_z = points2d
-        # for index_lidar in range(points2d.shape[1]):
-        #     # print(f"{int(uv_x[index_lidar])},{int(uv_y[index_lidar])}")
-        #     cv2.circle(visualize_cv_image, (int(uv_x[index_lidar]), int(image_height - uv_y[index_lidar])), radius=5, color=(255, 0, 0), thickness=-1)
+        # visualize the lidar points in image
+        uv_x, uv_y, uv_z = points2d
+        for index_lidar in range(points2d.shape[1]):
+            # print(f"{int(uv_x[index_lidar])},{int(uv_y[index_lidar])}")
+            cv2.circle(visualize_cv_image, (int(uv_x[index_lidar]), int(image_height - uv_y[index_lidar])), radius=5, color=(255, 0, 0), thickness=-1)
         
         # visualize center line in image
         for index_circle in range(len(route_indices)):
             if index_circle == smallest_index:
                 continue
             else:
-                red_circle_x = route_indices[index_circle][0]
-                red_circle_y = route_indices[index_circle][1]
-                cv2.circle(visualize_cv_image, (red_circle_x, red_circle_y), radius=5, color=(0, 0, 255), thickness=-1)
-        
+                green_circle_row = route_indices[index_circle][0]
+                green_circle_coloum = route_indices[index_circle][1]
+                cv2.circle(visualize_cv_image, (green_circle_coloum, green_circle_row), radius=5, color=(0, 125, 125), thickness=-1)
+
+        # visualize filtered center line in image
+        for index_circle in range(len(filtered_route_indices)):
+            if index_circle == smallest_index:
+                continue
+            else:
+                red_circle_row = filtered_route_indices[index_circle][1]
+                red_circle_coloum = filtered_route_indices[index_circle][0]
+                cv2.circle(visualize_cv_image, (red_circle_coloum, image_height - red_circle_row), radius=5, color=(0, 0, 255), thickness=-1)
+
         # visualize the chosen point in image
-        cv2.circle(visualize_cv_image, (circle_x, circle_y), radius=7, color=(0, 255, 0), thickness=-1)
-        cv2.circle(visualize_cv_image, (0, 0), radius=12, color=(0, 255, 0), thickness=-1)
+        cv2.circle(visualize_cv_image, (circle_x, circle_y), radius=7, color=(255, 0, 255), thickness=-1)
         
         cv2.imshow('circled image',visualize_cv_image)
         cv2.waitKey(25)
@@ -313,6 +333,7 @@ class trailDetector(Node):
         trail_location_msg.pose.orientation.z = math.sin(yaw/2)
         trail_location_msg.pose.orientation.w = math.cos(yaw / 2)
         self.get_logger().info("location published!")
+        self.get_logger().info(f"Point: {filtered_3dPoints[smallest_index][0]}, {filtered_3dPoints[smallest_index][1]}, {filtered_3dPoints[smallest_index][2]}")
         self.trail_publisher.publish(trail_location_msg)
         
     def only_camera_callback(self, camera_msg):
