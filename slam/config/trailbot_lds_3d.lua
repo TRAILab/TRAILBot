@@ -43,7 +43,7 @@ MAP_BUILDER.use_trajectory_builder_3d = true --originally false
 MAP_BUILDER.num_background_threads = 4 --originally 4
 
 POSE_GRAPH.optimization_problem.huber_scale = 5e2 --originally 100 
-POSE_GRAPH.optimize_every_n_nodes = 90 --originally 90
+POSE_GRAPH.optimize_every_n_nodes = 10 --originally 90
 -- POSE_GRAPH.optimize_every_n_nodes = 0 --only replace as zero when wanting to turn off global slam (good for testing different settings)
 POSE_GRAPH.constraint_builder.sampling_ratio = 0.03 --originally 0.3
 
