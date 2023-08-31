@@ -140,6 +140,48 @@ class Person:
         self.id = 0
 
 
+class internalState:
+    human_max_speed = 2.8 # m/s
+    fps = 10
+    buffer_ratio = 1.5 # allow fluctuation of up to 1.5 times 
+    max_movement_per_frame = human_max_speed / fps * buffer_ratio
+    moving_average_weights = [10,5,3,2,1]
+
+    def __init__(self,depth_history_length):
+        # Instance attributes (unique to each instance)
+        self.depth_history = []
+        self.discarded_depth_history = []
+        self.missing_frame_count = 0 
+        self.depth_history_length =depth_history_length  
+
+    def weighted_moving_average(self,data, weights):
+        num_points = min(len(data), len(weights))
+        weights_sum = 0
+        weighted_data_sum = 0
+        for i in range(num_points):
+            weighted_data_sum += weights[i]*data[-1-i] 
+            weights_sum += weights[i]
+        return weighted_data_sum/weights_sum
+
+    def get_average(self):
+        return self.weighted_moving_average(self.depth_history,internalState.moving_average_weights)
+
+
+    def append(self, new_depth):
+        if len(self.depth_history) < self.depth_history_length:
+            self.depth_history.append(new_depth)
+            return 0
+
+        avg = self.get_average()
+        if abs(avg-new_depth) < internalState.max_movement_per_frame*self.missing_frame_count:
+            self.depth_history.pop(0)
+            self.depth_history.append(new_depth)
+            self.missing_frame_count = 0
+            return 0
+        self.missing_frame_count +=1
+        self.discarded_depth_history.append(new_depth)
+        return 1
+
 class LidarCameraSubscriber(Node):
     def print_and_log(self, string):
         self.get_logger().info(string)
