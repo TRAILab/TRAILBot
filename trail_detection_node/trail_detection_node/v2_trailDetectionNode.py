@@ -100,8 +100,8 @@ def estimate_depth(x, y, np_2d_array):
 def load_model(device):
     # model = FCN8s(nclass=6, backbone='vgg16', pretrained_base=True, pretrained=True)
     model = PSPNet(nclass=2, backbone='resnet50', pretrained_base=True)
-    model_location = 'psp2/psp_resnet50_pascal_voc_best_model.pth'
-    model.load_state_dict(torch.load(f'src/trail_detection_node/trail_detection_node/model/{model_location}',map_location=torch.device('cuda:0')))
+    model_location = 'psp_resnet50_pascal_voc_best_model.pth'
+    model.load_state_dict(torch.load(f'src/TRAILBot/trail_detection_node/trail_detection_node/model/{model_location}',map_location=torch.device('cuda:0')))
     model = model.to(device)
     model.eval()
     print('Finished loading model!')

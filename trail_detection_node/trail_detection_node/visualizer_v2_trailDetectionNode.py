@@ -104,10 +104,10 @@ def load_model(device):
 
     # model_location = '32s_batch8/fcn32s_vgg16_pascal_voc_best_model.pth'
     # model_location = '32s_self_labelled/fcn32s_vgg16_pascal_voc_best_model.pth'
-    model_location = 'psp2/psp_resnet50_pascal_voc_best_model.pth'
+    model_location = 'psp_resnet50_pascal_voc_best_model.pth'
 
-    if os.path.isfile(f'src/trail_detection_node/trail_detection_node/model/{model_location}'):
-        model.load_state_dict(torch.load(f'src/trail_detection_node/trail_detection_node/model/{model_location}',map_location=torch.device('cuda:0')))
+    if os.path.isfile(f'src/TRAILBot/trail_detection_node/trail_detection_node/model/{model_location}'):
+        model.load_state_dict(torch.load(f'src/TRAILBot/trail_detection_node/trail_detection_node/model/{model_location}',map_location=torch.device('cuda:0')))
     else:
         model.load_state_dict(torch.load(f'trail_detection_node/model/{model_location}',map_location=torch.device('cuda:0')))
     model = model.to(device)
@@ -175,7 +175,7 @@ def equalize_hist_rgb(img):
 class trailDetector(Node):
     def __init__(self, model, device):
         super().__init__('trail_detector')
-        self.only_camera_mode = False
+        self.only_camera_mode = True
         self.bridge = CvBridge()
 
         # load model and device
