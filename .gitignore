@@ -56,3 +56,5 @@ CATKIN_IGNORE
 human_detection/multipose/saved_model.pb
 human_detection/multipose/variables/variables.data-00000-of-00001
 human_detection/multipose/variables/variables.index
+human_detection/human_detection/*.pt
+trail_detection_node/trail_detection_node/*.pth
