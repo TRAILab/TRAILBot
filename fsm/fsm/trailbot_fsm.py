@@ -31,6 +31,7 @@ class ApproachState(State):
         self.goal_publisher = goal_publisher
         self.state_publisher = state_publisher
         self.blackboard = blackboard
+        self.curr_target = None
 
     def execute(self, blackboard):
         state_msg = String()
@@ -40,6 +41,15 @@ class ApproachState(State):
         target_location = blackboard.get('target_location', None)
         if target_location is not None:
             self.goal_publisher.publish(target_location)
+
+            # if self.curr_target is not None:
+            #     if self.curr_target != target_location:
+            #         self.curr_target = target_location
+
+            # else:
+            #     self.state_publisher.publish(state_msg)
+            #     self.goal_publisher.publish(target_location)
+            #     self.curr_target = target_location
         
         if blackboard.get('goal_reached', False):
             return 'arrived'
@@ -85,7 +95,7 @@ class FSM(Node):
         self.current_state = 'SEARCH'
 
         self.state_publisher = self.create_publisher(String, 'trailbot_state', 10)
-        self.goal_publisher = self.create_publisher(PoseStamped, 'goal_pose', 10)
+        self.goal_publisher = self.create_publisher(PoseStamped, 'goal_pose_fsm', 10)
 
         # Update subscriber topics to subsribe to the lidar and voice assistant nodes
         self.goal_subscriber = self.create_subscription(
@@ -119,6 +129,7 @@ class FSM(Node):
             outcome = self.sm.execute(self.blackboard)
             self.current_state = outcome
             self.update_state(self.current_state)
+            # self.update_state(outcome)
             rclpy.spin_once(self)
 
     def goal_status_callback(self, msg):
