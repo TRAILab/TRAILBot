@@ -1,3 +1,5 @@
+import os
+from glob import glob
 from setuptools import setup
 
 package_name = 'fsm'
@@ -10,6 +12,8 @@ setup(
         ('share/ament_index/resource_index/packages',
             ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
+        # Include all launch files.
+        (os.path.join('share', package_name, 'launch'), glob('launch/*.launch.py'))
     ],
     install_requires=['setuptools'],
     zip_safe=True,
@@ -22,6 +26,8 @@ setup(
         'console_scripts': [
             "trailbot_fsm = fsm.trailbot_fsm:main",
             "navigator_node = fsm.navigator_node:main",
+            "navigator_cmd_node = fsm.nav_fsm_node:main",
+            "fsm_test = fsm.nav_fsm_test_file:main",
         ],
     },
 )
