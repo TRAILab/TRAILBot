@@ -24,9 +24,9 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            "trailbot_fsm = fsm.trailbot_fsm:main",
-            "navigator_node = fsm.navigator_node:main",
-            "navigator_cmd_node = fsm.nav_fsm_node:main",
+            # "trailbot_fsm = fsm.trailbot_fsm:main",
+            "trailbot_fsm = fsm.trailnav_fsm:main",
+            "navigator_cmd_node = fsm.trailnav_cmd:main",
             "fsm_test = fsm.nav_fsm_test_file:main",
         ],
     },
