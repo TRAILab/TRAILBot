@@ -27,7 +27,7 @@ class ApproachState(State):
             return 'no_target'
         return 'not_arrived'
 
-class TravelState(State):
+class SearchState(State):
     def __init__(self, state_publisher, blackboard):
         super().__init__(outcomes=['customer_close', 'customer_not_close'])
         self.state_publisher = state_publisher
@@ -107,10 +107,10 @@ class FSM(Node):
 
         self.sm = StateMachine(outcomes=['finished'])
 
-        self.sm.add_state('TRAVEL', TravelState(self.state_publisher, self.blackboard), transitions={'customer_close': 'APPROACH', 'customer_not_close': 'TRAVEL'})
-        self.sm.add_state('APPROACH', ApproachState(self.state_publisher, self.blackboard), transitions={'arrived': 'QUERY', 'not_arrived': 'APPROACH', 'no_target': 'TRAVEL'})
+        self.sm.add_state('SEARCH', SearchState(self.state_publisher, self.blackboard), transitions={'customer_close': 'APPROACH', 'customer_not_close': 'SEARCH'})
+        self.sm.add_state('APPROACH', ApproachState(self.state_publisher, self.blackboard), transitions={'arrived': 'QUERY', 'not_arrived': 'APPROACH', 'no_target': 'SEARCH'})
         self.sm.add_state('QUERY', QueryState(self.state_publisher, self.blackboard), transitions={'query_complete': 'DONE', 'query_not_complete': 'QUERY'})
-        self.sm.add_state('DONE', DoneState(self.state_publisher, self.blackboard), transitions={'done': 'TRAVEL'})
+        self.sm.add_state('DONE', DoneState(self.state_publisher, self.blackboard), transitions={'done': 'SEARCH'})
 
     def run(self):
         while rclpy.ok():

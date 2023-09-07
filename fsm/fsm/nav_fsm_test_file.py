@@ -23,7 +23,7 @@ def main():
 
         navigator.run()
 
-        if navigator.new_goal and navigator.curr_fsm_state in ('ApproachState', "TravelState"):
+        if navigator.new_goal and navigator.curr_fsm_state in ('ApproachState', "SearchState"):
             print('New nav goal')
             navigator.is_running = True
             navigator.new_goal = False
