@@ -36,6 +36,7 @@ def generate_launch_description():
 
     fsm_node = Node(
         package='fsm',
+        # executable='trailbot_fsm',
         executable='trailbot_fsm',
         name='fsm',
         output='screen'
@@ -43,7 +44,8 @@ def generate_launch_description():
 
     navigator_node = Node(
         package='fsm',
-        executable='navigator_node',
+        # executable='navigator_node',
+        executable='fsm_test',
         name='test_cmd_vel_node',
         output='screen'
     )
@@ -89,8 +91,8 @@ def generate_launch_description():
     )
 
     ld = LaunchDescription()
-    # ld.add_action(fsm_node)
-    # ld.add_action(navigator_node)
+    ld.add_action(fsm_node)
+    ld.add_action(navigator_node)
     ld.add_action(ximea_node)
     ld.add_action(slam_launch)
     ld.add_action(nav_node)

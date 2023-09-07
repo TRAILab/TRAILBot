@@ -5,7 +5,9 @@ from rclpy.node import Node
 from geometry_msgs.msg import Twist
 from std_msgs.msg import String, Bool
 
-from geometry_msgs.msg import PoseStamped
+
+from tf2_geometry_msgs import PoseStamped
+from geometry_msgs.msg import Pose
 from vision_msgs.msg import Detection3DArray, Detection3D
 from nav2_simple_commander.robot_navigator import BasicNavigator
 from math import sqrt
@@ -66,7 +68,8 @@ class Navigator_Command(BasicNavigator):
         self.curr_trail_point = PoseStamped()
 
         # Target tracking
-        self.track_init_thresh = 2.0 # move towards target instead of trail when within this distance
+        self.track_init_thresh = 4.0 # move towards target instead of trail when within this distance
+        # self.track_init_thresh = 100000.0
         self.curr_track_id = -1
         self.curr_track_location = None
         self.no_target_count = 0
@@ -159,8 +162,9 @@ class Navigator_Command(BasicNavigator):
         for track in new_tracks:
             # If in Approach state, keep current track, else track closest person
             if track.id == self.curr_track_id and self.curr_fsm_state == "ApproachState":
-                self.curr_track_location.header = track.header
-                self.curr_track_location.pose = track.bbox.center
+                temp_loc.header = track.header
+                temp_loc.pose = track.bbox.center
+                self.curr_track_location = self.tf_buffer.transform(temp_loc, 'map')
                 new_track = False
                 self.get_logger().info('New target track position', throttle_duration_sec=1)
                 break
@@ -184,7 +188,7 @@ class Navigator_Command(BasicNavigator):
         
         if new_track:
             self.curr_track_id = temp_id
-            self.curr_track_location = temp_loc
+            self.curr_track_location = self.tf_buffer.transform(temp_loc, 'map')
             self.get_logger().info('New Track ID: {} |  Dist. {}'.format(self.curr_track_id, dist), throttle_duration_sec=1)
 
         if self.curr_fsm_state == "SearchState" and temp_dist < self.track_init_thresh:
@@ -192,17 +196,17 @@ class Navigator_Command(BasicNavigator):
             self.publish_target_close()
 
     def parse_trail_point(self, new_point):
+        new_point_map = self.tf_buffer.transform(new_point, 'map')
         if self.curr_trail_point is not None and self.check_new_trail_dist:
-            dist = self.curr_trail_point.pose.position.dot(new_point.pose.position)
+            dist = self.curr_trail_point.pose.position.dot(new_point_map.pose.position)
             if dist < self.centerline_update_max_thresh2:
-                self.curr_trail_point = new_point
+                self.curr_trail_point = new_point_map
                 self.get_logger().info('Updated trail point', throttle_duration_sec=1)
             else:
                 self.get_logger().info('New point is too far at {}'.format(sqrt(dist)), throttle_duration_sec=1)                
 
         else:
-            self.curr_trail_point = new_point
-            test = self.tf_buffer.transform(self.curr_trail_point, 'map')
+            self.curr_trail_point = new_point_map
             self.get_logger().info('Updated trail point', throttle_duration_sec=1)
 
     def run(self):
