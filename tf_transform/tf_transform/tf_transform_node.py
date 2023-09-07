@@ -13,13 +13,13 @@ class TFTransformNode(Node):
 
     def transform_callback(self):
         try:
-                # Look up the transformations between "map" and "base_link"
-            trans_map = self.tf_buffer.lookup_transform("map", "base_link", rclpy.time.Time())
+                # Look up the transformations between "map" and "velodyne"
+            trans_map = self.tf_buffer.lookup_transform("map", "velodyne", rclpy.time.Time())
             #the base link is an identity transformation, hence the values are all 0 (not being computed), but am leaving for understanding
-            trans_base = self.tf_buffer.lookup_transform("base_link", "base_link", rclpy.time.Time())  # Identity transformation
+            trans_base = self.tf_buffer.lookup_transform("velodyne", "velodyne", rclpy.time.Time())  # Identity transformation
             
             translation_map = trans_map.transform.translation
-            rotation_map = trans_map.transform.rotation
+            #rotation_map = trans_map.transform.rotation
             
             translation_base = trans_base.transform.translation
             
@@ -28,9 +28,9 @@ class TFTransformNode(Node):
             #The translation is being defined in the map frame, so setting z = 0 creates a pseduo robot frame at the corresponding xy pos. 
             #The added +0.30 is to allow the pointcloud converter some adjustment room for angles 
             #desired_translation = gm.Vector3(x=translation_map.x, y=translation_map.y, z=(translation_base.z + 0.30))
-            desired_translation = gm.Vector3(x=translation_map.x, y=translation_map.y, z= 0.30) #same thing as above 
+            desired_translation = gm.Vector3(x=translation_map.x, y=translation_map.y, z= 0.10) #same thing as above 
 
-            #If you want the translation to be at the original location of the map but follow the base_link's z height then this is the corresponding translation:
+            #If you want the translation to be at the original location of the map but follow the velodyne's z height then this is the corresponding translation:
             #desired_translation = gm.Vector3(x=translation_base.x, y=translation_base.y, z=translation_map)
             
             new_trans = gm.TransformStamped()
@@ -38,7 +38,7 @@ class TFTransformNode(Node):
             new_trans.header.frame_id = "map"
             new_trans.child_frame_id = "robot_adjusted"
             new_trans.transform.translation = desired_translation
-            new_trans.transform.rotation = rotation_map
+            #new_trans.transform.rotation = rotation_map
             
             self.tf_broadcaster.sendTransform(new_trans)
                 

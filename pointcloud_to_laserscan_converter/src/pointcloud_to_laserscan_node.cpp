@@ -164,11 +164,16 @@ void PointCloudToLaserScanNode::cloudCallback(
     scan_msg->ranges.assign(ranges_size, scan_msg->range_max + inf_epsilon_);
   }
 
+  //declare transform variable
+  geometry_msgs::msg::TransformStamped frame_offset;
+
   // Transform cloud if necessary
   if (scan_msg->header.frame_id != cloud_msg->header.frame_id) {
     try {
       auto cloud = std::make_shared<sensor_msgs::msg::PointCloud2>();
       tf2_->transform(*cloud_msg, *cloud, target_frame_, tf2::durationFromSec(tolerance_));
+      //before copying the frame find the offset
+      frame_offset = tf2_->lookupTransform(target_frame_, cloud_msg->header.frame_id, tf2::TimePointZero);
       cloud_msg = cloud;
     } catch (tf2::TransformException & ex) {
       RCLCPP_ERROR_STREAM(this->get_logger(), "Transform failure: " << ex.what());
@@ -189,7 +194,10 @@ void PointCloudToLaserScanNode::cloudCallback(
       continue;
     }
 
-    if (*iter_z > max_height_ || *iter_z < min_height_) {
+
+    //changing this to account for a min and max height correlating with the transform from velodyne frame
+    if ((*iter_z - frame_offset.transform.translation.z) > max_height_ || 
+    (*iter_z - frame_offset.transform.translation.z) < min_height_) {
       RCLCPP_DEBUG(
         this->get_logger(),
         "rejected for height %f not in range (%f, %f)\n",

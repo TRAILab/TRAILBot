@@ -70,7 +70,7 @@ def generate_launch_description():
         launch_arguments={'resolution':resolution,
                           'publish_period_sec': publish_period_sec}.items(),)
 
-    map_transform_publisher = Node(
+    robot_transform_publisher = Node(
         package='tf_transform',
         executable='tf_transform_node',
         name='tf_transform_node',
@@ -87,6 +87,6 @@ def generate_launch_description():
     ld.add_action(occupancy_grid)
     ld.add_action(rviz_node)
     ld.add_action(IMU_node) 
-    ld.add_action(map_transform_publisher)
+    ld.add_action(robot_transform_publisher)
 
     return ld
