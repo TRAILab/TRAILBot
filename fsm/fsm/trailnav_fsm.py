@@ -72,6 +72,8 @@ class DoneState(State):
         blackboard['target_found'] = False
         blackboard['goal_reached'] = False
         blackboard['query_completed'] = False
+        blackboard['no_target'] = False
+        blackboard['customer_is_close'] = False
         return 'done'
     
 class FSM(Node):
@@ -121,12 +123,15 @@ class FSM(Node):
     def goal_status_callback(self, msg):
         if msg.data == 'goal_reached':
             self.blackboard['goal_reached'] = True
+            # self.blackboard['no_target'] = False
         elif msg.data == 'no_target':
             self.blackboard['no_target'] = True
+            self.blackboard['customer_is_close'] = False
     
     def customer_callback(self, msg):
         if msg.data == True:
             self.blackboard['customer_is_close'] = True
+            self.blackboard['no_target'] = False
 
     def query_complete_listener_callback(self, msg):
         if msg.data == True:

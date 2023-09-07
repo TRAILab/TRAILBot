@@ -11,6 +11,9 @@ from nav2_simple_commander.robot_navigator import BasicNavigator
 from math import sqrt
 from rclpy.duration import Duration
 
+from numpy import array
+from rclpy.clock import Clock
+
 class Navigator_Command(BasicNavigator):
     def __init__(self):
         super().__init__('trailnav_cmd')
@@ -47,7 +50,7 @@ class Navigator_Command(BasicNavigator):
         self.cancel_task = True
         self.new_goal = False
         self.is_running = False
-        self.check_new_tnav_dist = False
+        self.check_new_nav_dist = False
         nav_update_thresh = 0.5 # distance between goals to update the current goal
         self.nav_update_thresh2 = nav_update_thresh**2
 
@@ -55,7 +58,7 @@ class Navigator_Command(BasicNavigator):
         self.check_new_trail_dist = False
         centerline_update_max_thresh = 2 # max distance allowed between consecutive new centerline points
         self.centerline_update_max_thresh2 = centerline_update_max_thresh**2
-        self.curr_trail_point = None
+        self.curr_trail_point = PoseStamped
 
         # Target tracking
         self.track_init_thresh = 2.0 # move towards target instead of trail when within this distance
@@ -63,6 +66,8 @@ class Navigator_Command(BasicNavigator):
         self.curr_track_location = None
         self.no_target_count = 0
         self.no_target_thresh = 2
+
+        self.array = array([0,0,0]) # dummy numpy array
 
     def publish_nav_success(self):
         goal_status_msg = String()
@@ -90,8 +95,12 @@ class Navigator_Command(BasicNavigator):
             self.no_target_count = 0
         else:
             self.no_target_count += 1
+            if self.curr_fsm_state == 'ApproachState':
+                self.get_logger().info('Track msg with no targets, {} in a row'.format(self.no_target_count), throttle_duration_sec=1)
         if self.no_target_count >= self.no_target_thresh:
             self.publish_no_target()
+            if self.curr_fsm_state == 'ApproachState':
+                self.get_logger().info('ApproachState dropped after {} empty track messages'.format(self.no_target_thresh), throttle_duration_sec=1)
 
     def listener_callback_trail_point(self, msg):
         self.parse_trail_point(msg)
@@ -121,6 +130,7 @@ class Navigator_Command(BasicNavigator):
         
         elif self.curr_fsm_state == "TravelState":
             if self.curr_fsm_goal != self.curr_trail_point:
+
                 self.curr_fsm_goal = self.curr_trail_point
                 self.get_logger().info('New trail goal', throttle_duration_sec=1)
                 self.new_goal = True
@@ -129,6 +139,7 @@ class Navigator_Command(BasicNavigator):
             if self.result_future is not None:
                 if not self.isTaskComplete():
                     self.cancel_task = True
+                    self.get_logger().info('Canceling nav', throttle_duration_sec=1)
                 self.curr_fsm_goal = None
             if self.is_running:
                 self.get_logger().info('Failed to catch', throttle_duration_sec=1)
@@ -137,37 +148,59 @@ class Navigator_Command(BasicNavigator):
 
     def parse_tracks(self, new_tracks):
         temp_id = None
-        temp_loc = None
+        temp_loc = PoseStamped
         temp_dist = None
+        new_track = True
         for track in new_tracks:
-            if track.id == self.curr_track_id and self.curr_fsm_state != "ApproachState":
-                self.curr_track_location = track.bbox.center.pose
+            # If in Approach state, keep current track, else track closest person
+            if track.id == self.curr_track_id and self.curr_fsm_state == "ApproachState":
+                self.curr_track_location.header = track.header
+                self.curr_track_location.pose = track.bbox.center.position
+                new_track = False
+                self.get_logger().info('New target track position', throttle_duration_sec=1)
                 break
             
+            self.get_logger().info('Not current track', throttle_duration_sec=1)
+            self.array[0] = track.bbox.center.position.x
+            self.array[1] = track.bbox.center.position.y
+            self.array[2] = track.bbox.center.position.z
+            dist = self.array.dot(self.array)
             if temp_id is not None:
-                dist = track.bbox.center.position.dot(track.bbox.center.position)
                 if dist < temp_dist:
                     temp_id = track.id
-                    temp_loc = track.bbox.center.pose
+                    temp_loc.header = track.header
+                    temp_loc.pose = track.bbox.center.position
                     temp_dist = dist
             else:
                 temp_id = track.id
-                temp_loc = track.bbox.center.pose
+                # temp_loc.header = track.header
+                temp_loc.header.frame_id = 'map'
+                temp_loc.header.stamp = Clock.now()
+                temp_loc.header.seq = 1
+                temp_loc.pose = track.bbox.center.position
                 temp_dist = dist
-            
+        
+        if new_track:
             self.curr_track_id = temp_id
             self.curr_track_location = temp_loc
-            
+            self.get_logger().info('New Track ID: {} |  Dist. {}'.format(self.curr_track_id, dist), throttle_duration_sec=1)
+
         if self.curr_fsm_state == "TravelState" and temp_dist < self.track_init_thresh:
+            self.get_logger().info('Target ID {} is close enough to approach'.format(temp_id), throttle_duration_sec=1)
             self.publish_target_close()
 
     def parse_trail_point(self, new_point):
-        if self.curr_trail_point is not None and self.check_new_trail_points:
+        if self.curr_trail_point is not None and self.check_new_trail_dist:
             dist = self.curr_trail_point.pose.position.dot(new_point.pose.position)
             if dist < self.centerline_update_max_thresh2:
                 self.curr_trail_point = new_point
+                self.get_logger().info('Updated trail point', throttle_duration_sec=1)
+            else:
+                self.get_logger().info('New point is too far at {}'.format(sqrt(dist)), throttle_duration_sec=1)                
+
         else:
             self.curr_trail_point = new_point
+            self.get_logger().info('Updated trail point', throttle_duration_sec=1)
 
     def run(self):
         rclpy.spin_once(self)
@@ -175,7 +208,8 @@ class Navigator_Command(BasicNavigator):
 def main(args=None):
     rclpy.init(args=args)
     minimal_publisher = Navigator_Command()
-    minimal_publisher.run()
+    while rclpy.ok():
+        minimal_publisher.run()
     minimal_publisher.destroy_node()
     rclpy.shutdown()
 
