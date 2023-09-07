@@ -59,7 +59,7 @@ class QueryState(State):
 
 class DoneState(State):
     def __init__(self, state_publisher, blackboard):
-        super().__init__(outcomes=['done'])
+        super().__init__(outcomes=['done', 'restart'])
         self.state_publisher = state_publisher
         self.blackboard = blackboard
 
@@ -74,6 +74,8 @@ class DoneState(State):
         blackboard['query_completed'] = False
         blackboard['no_target'] = False
         blackboard['customer_is_close'] = False
+        if blackboard.get('restart', False):
+            return 'restart'
         return 'done'
     
 class FSM(Node):
@@ -104,13 +106,19 @@ class FSM(Node):
             self.query_complete_listener_callback,
             10
         )
+        self.restart_subscriber = self.create_subscription(
+            Bool,
+            'restart_run',
+            self.restart_listener_callback,
+            10
+        )
 
         self.sm = StateMachine(outcomes=['finished'])
 
         self.sm.add_state('SEARCH', SearchState(self.state_publisher, self.blackboard), transitions={'customer_close': 'APPROACH', 'customer_not_close': 'SEARCH'})
         self.sm.add_state('APPROACH', ApproachState(self.state_publisher, self.blackboard), transitions={'arrived': 'QUERY', 'not_arrived': 'APPROACH', 'no_target': 'SEARCH'})
         self.sm.add_state('QUERY', QueryState(self.state_publisher, self.blackboard), transitions={'query_complete': 'DONE', 'query_not_complete': 'QUERY'})
-        self.sm.add_state('DONE', DoneState(self.state_publisher, self.blackboard), transitions={'done': 'SEARCH'})
+        self.sm.add_state('DONE', DoneState(self.state_publisher, self.blackboard), transitions={'done': 'DONE', 'restart': 'SEARCH'})
 
     def run(self):
         while rclpy.ok():
@@ -143,6 +151,10 @@ class FSM(Node):
             state_msg = String()
             state_msg.data = state.__class__.__name__
             self.state_publisher.publish(state_msg)
+    
+    def restart_listener_callback(self, msg):
+        if msg.data == True:
+            self.blackboard['restart'] = True
 
 def main(args=None):
     rclpy.init(args=args)
