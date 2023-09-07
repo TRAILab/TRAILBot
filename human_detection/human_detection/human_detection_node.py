@@ -114,25 +114,23 @@ def get_heading_angle(
     x_angle_radian = math.atan(
         (centroid_x - (image_width / 2)) / (image_width / 2) * math.tan(math.radians(fov / 2)))
     return offset + scaling * math.degrees(x_angle_radian)
-def process_frame(model,image,configs):
+def process_frame(person_array_by_id,model,image,configs):
     """
     process a frame. Determine keypoints and number of people and
     heading angle.
     """
     # Run model inference
-    person_array = []
     bounding_boxes, identities, confidences=model.process_frame(image,view_img=False)
     if identities is None:
         return []
     for i in range(len(bounding_boxes)):
-        person = Person()
+        if identities[i] not in person_array_by_id:
+            person_array_by_id[ identities[i] ] = Person()
         centroid = xyxy_to_centroid(bounding_boxes[i])
-        person.heading_angle = get_heading_angle(centroid)
-        person.x, person.y = centroid 
-        person.on_screen=True
-        person.id = identities[i]
-        person_array.append(person)
-    return person_array
+        person_array_by_id[ identities[i] ].heading_angle = get_heading_angle(centroid)
+        person_array_by_id[ identities[i] ].x, person_array_by_id[ identities[i] ].y = centroid 
+        person_array_by_id[ identities[i] ].on_screen=True
+    return person_array_by_id
 
 
 class Person:
@@ -142,13 +140,11 @@ class Person:
     def __init__(self):
         self.x = -1.0
         self.y = -1.0
-        self.z = -1.0
+        self.z = movingAverage(5)
         self.on_screen = False
         self.heading_angle = 0.0
-        self.id = 0
 
-
-class internalState:
+class movingAverage:
     human_max_speed = 2.8 # m/s
     fps = 10
     buffer_ratio = 1.5 # allow fluctuation of up to 1.5 times 
@@ -163,6 +159,8 @@ class internalState:
         self.depth_history_length =depth_history_length  
 
     def weighted_moving_average(self,data, weights):
+        if len(data)==0 or len(weights)==0:
+            return -1.0
         num_points = min(len(data), len(weights))
         weights_sum = 0
         weighted_data_sum = 0
@@ -172,7 +170,7 @@ class internalState:
         return weighted_data_sum/weights_sum
 
     def get_average(self):
-        return self.weighted_moving_average(self.depth_history,internalState.moving_average_weights)
+        return self.weighted_moving_average(self.depth_history,movingAverage.moving_average_weights)
 
 
     def append(self, new_depth):
@@ -181,7 +179,7 @@ class internalState:
             return 0
 
         avg = self.get_average()
-        if abs(avg-new_depth) < internalState.max_movement_per_frame*self.missing_frame_count:
+        if abs(avg-new_depth) < movingAverage.max_movement_per_frame*self.missing_frame_count:
             self.depth_history.pop(0)
             self.depth_history.append(new_depth)
             self.missing_frame_count = 0
@@ -197,7 +195,7 @@ class LidarCameraSubscriber(Node):
 
 
     def __init__(self,parser_args,model,configs):
-        self.person_array = []
+        self.person_array_by_id = dict()
         self.is_there_anyone = False
         self.cur_state = "SearchState" # initial state
         self.parser_args = parser_args
@@ -301,9 +299,9 @@ class LidarCameraSubscriber(Node):
                 
 
                 # Draw red dots on the image at specified xy coordinates
-                for person in self.person_array:
+                for person_id, person in self.person_array_by_id.items():
                     cv2.circle(image_with_dots, (int(person.x), int(person.y)), 5, (0, 0, 255), -1)  # Draw a red circle at (x, y)
-                    cv2.putText(image_with_dots, str(person.id),  (int(person.x), int(person.y)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2) 
+                    cv2.putText(image_with_dots, str(person_id),  (int(person.x), int(person.y)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2) 
 
                 
                 cv2.imshow("Camera Image", image_with_dots)
@@ -324,8 +322,8 @@ class LidarCameraSubscriber(Node):
 
         self.cv_image = self.bridge.imgmsg_to_cv2(
             msg, desired_encoding='passthrough')
-        self.person_array = process_frame(self.model, self.cv_image, self.configs)
-        self.is_there_anyone = len(self.person_array)>0
+        process_frame(self.person_array_by_id, self.model, self.cv_image, self.configs)
+        self.is_there_anyone = len(self.person_array_by_id)>0
         self.timestamp = msg.header.stamp
 
 
@@ -352,11 +350,11 @@ class LidarCameraSubscriber(Node):
             self.configs)
 
         #update depth for every person
-        for person in self.person_array:
+        for person_id, person in self.person_array_by_id.items():
             if not person.on_screen:
-                person.z = -1.0
+                person.z.append(-1.0)
             else:
-                person.z = estimate_depth(person.x, person.y, points2d,self.configs)
+                person.z.append(estimate_depth(person.x, person.y, points2d,self.configs))
         self.timestamp = msg.header.stamp
         # if this is -1, node will publish constantly (as camera FPS)
         if not self.publishing_frequency>0:
@@ -376,15 +374,14 @@ class LidarCameraSubscriber(Node):
 
         detection_array = Detection3DArray()
 
-        for person in self.person_array:
-
-            message = f"id {person.id} coord: {round(person.x,2)},{round(person.y,2)},{round(person.z,2)}"
+        for person_id, person in self.person_array_by_id.items():
+            message = f"id {person_id} coord: {round(person.x,2)},{round(person.y,2)},{round(person.z.get_average(),2)}"
             # print_verbose_only(self.parser_args, message)
             self.print_and_log(message)
 
             detection3d = Detection3D()
             lidar_x,lidar_y,lidar_z = convert_to_lidar_frame(
-                (person.x,person.y,person.z),
+                (person.x,person.y,person.z.get_average()),
                 self.inverse_camera_transformation_k,
                 self.inverse_rotation_matrix,
                 self.translation_vector,
@@ -393,7 +390,7 @@ class LidarCameraSubscriber(Node):
             detection3d.bbox.center.position.x = float(lidar_x)
             detection3d.bbox.center.position.y = float(lidar_y)
             detection3d.bbox.center.position.z = float(lidar_z)
-            detection3d.id = str(person.id)
+            detection3d.id = str(person_id)
             # detection3d.bbox.size.x = float(0)
             # detection3d.bbox.size.y = float(0) 
             # detection3d.bbox.center.orientation.w = float(0)
