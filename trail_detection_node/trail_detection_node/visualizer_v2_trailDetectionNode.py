@@ -1,5 +1,5 @@
 import torch
-from .model_loader import FCN8s, FCN32s, PSPNet
+from .model_loader import PSPNet
 from PIL import Image as ImagePIL
 from torchvision import transforms
 import cv2
@@ -15,7 +15,6 @@ import math
 from cv_bridge import CvBridge
 
 import message_filters
-from scipy.ndimage import grey_erosion
 '''
     The transformation matrix as well as the coordinate conversion and depth estimation functions are copied from human_detection_node
 '''
@@ -131,8 +130,6 @@ def find_route(model, device, cv_image):
     pred[pred == 0] = 255 # only see the trail
     pred[pred == 1] = 0    
     pred = np.array(pred, dtype=np.uint8)
-
-    pred = grey_erosion(pred, size=(4,4))
     
     # # prediction visualize
     # cv2.imshow('prediction',pred)
@@ -313,7 +310,7 @@ class trailDetector(Node):
                 cv2.circle(visualize_cv_image, (red_circle_coloum, image_height - red_circle_row), radius=5, color=(0, 0, 255), thickness=-1)
 
         # visualize the chosen point in image
-        cv2.circle(visualize_cv_image, (circle_x, circle_y), radius=7, color=(255, 0, 255), thickness=-1)
+        cv2.circle(visualize_cv_image, (circle_x, circle_y), radius=7, color=(255, 255, 255), thickness=-1)
         
         cv2.imshow('circled image',visualize_cv_image)
         cv2.waitKey(25)

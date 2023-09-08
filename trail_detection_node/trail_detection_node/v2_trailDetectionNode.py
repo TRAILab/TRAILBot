@@ -1,5 +1,5 @@
 import torch
-from .model_loader import FCN8s, PSPNet
+from .model_loader import PSPNet
 from PIL import Image as ImagePIL
 from torchvision import transforms
 import cv2
