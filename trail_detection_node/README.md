@@ -7,15 +7,16 @@ SETUP GUIDE
 
 RUN the node
 =============
-The package contains two nodes:
-1. The node that takes the camera and lidar data and sends the Posestamp message
 ```
 ros2 run trail_detection_node trail_detection
 ```
-2. The node that takes the camera and lidar data and shows the visualization of the output
-```
-ros2 run trail_detection_node visualizer
-```
+
+Node Usage
+=============
+The node has three modes, which can be controlled by setting the ```only_camera_mode```(line 175) and ```visualize```(line 188) to different value: 
+1. Trail centerline publisher(default, ```only_camera_mode=False```, ```visualize=False```): subscribes to camera and lidar and publishes the centerline point(posestamp type msg) in ```velodyne``` frame in ```trail_location``` topic
+2. Trail centerline visualizer(```only_camera_mode=False```, ```visualize=True```): subscribes to camera and lidar and shows the chosen centerline point in **white**, the lidar points in **blue**, center points with no lidar points around in **yellow**, and center points with lidar points around in **red** in the image in the pop up window
+3. Only Camera mode(```only_camera_mode=True```): subscribes only to camera, runs the segmentation model, and shows the segmented trail in image in the pop up window
 
 Possible issues
 =============
@@ -24,10 +25,5 @@ Possible issues
 2. **Subfolder package relative import error:**
    Temporary fix: Move the script to the same folder and change the import code
 
-Scripts explanation
-=============
-1. ```v1_trailDetectionNode.py``` and ```v2_trailDetectionNode.py```: two versions of ros2 node that sends the Posestamp message
-2. ```visualizer_v1_trailDetectionNode.py``` and ```visualizer_v2_trailDetectionNode.py```: two versions of ros2 visualization node
-3. ```GANav_visualizer.py```: ros2 visualization node for GANav model
-4. ```jpu.py```, ```model_loader.py```, ```model_store.py```, ```segbase.py```, ```vgg.py```, and ```base_models``` folder: model loaders for FCN32S. FCN8s, and PSPNet. Copied from: https://github.com/Tramac/awesome-semantic-segmentation-pytorch
+
     
