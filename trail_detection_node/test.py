@@ -1,3 +1,3 @@
-from trail_detection_node.visualizer_v2_trailDetectionNode import *
+from trail_detection_node.trailDetectionNode import *
 
 main()
