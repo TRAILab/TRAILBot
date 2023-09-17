@@ -16,7 +16,7 @@ from cv_bridge import CvBridge
 
 import message_filters
 '''
-    The transformation matrix as well as the coordinate conversion and depth estimation functions are copied from human_detection_node
+    The transformation matrix as well as the coordinate conversion and depth estimation functions (from line 21 to line 98) are copied from human_detection_node
 '''
 camera_transformation_k = np.array([
     [628.5359544,0,676.9575694],
