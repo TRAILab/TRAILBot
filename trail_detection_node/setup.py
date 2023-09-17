@@ -14,15 +14,13 @@ setup(
     install_requires=['setuptools'],
     zip_safe=True,
     maintainer='zhaodong',
-    maintainer_email='tom2352759619@hotmail.com',
+    maintainer_email='zhaodong.jiang@mail.utoronto.ca',
     description='TODO: Package description',
     license='TODO: License declaration',
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'trail_detection = trail_detection_node.v2_trailDetectionNode:main',
-            'visualizer = trail_detection_node.visualizer_v2_trailDetectionNode:main',
-            'original_visualizer = trail_detection_node.visualizer_v1_trailDetectionNode:main',
+            'trail_detection = trail_detection_node.trailDetectionNode:main',
         ],
     },
 )
