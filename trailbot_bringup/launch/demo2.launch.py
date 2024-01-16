@@ -42,7 +42,7 @@ def generate_launch_description():
         output='screen'
     )
 
-    navigator_node = Node(
+    fsm_nav_node = Node(
         package='fsm',
         # executable='navigator_node',
         executable='fsm_test',
@@ -91,13 +91,13 @@ def generate_launch_description():
     )
 
     ld = LaunchDescription()
-    ld.add_action(fsm_node)
-    ld.add_action(navigator_node)
+    # ld.add_action(fsm_node)
+    # ld.add_action(fsm_nav_node)
     ld.add_action(ximea_node)
     ld.add_action(slam_launch)
     ld.add_action(nav_node)
-    ld.add_action(human_detection_node)
-    ld.add_action(trail_detection_node)
+    # ld.add_action(human_detection_node)
+    # ld.add_action(trail_detection_node)
     # ld.add_action(launch_voice_assistant)
 
     logging = False
