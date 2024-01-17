@@ -375,7 +375,7 @@ class LidarCameraSubscriber(Node):
         self.is_person_publisher.publish(is_person_msg)
 
         detection_array = Detection3DArray()
-
+        detection_array.header.frame_id = 'velodyne'
         for person in self.person_array:
 
             message = f"id {person.id} coord: {round(person.x,2)},{round(person.y,2)},{round(person.z,2)}"

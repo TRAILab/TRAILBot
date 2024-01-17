@@ -39,7 +39,7 @@ class Navigator_Command(BasicNavigator):
         # Subscribe to the trail detection pose
         self.fsm_state_subscription = self.create_subscription(
             PoseStamped,
-            'target_location',
+            'trail_location',
             self.listener_callback_trail_point,
             10)
 
@@ -68,7 +68,7 @@ class Navigator_Command(BasicNavigator):
         self.curr_trail_point = PoseStamped()
 
         # Target tracking
-        self.track_init_thresh = 4.0 # move towards target instead of trail when within this distance
+        self.track_init_thresh = 2.0 # move towards target instead of trail when within this distance
         # self.track_init_thresh = 100000.0
         self.curr_track_id = -1
         self.curr_track_location = None
@@ -99,8 +99,7 @@ class Navigator_Command(BasicNavigator):
 
     def listener_callback_tracking(self, msg):
         if len(msg.detections):
-            self.parse_tracks(msg.detections)
-            self.no_target_count = 0
+            self.parse_tracks(msg)
         else:
             self.no_target_count += 1
             if self.curr_fsm_state == 'ApproachState':
@@ -137,8 +136,7 @@ class Navigator_Command(BasicNavigator):
                 self.new_goal = True
         
         elif self.curr_fsm_state == "SearchState":
-            if self.curr_fsm_goal != self.curr_trail_point:
-
+            if self.curr_fsm_goal != self.curr_trail_point and self.curr_trail_point.header.frame_id != "":
                 self.curr_fsm_goal = self.curr_trail_point
                 self.get_logger().info('New trail goal', throttle_duration_sec=1)
                 self.new_goal = True
@@ -154,7 +152,8 @@ class Navigator_Command(BasicNavigator):
                 self.cancel_task = True
                 self.curr_fsm_goal = None
 
-    def parse_tracks(self, new_tracks):
+    def parse_tracks(self, track_msgs):
+        new_tracks = track_msgs.detections
         temp_id = None
         temp_loc = PoseStamped()
         temp_dist = None
@@ -162,14 +161,17 @@ class Navigator_Command(BasicNavigator):
         for track in new_tracks:
             # If in Approach state, keep current track, else track closest person
             if track.id == self.curr_track_id and self.curr_fsm_state == "ApproachState":
-                temp_loc.header = track.header
+                self.no_target_count = 0
+                temp_loc.header = track_msgs.header
                 temp_loc.pose = track.bbox.center
                 self.curr_track_location = self.tf_buffer.transform(temp_loc, 'map')
                 new_track = False
                 self.get_logger().info('New target track position', throttle_duration_sec=1)
+                self.get_logger().info('Target location in velo x:{} y:{} z:{}'.format(temp_loc.pose.position.x, temp_loc.pose.position.y, temp_loc.pose.position.z))
+                self.get_logger().info('Target location in map x:{} y:{} z:{}'.format(self.curr_track_location.pose.position.x, self.curr_track_location.pose.position.y, self.curr_track_location.pose.position.z))
                 break
             
-            self.get_logger().info('Not current track', throttle_duration_sec=1)
+            # self.get_logger().info('Not current track', throttle_duration_sec=1)
             self.array[0] = track.bbox.center.position.x
             self.array[1] = track.bbox.center.position.y
             self.array[2] = track.bbox.center.position.z
@@ -177,22 +179,29 @@ class Navigator_Command(BasicNavigator):
             if temp_id is not None:
                 if dist < temp_dist:
                     temp_id = track.id
-                    temp_loc.header = track.header
+                    temp_loc.header = track_msgs.header
                     temp_loc.pose = track.bbox.center
                     temp_dist = dist
             else:
                 temp_id = track.id
-                temp_loc.header = track.header
+                temp_loc.header = track_msgs.header
                 temp_loc.pose = track.bbox.center
                 temp_dist = dist
         
-        if new_track:
+        if new_track and self.curr_fsm_state != 'ApproachState':
             self.curr_track_id = temp_id
             self.curr_track_location = self.tf_buffer.transform(temp_loc, 'map')
-            self.get_logger().info('New Track ID: {} |  Dist. {}'.format(self.curr_track_id, dist), throttle_duration_sec=1)
+            self.get_logger().info('New Track ID: {} |  Dist. {}'.format(self.curr_track_id, sqrt(dist)), throttle_duration_sec=1)
 
-        if self.curr_fsm_state == "SearchState" and temp_dist < self.track_init_thresh:
-            self.get_logger().info('Target ID {} is close enough to approach'.format(temp_id), throttle_duration_sec=1)
+        elif new_track and self.curr_fsm_state == 'ApproachState':
+            self.no_target_count += 1
+            self.get_logger().info('Target ID {} not in frame'.format(self.curr_track_id), throttle_duration_sec=1)
+
+        if self.curr_fsm_state == "SearchState" and sqrt(temp_dist) < self.track_init_thresh:
+            self.no_target_count = 0
+            self.get_logger().info('Target ID {} @ {} m is close enough to approach'.format(temp_id, sqrt(dist)), throttle_duration_sec=1)
+            self.get_logger().info('Target location in velo x:{} y:{} z:{}'.format(temp_loc.pose.position.x, temp_loc.pose.position.y, temp_loc.pose.position.z), throttle_duration_sec=1)
+            self.get_logger().info('Target location in map x:{} y:{} z:{}'.format(self.curr_track_location.pose.position.x, self.curr_track_location.pose.position.y, self.curr_track_location.pose.position.z), throttle_duration_sec=1)
             self.publish_target_close()
 
     def parse_trail_point(self, new_point):

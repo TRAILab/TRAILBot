@@ -16,7 +16,7 @@ def main():
     navigator = Navigator_Command()
 
     # Wait for navigation to fully activate
-    navigator.waitUntilNav2Active()
+    # navigator.waitUntilNav2Active()
 
     # Run until dead
     while rclpy.ok():

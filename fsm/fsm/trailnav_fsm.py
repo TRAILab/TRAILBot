@@ -76,6 +76,8 @@ class DoneState(State):
         blackboard['customer_is_close'] = False
         if blackboard.get('restart', False):
             return 'restart'
+        
+        blackboard['restart'] = False
         return 'done'
     
 class FSM(Node):
