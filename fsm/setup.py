@@ -28,6 +28,7 @@ setup(
             "trailbot_fsm = fsm.trailnav_fsm:main",
             "navigator_cmd_node = fsm.trailnav_cmd:main",
             "fsm_test = fsm.nav_fsm_test_file:main",
+            "navigator_node = fsm.navigator_node:main",
         ],
     },
 )
