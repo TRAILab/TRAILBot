@@ -109,7 +109,7 @@ def generate_launch_description():
         arguments=['-configuration_directory', cartographer_config_dir,
                    '-configuration_basename', configuration_basename],
         remappings=[('/husky_velocity_controller/odom', '/odom'),
-                    ('/points2', '/velodyne_points')],
+                    ('/points2', '/ouster/points')],
     )
 
     occupancy_grid = IncludeLaunchDescription(

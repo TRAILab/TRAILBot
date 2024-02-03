@@ -150,7 +150,7 @@ Visualization Manager:
           Value: true
         user_rail_link:
           Value: true
-        velodyne:
+        os_sensor:
           Value: true
       Marker Scale: 1
       Name: TF
@@ -190,7 +190,7 @@ Visualization Manager:
                   {}
               user_rail_link:
                 {}
-              velodyne:
+              os_sensor:
                 {}
       Update Interval: 0
       Value: true

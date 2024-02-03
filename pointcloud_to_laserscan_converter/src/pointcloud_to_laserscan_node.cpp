@@ -69,7 +69,7 @@ PointCloudToLaserScanNode::PointCloudToLaserScanNode(const rclcpp::NodeOptions &
   angle_min_ = this->declare_parameter("angle_min", -M_PI);
   angle_max_ = this->declare_parameter("angle_max", M_PI);
   angle_increment_ = this->declare_parameter("angle_increment", M_PI / 180.0);
-  scan_time_ = this->declare_parameter("scan_time", 1.0 / 30.0);
+  scan_time_ = this->declare_parameter("scan_time", 1.0 / 10.0);
   range_min_ = this->declare_parameter("range_min", 0.0);
   range_max_ = this->declare_parameter("range_max", std::numeric_limits<double>::max());
   inf_epsilon_ = this->declare_parameter("inf_epsilon", 1.0);
@@ -138,6 +138,7 @@ void PointCloudToLaserScanNode::subscriptionListenerThreadLoop()
 void PointCloudToLaserScanNode::cloudCallback(
   sensor_msgs::msg::PointCloud2::ConstSharedPtr cloud_msg)
 {
+
   // build laserscan output
   auto scan_msg = std::make_unique<sensor_msgs::msg::LaserScan>();
   scan_msg->header = cloud_msg->header;
