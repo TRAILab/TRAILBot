@@ -32,7 +32,7 @@ def generate_launch_description():
     # FSM Node
     fsm_node = Node(
         package='fsm',
-        executable='trailbot_fsm',
+        executable='trailbot_fsm.py',
         name='fsm',
         output='screen'
     )
@@ -80,8 +80,8 @@ def generate_launch_description():
     ld = LaunchDescription()
     ld.add_action(gazebo_builder)
     ld.add_action(rviz_node)
-    ld.add_action(fsm_node)
-    ld.add_action(navigator_node)
+    # ld.add_action(fsm_node)
+    # ld.add_action(navigator_node)
     # ld.add_action(slam_node)
     # ld.add_action(delayed_spawn)
     # ld.add_action(delayed_spawn2)

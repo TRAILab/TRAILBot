@@ -119,7 +119,7 @@ def generate_launch_description():
     cartographer_config_dir = LaunchConfiguration('cartographer_config_dir', default=os.path.join(
                                                   trailbot_cartographer_prefix, 'config'))
     configuration_basename = LaunchConfiguration('configuration_basename', default='trailbot_lds_2d.lua') 
-    configuration_basename_3d = LaunchConfiguration('configuration_basename', default='trailbot_lds_3d.lua') 
+    # configuration_basename_3d = LaunchConfiguration('configuration_basename', default='trailbot_lds_3d.lua') 
     resolution = LaunchConfiguration('resolution', default='0.05')
     publish_period_sec = LaunchConfiguration('publish_period_sec', default='1.0')
 

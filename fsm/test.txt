@@ -1,7 +1,0 @@
-ros2 topic pub --once /customer_is_close std_msgs/Bool "{data: True}"
-ros2 topic pub --once /goal_reached std_msgs/String "{data: "goal_reached"}"
-ros2 topic pub --once /goal_reached std_msgs/String "{data: "no_target"}"
-ros2 topic pub --once /query_complete std_msgs/Bool "{data: "True"}"
-ros2 topic pub --once /detection_location vision_msgs/Detection3DArray "{detections:[{id: '02', bbox: {center: {position: {x: 1.0, y: 0.0, z: 0.0}}}},{id: '01'}]}"
-ros2 topic pub --once /target_location geometry_msgs/msg/PoseStamped "{header: {frame_id: 'map'}, pose: {position: {x: -2.0, y: -2.0, z: 0.0}}}"
-ros2 topic pub --once /goal_reached std_msgs/String "{data: "goal_reached"}" && ros2 topic pub --once /restart_run std_msgs/Bool "{data: True}"
