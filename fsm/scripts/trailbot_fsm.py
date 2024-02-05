@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import datetime
 import rclpy
 from rclpy.node import Node
 from rclpy.action import ActionClient
@@ -17,31 +18,24 @@ class FSM(Node):
   def __init__(self):
     super().__init__("trailbot_state_machine")
     self.nav = BasicNavigator()
-    # self.timer = self.create_timer(0.5, self.nav_callback)
-
+    
     self.nav_target()
 
-  def nav_callback(self):
-    print(f"{self.nav.getResult()=}")
-    print(f"{self.nav.isTaskComplete()=}")
-    print(f"{self.nav.getFeedback()=}")
-
   def nav_target(self):
-    # goal_pose = PoseStamped()
-    # goal_pose.header.frame_id = "map"
-    # goal_pose.pose.position.x = 1.0
-    # goal_pose.pose.position.y = 0.0
-    # goal_pose.pose.position.z = 0.0
-    # goal_pose.pose.orientation.w = 1.0
+    goal_pose = PoseStamped()
+    goal_pose.header.frame_id = "map"
+    goal_pose.pose.position.x = 3.0
+    goal_pose.pose.position.y = -3.0
+    goal_pose.pose.position.z = 0.0
+    goal_pose.pose.orientation.w = 1.0
 
-    # self.nav.goToPose(goal_pose)
-
-    print(f"{self.nav.isTaskComplete()=}")
+    self.nav.goToPose(goal_pose)
 
     while not self.nav.isTaskComplete():
+      print(f"[{datetime.datetime.now().strftime('%H:%M:%S')}] {self.nav.isTaskComplete()=}")
       feedback = self.nav.getFeedback()
-      print(f"{feedback=}")
 
+    print(f"{self.nav.isTaskComplete()=}")
     result = self.nav.getResult()
     if result == TaskResult.SUCCEEDED:
       print("Goal succeeded!")
@@ -50,6 +44,8 @@ class FSM(Node):
     elif result == TaskResult.FAILED:
       print("Goal failed!")
 
+  def _feedback(self):
+    pass
 
 def main():
   rclpy.init()
