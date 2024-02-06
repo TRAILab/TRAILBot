@@ -70,7 +70,7 @@ def generate_launch_description():
         #             ('/imu', 'imu/data')],
         remappings=[('/husky_velocity_controller/odom', '/odom'),
                     ('points2', '/ouster/points'),
-                    ('/imu', 'imu/data')],
+                    ('/imu', '/imu/data')],
     )
 
     occupancy_grid = IncludeLaunchDescription(
@@ -94,7 +94,7 @@ def generate_launch_description():
     # # ld.add_action(velo_launch1)
     # # ld.add_action(velo_launch2)
     # ld.add_action(ouster_launch)
-    # ld.add_action(occupancy_grid)
+    ld.add_action(occupancy_grid)
     ld.add_action(rviz_node)
     ld.add_action(IMU_node) 
     ld.add_action(robot_transform_publisher)
