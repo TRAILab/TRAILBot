@@ -93,6 +93,31 @@ def generate_launch_description():
     launch_husky_accessories = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(PathJoinSubstitution(
         [FindPackageShare("husky_bringup"), 'launch', 'accessories.launch.py'])))
+    
+    
+    
+    config = os.path.join(
+        get_package_share_directory("trailbot_bringup"),
+        "logitech_camera",
+        "config",
+        "params.yaml",
+    )
+    logitech_node = Node(
+        package="usb_cam",
+        executable="usb_cam_node_exe",
+        name="usb_cam_node",
+        #ros2 run usb_cam usb_cam_node_exe --ros-args --params-file /path/to/colcon_ws/src/usb_cam/config/params.yaml
+        # arguments=["params-file", config]
+        #https://github.com/ros-drivers/usb_cam/tree/ros2?tab=readme-ov-file
+        #to see supported formats
+        #ros2 run usb_cam usb_cam_node_exe --ros-args -p pixel_format:="test"
+
+        #to compress:
+        #add package https://gitlab.com/boldhearts/ros2_v4l2_camera#usage-1
+        #ros2 run image_transport republish compressed raw --ros-args --remap in/compressed:=image_raw/compressed --remap out:=image_raw/uncompressed
+        #
+        parameters=[config]
+    )
 
 
     ld = LaunchDescription()
@@ -104,5 +129,8 @@ def generate_launch_description():
     ld.add_action(launch_husky_teleop_base)
     ld.add_action(launch_husky_teleop_joy)
     ld.add_action(launch_husky_accessories)
+
+    ld.add_action(logitech_node)
+
 
     return ld
