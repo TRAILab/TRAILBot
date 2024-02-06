@@ -50,19 +50,9 @@ def generate_launch_description():
         output='screen'
     )
 
-    #Ximea Camera Node (commented because no current implementation)
-    ld = LaunchDescription()
-    config = os.path.join(
-        get_package_share_directory("ximea_driver"),
-        "config",
-        "params.yaml",
-    )
-    ximea_node = Node(
-        package="ximea_driver",
-        executable="ximea_driver_node",
-        name="ximea_driver_node",
-        parameters=[config]
-    )
+    #Logitech Camera Launch File
+    camera_launch_path = os.path.join(get_package_share_directory('trailbot_bringup'),'launch','logitech_camera.launch.py')
+    camera_launch = IncludeLaunchDescription(PythonLaunchDescriptionSource([camera_launch_path])) 
 
     # Launch voice_assistant/voice_assistant.launch.py which is voice interaction.
     launch_voice_assistant = IncludeLaunchDescription(
@@ -93,7 +83,7 @@ def generate_launch_description():
     ld = LaunchDescription()
     # ld.add_action(fsm_node)
     # ld.add_action(fsm_nav_node)
-    ld.add_action(ximea_node)
+    ld.add_action(camera_launch)
     ld.add_action(slam_launch)
     ld.add_action(nav_node)
     # ld.add_action(human_detection_node)
