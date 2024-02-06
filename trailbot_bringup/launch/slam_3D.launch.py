@@ -69,7 +69,7 @@ def generate_launch_description():
         #             ('/points2', '/velodyne_points'),
         #             ('/imu', 'imu/data')],
         remappings=[('/husky_velocity_controller/odom', '/odom'),
-                    ('/points2', 'ouster/points'),
+                    ('points2', '/ouster/points'),
                     ('/imu', 'imu/data')],
     )
 
