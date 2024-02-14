@@ -43,7 +43,10 @@ def generate_launch_description():
         executable='usb_cam_node_exe',
         name='usb_cam_node',
         remappings=[
-                ('/image_raw', '/camera')
+                ('/image_raw', '/camera'),
+                ('/image_raw/compressed', '/camera/compressed'),
+                ('/image_raw/compressedDepth', '/camera/compressedDepth'),
+                ('/image_raw/theora', '/camera/theora')
             ],
         output='screen',
         arguments=['--ros-args', '--params-file', LaunchConfiguration('params_file')]
