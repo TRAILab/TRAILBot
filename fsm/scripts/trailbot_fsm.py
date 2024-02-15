@@ -11,25 +11,36 @@ from simple_node import Node
 from yasmin import State 
 from yasmin import StateMachine
 from robot_navigator import BasicNavigator, TaskResult
-from nav2_msgs.action import NavigateToPose
 
 
-# class SearchState(State):
-#   def __init__(self, state_publisher, blackboard):
-#     super().__init__(outcomes=["target_found", "target_not_found"])
-#     self.state_publisher = state_publisher
-#     self.blackboard = blackboard
+class SearchState(State):
+  def __init__(self, blackboard, state_publisher):
+    super().__init__(outcomes=["target_found", "target_not_found"])
+    self.state_publisher = state_publisher
+    self.blackboard = blackboard
 
-#   def execute(self, blackboard):
-#     state_msg = String()
-#     state_msg.data = self.__class__.__name__
-#     self.state_publisher.publish(state_msg)
+  def execute(self, blackboard):
+    state_msg = String()
+    state_msg.data = self.__class__.__name__
+    self.state_publisher.publish(state_msg)
 
-#     # check if the target has been found
-#     if blackboard.get("target_found", False):
-#       return "target_found"
-#     return "target_not_found"
+    # check if the target has been found
+    if blackboard.get("target_found", False):
+      return "target_found"
+    return "target_not_found"
 
+class ApproachState(State):
+  def __init__(self, blackboard, state_publisher):
+    super().__init__(outcomes=["arrived", "not_arrived"])
+    self.blackboard = blackboard
+    self.state_publisher = state_publisher
+
+  def execute(self, blackboard):
+    state_msg = String()
+    state_msg.data = self.__class__.__name__
+    self.state_publisher.publish(state_msg)
+
+    
 
 
 
@@ -43,12 +54,19 @@ class FSM(Node):
     self.nav = BasicNavigator()
 
     # create state machine and blackboard
-    # sm = StateMachine(outcomes=["finished"])
+    sm = StateMachine(outcomes=["finished"])
     self.blackboard = {} 
-    # self.current_state = "SEARCH"
+    self.current_state = "SEARCH"
 
     # add states
-    # self.sm.add_state("SEARCH", Search)
+    self.sm.add_state("SEARCH", SearchState(self.state_publisher_, self.blackboard),
+                      transitions={"target_found": "APPROACH", "target_not_found": "SEARCH"})
+    self.sm.add_state("APPROACH", ApproachState(self.state_publisher_, self.blackboard),
+                      transitions={"target_found": "APPROACH", "target_not_found": "SEARCH"})
+    self.sm.add_state("SEARCH", SearchState(self.state_publisher_, self.blackboard),
+                      transitions={"target_found": "APPROACH", "target_not_found": "SEARCH"})
+    self.sm.add_state("SEARCH", SearchState(self.state_publisher_, self.blackboard),
+                      transitions={"target_found": "APPROACH", "target_not_found": "SEARCH"})
 
     # publish trailbot state
     self.state_publisher_ = self.create_publisher(String, 'trailbot_state', 10)
@@ -98,8 +116,6 @@ class FSM(Node):
     self.blackboard["target_location"] = msg
     self.blackboard["target_found"] = True
     self.goal_received = True
-
-    # print blackboard
     self.get_blackboard()
 
   def get_blackboard(self):
