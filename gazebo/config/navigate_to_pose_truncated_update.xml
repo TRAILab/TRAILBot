@@ -17,7 +17,7 @@
               </GoalUpdater>
               <ClearEntireCostmap name="ClearGlobalCostmap-Context" service_name="global_costmap/clear_entirely_global_costmap"/>
             </RecoveryNode>
-            <TruncatePath distance = "0.7" input_path = "{path}" output_path = "{truncated_path}" />
+            <TruncatePath distance = "0.75" input_path = "{path}" output_path = "{truncated_path}" />
           </Sequence>
         </RateController>
         <RecoveryNode number_of_retries="1" name="FollowPath">
