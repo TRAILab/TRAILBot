@@ -13,7 +13,8 @@ setup(
             ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
         # Include all launch files.
-        (os.path.join('share', package_name, 'launch'), glob('launch/*.launch.py'))
+        (os.path.join('share', package_name, 'launch'), glob('launch/*.launch.py')),
+        (os.path.join('share', package_name,  'logitech_camera/config'), glob('logitech_camera/config/*.yaml'))
     ],
     install_requires=['setuptools'],
     zip_safe=True,
