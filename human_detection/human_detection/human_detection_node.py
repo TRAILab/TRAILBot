@@ -223,7 +223,7 @@ class LidarCameraSubscriber(Node):
 
         self.lidar_subscription = self.create_subscription(
             PointCloud2,
-            'velodyne_points',  
+            './._points',  
             self.lidar_callback,
             10)
         self.lidar_subscription

@@ -49,7 +49,8 @@ def generate_launch_description():
 
 
     # Cartographer node
-    use_sim_time = LaunchConfiguration('use_sim_time', default='false')
+    # use_sim_time = LaunchConfiguration('use_sim_time', default='false')
+    use_sim_time = LaunchConfiguration('use_sim_time', default='true')
     trailbot_cartographer_prefix = get_package_share_directory(package_name)
     cartographer_config_dir = LaunchConfiguration('cartographer_config_dir', default=os.path.join(
                                                   trailbot_cartographer_prefix, 'config'))
@@ -70,7 +71,7 @@ def generate_launch_description():
         #             ('/imu', 'imu/data')],
         remappings=[('/husky_velocity_controller/odom', '/odom'),
                     ('points2', '/ouster/points'),
-                    ('/imu', '/imu/data')],
+                    ('/imu', '/ouster/imu')],
     )
 
     occupancy_grid = IncludeLaunchDescription(

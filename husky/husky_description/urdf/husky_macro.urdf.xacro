@@ -118,14 +118,16 @@
       <child link="${prefix}velodyne" />
     </joint> -->
 
+    <!-- Suppressed ext. IMU, Internal IMU in OUSTER LiDAR system is being used, check TF tree and ouster/imu topic-->
     <!-- IMU Link-->
     <!-- Can be modified with environment variables in /etc/ros/setup.bash -->
-    <link name="${prefix}imu_link"/>
+    
+    <!-- <link name="${prefix}imu_link"/>
     <joint name="${prefix}imu_joint" type="fixed">
       <origin xyz="$(optenv CPR_IMU_XYZ 0 0 0)" rpy="$(optenv CPR_IMU_RPY 0 0 0)" />
       <parent link="${prefix}base_link" />
       <child link="${prefix}imu_link" />
-    </joint>
+    </joint> -->
 
     <!-- GPS Link-->
     <!-- Can be modified with environment variables in /etc/ros/setup.bash -->
