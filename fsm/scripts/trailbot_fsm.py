@@ -2,16 +2,19 @@
 import datetime
 import rclpy
 from rclpy.node import Node
-from rclpy.action import ActionClient
 
-from std_msgs.msg import String
+from std_msgs.msg import String, Bool
 from geometry_msgs.msg import PoseStamped
 
 from simple_node import Node
 from yasmin import State 
 from yasmin import StateMachine
-from robot_navigator import BasicNavigator 
+from robot_navigator import BasicNavigator, TaskResult
 
+def get_blackboard(blackboard):
+  print(f"Current Blackboard Contents")
+  for key, val in blackboard.items():
+    print(f"{key}: {val}")
 
 class SearchState(State):
   def __init__(self, state_publisher):
@@ -43,15 +46,19 @@ class ApproachState(State):
     target_location = blackboard.get("target_location")   # get goal pose
     self.navigator.goToPose(target_location)              # navigate to goal pose
 
-    while not self.nav.isTaskComplete():
-      feedback = self.nav.getFeedback()
+    # check if robot reached goal
+    while not self.navigator.isTaskComplete():
+      feedback = self.navigator.getFeedback()
       print(f"[{datetime.datetime.now().strftime('%H:%M:%S')}] {feedback.distance_remaining=}")
+      current_time = datetime.datetime.now().strftime('%H:%M:%S')
+      state_msg.data = f"[{current_time}] {self.__class__.__name__}"
+      self.state_publisher_.publish(state_msg)
 
-
-    if blackboard.get("arrived", False):
+    if self.navigator.getResult() == TaskResult.SUCCEEDED:
+      blackboard["arrived"] = True
+      get_blackboard(blackboard)
       return "arrived"
     return "not_arrived"
-
 
 class QueryState(State):
   def __init__(self, state_publisher):
@@ -60,28 +67,16 @@ class QueryState(State):
 
   def execute(self, blackboard):
     state_msg = String()
-    state_msg.data = self.__class__.__name__
+    current_time = datetime.datetime.now().strftime('%H:%M:%S')
+    state_msg.data = f"[{current_time}] {self.__class__.__name__}"
     self.state_publisher_.publish(state_msg)
 
-    if blackboard.get("snack_dispensed", False):
+    if blackboard.get("dispensed", False):
+      blackboard["target_found"] = False
+      blackboard["dispensed"] = False
       return "snack_dispensed"
     return "snack_not_dispensed"
     
-class DoneState(State):
-  def __init__(self, state_publisher):
-    super().__init__(outcomes=["finished"])
-    self.state_publisher_ = state_publisher
-
-  def execute(self, blackboard):
-    state_msg = String()
-    state_msg.data = self.__class__.__name__
-    self.state_publisher_.publish(state_msg)
-
-    blackboard["target_found"] = False
-    blackboard["goal_reached"] = False
-    blackboard["snack_dispensed"] = False
-    return "finished"
-
 
 class FSM(Node):
   def __init__(self):
@@ -92,11 +87,14 @@ class FSM(Node):
     self.state_publisher_ = self.create_publisher(String, "trailbot_state", 10)
 
     # subscribe to goal pose topic
-    self.goal_subscriber_ = self.create_subscription(PoseStamped, "goal_pose", self.goal_callback,10)
+    self.goal_subscriber_ = self.create_subscription(PoseStamped, "target_pose", self.target_callback, 10)
+
+    # subscribe to dispenser client
+    self.dispenser_subscriber_ = self.create_subscription(Bool, "client_state", self.client_callback, 10)
 
     # create state machine (yasmin) and blackboard (dict)
     self.sm = StateMachine(outcomes=["finished"])
-    self.blackboard = {} 
+    self.blackboard = {"target_found":False, "target_location":None, "dispensed":False} 
 
     # add states
     self.sm.add_state("SEARCH", SearchState(self.state_publisher_),
@@ -104,59 +102,18 @@ class FSM(Node):
     self.sm.add_state("APPROACH", ApproachState(self.state_publisher_, self.nav),
                       transitions={"arrived": "QUERY", "not_arrived": "APPROACH"})
     self.sm.add_state("QUERY", QueryState(self.state_publisher_),
-                      transitions={"snack_dispensed": "DONE", "snack_not_dispensed": "QUERY"})
-    self.sm.add_state("DONE", DoneState(self.state_publisher_),
-                      transitions={"finished": "SEARCH"})
+                      transitions={"snack_dispensed": "SEARCH", "snack_not_dispensed": "QUERY"})
 
+    # run state machine
     self.sm.execute(self.blackboard)
-    # self.StateMachine()
     
-
-  def StateMachine(self):
-    while True:
-      outcome = self.sm.execute(self.blackboard)
-
-
-
-
-    # # wait for goal pose message
-    # while not self.goal_received:
-    #   print(f"[{datetime.datetime.now().strftime('%H:%M:%S')}] Waiting for goal pose.")
-    
-    # # reset flag for future goals
-    # self.goal_received = False
-
-    # # proceed with navigation if target found
-    # target_pose = self.blackboard.get("target_location")
-    # if target_pose:
-    #   self.nav.goToPose(target_pose)
-
-    # while not self.nav.isTaskComplete():
-    #   feedback = self.nav.getFeedback()
-    #   # print(f"[{datetime.datetime.now().strftime('%H:%M:%S')}] {feedback.distance_remaining=}")
-    #   msg = String()
-    #   msg.data = f"[{datetime.datetime.now().strftime('%H:%M:%S')}] APPROACH STATE"
-    #   self.state_publisher_.publish(msg)
-
-    # print(f"{self.nav.isTaskComplete()=}")
-    # result = self.nav.getResult()
-    # if result == TaskResult.SUCCEEDED:
-    #   print("Goal succeeded!")
-    #   msg = String()
-    #   msg.data = f"[{datetime.datetime.now().strftime('%H:%M:%S')}] MOVE TO NEXT STATE"
-    #   self.state_publisher_.publish(msg)
-
-
-  def goal_callback(self, msg):
-    self.blackboard["target_location"] = msg
+  def target_callback(self, msg):
     self.blackboard["target_found"] = True
-    self.get_blackboard()
+    self.blackboard["target_location"] = msg
 
-  def get_blackboard(self):
-    print(f"Current Blackboard Contents")
-    for key, val in self.blackboard.items():
-      print(f"{key}: {val}")
-
+  def client_callback(self, msg):
+    if msg.data:
+      self.blackboard["dispensed"] = True
 
 def main():
   rclpy.init()
