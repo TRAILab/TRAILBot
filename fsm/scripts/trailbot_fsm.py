@@ -10,42 +10,52 @@ from geometry_msgs.msg import PoseStamped
 from simple_node import Node
 from yasmin import State 
 from yasmin import StateMachine
-from robot_navigator import BasicNavigator, TaskResult
+from robot_navigator import BasicNavigator 
 
 
 class SearchState(State):
-  def __init__(self, blackboard, state_publisher):
+  def __init__(self, state_publisher):
     super().__init__(outcomes=["target_found", "target_not_found"])
     self.state_publisher_ = state_publisher
-    self.blackboard = blackboard
 
   def execute(self, blackboard):
     state_msg = String()
-    state_msg.data = self.__class__.__name__
+    current_time = datetime.datetime.now().strftime('%H:%M:%S')
+    state_msg.data = f"[{current_time}] {self.__class__.__name__}"
     self.state_publisher_.publish(state_msg)
 
-    # check if the target has been found
     if blackboard.get("target_found", False):
       return "target_found"
     return "target_not_found"
 
 class ApproachState(State):
-  def __init__(self, blackboard, state_publisher):
+  def __init__(self, state_publisher, basic_navigator):
     super().__init__(outcomes=["arrived", "not_arrived"])
-    self.blackboard = blackboard
     self.state_publisher_ = state_publisher
+    self.navigator = basic_navigator
 
   def execute(self, blackboard):
     state_msg = String()
-    state_msg.data = self.__class__.__name__
+    current_time = datetime.datetime.now().strftime('%H:%M:%S')
+    state_msg.data = f"[{current_time}] {self.__class__.__name__}"
     self.state_publisher_.publish(state_msg)
 
-    target_location = blackboard.get('target_location', None)
+    target_location = blackboard.get("target_location")   # get goal pose
+    self.navigator.goToPose(target_location)              # navigate to goal pose
+
+    while not self.nav.isTaskComplete():
+      feedback = self.nav.getFeedback()
+      print(f"[{datetime.datetime.now().strftime('%H:%M:%S')}] {feedback.distance_remaining=}")
+
+
+    if blackboard.get("arrived", False):
+      return "arrived"
+    return "not_arrived"
+
 
 class QueryState(State):
-  def __init__(self, blackboard, state_publisher):
+  def __init__(self, state_publisher):
     super().__init__(outcomes=["snack_dispensed", "snack_not_dispensed"])
-    self.blackboard = blackboard
     self.state_publisher_ = state_publisher
 
   def execute(self, blackboard):
@@ -58,9 +68,8 @@ class QueryState(State):
     return "snack_not_dispensed"
     
 class DoneState(State):
-  def __init__(self, blackboard, state_publisher):
+  def __init__(self, state_publisher):
     super().__init__(outcomes=["finished"])
-    self.blackboard = blackboard
     self.state_publisher_ = state_publisher
 
   def execute(self, blackboard):
@@ -77,40 +86,35 @@ class DoneState(State):
 class FSM(Node):
   def __init__(self):
     super().__init__("trailbot_state_machine")
-    self.nav = BasicNavigator()
+    self.nav = BasicNavigator() 
     
     # publish trailbot state
-    self.state_publisher_ = self.create_publisher(String, 'trailbot_state', 10)
+    self.state_publisher_ = self.create_publisher(String, "trailbot_state", 10)
 
     # subscribe to goal pose topic
     self.goal_subscriber_ = self.create_subscription(PoseStamped, "goal_pose", self.goal_callback,10)
 
-    # initialize goal flag
-    self.goal_received = False
-
     # create state machine (yasmin) and blackboard (dict)
     self.sm = StateMachine(outcomes=["finished"])
     self.blackboard = {} 
-    self.current_state = "SEARCH"
 
     # add states
-    self.sm.add_state("SEARCH", SearchState(self.state_publisher_, self.blackboard),
+    self.sm.add_state("SEARCH", SearchState(self.state_publisher_),
                       transitions={"target_found": "APPROACH", "target_not_found": "SEARCH"})
-    self.sm.add_state("APPROACH", ApproachState(self.state_publisher_, self.blackboard),
+    self.sm.add_state("APPROACH", ApproachState(self.state_publisher_, self.nav),
                       transitions={"arrived": "QUERY", "not_arrived": "APPROACH"})
-    self.sm.add_state("QUERY", QueryState(self.state_publisher_, self.blackboard),
+    self.sm.add_state("QUERY", QueryState(self.state_publisher_),
                       transitions={"snack_dispensed": "DONE", "snack_not_dispensed": "QUERY"})
-    self.sm.add_state("DONE", DoneState(self.state_publisher_, self.blackboard),
+    self.sm.add_state("DONE", DoneState(self.state_publisher_),
                       transitions={"finished": "SEARCH"})
 
-    self.StateMachine()
+    self.sm.execute(self.blackboard)
+    # self.StateMachine()
     
 
   def StateMachine(self):
     while True:
-      outcome = self.sm()
-      print(f"{outcome=}")      
-
+      outcome = self.sm.execute(self.blackboard)
 
 
 
@@ -146,7 +150,6 @@ class FSM(Node):
   def goal_callback(self, msg):
     self.blackboard["target_location"] = msg
     self.blackboard["target_found"] = True
-    self.goal_received = True
     self.get_blackboard()
 
   def get_blackboard(self):
