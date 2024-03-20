@@ -1,5 +1,5 @@
 import torch
-from .model_loader import FCN8s, PSPNet
+from .model_loader import FCN8s, PSPNet, LEDNet
 from PIL import Image as ImagePIL
 from torchvision import transforms
 import cv2
@@ -12,6 +12,7 @@ import sensor_msgs_py.point_cloud2 as pc2
 import numpy as np
 import math
 from cv_bridge import CvBridge
+import os
 
 import message_filters
 
@@ -99,9 +100,15 @@ def estimate_depth(x, y, np_2d_array):
 
 def load_model(device):
     # model = FCN8s(nclass=6, backbone='vgg16', pretrained_base=True, pretrained=True)
-    model = PSPNet(nclass=2, backbone='resnet50', pretrained_base=True)
-    model_location = 'psp_resnet50_pascal_voc_best_model.pth'
-    model.load_state_dict(torch.load(f'src/TRAILBot/trail_detection_node/trail_detection_node/model/{model_location}',map_location=torch.device('cuda:0')))
+    # model = PSPNet(nclass=2, backbone='resnet50', pretrained_base=True)
+    model = LEDNet(nclass=2, backbone='resnet50', pretrained_base=True)
+    model_location = 'lednet_resnet50_trails_best_model.pth' # previously: psp_resnet50_pascal_voc_best_model
+    if os.path.isfile(f'~/.torch/models/{model_location}'):
+        model.load_state_dict(torch.load(f'~/.torch/models/{model_location}',map_location=torch.device('cuda:0')))
+        # model.load_state_dict(torch.load(f'src/TRAILBot/trail_detection_node/trail_detection_node/model/{model_location}',map_location=torch.device('cuda:0')))
+    else:
+        print("Could not load model")
+        return None
     model = model.to(device)
     model.eval()
     print('Finished loading model!')
