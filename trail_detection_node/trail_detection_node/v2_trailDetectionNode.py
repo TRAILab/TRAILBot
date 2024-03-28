@@ -59,6 +59,7 @@ def convert_to_camera_frame(point_cloud):
     
     point_cloud = point_cloud.T
     point_cloud = rotation_matrix@point_cloud + translation
+    #TODO: remove below, no need to bring lidar into undistorted camera frame
     point_cloud = camera_transformation_k @ point_cloud
 
     uv_coordinate = np.empty_like(point_cloud)
@@ -116,7 +117,9 @@ def load_model(device):
     return model
 
 def find_route(model, device, cv_image):
+    #TODO: arriving image is undistorted. Check if COLOR_BGR2RGB conversion is still required
     PIL_image = ImagePIL.fromarray(cv2.cvtColor(cv_image, cv2.COLOR_BGR2RGB))
+    #Normalize values for Neural Network
     transform = transforms.Compose([
         transforms.ToTensor(),
         transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
@@ -129,8 +132,11 @@ def find_route(model, device, cv_image):
     pred[pred == 0] = 255 # only see the trail
     pred[pred == 1] = 0
     pred = np.array(pred, dtype=np.uint8)
+    #TODO: convert pred np array to a mask and do contour filtering to remove small blobs
+        #visualize paths and more filtering
     route = np.zeros_like(pred)
     # calculate the center line by taking the average
+    #TODO: Apply filtering to how centerline is calculated from resulting points
     row_num = 0
     for row in pred:
         white_pixels = list(np.nonzero(row)[0])
@@ -138,7 +144,7 @@ def find_route(model, device, cv_image):
             average = (white_pixels[0] + white_pixels[-1]) / 2
             route[row_num][round(average)] = 255
         row_num = row_num + 1
-    return route
+    return route #array of size of the original undistorted image where the centreline is of value 255, rest is 0 in camera frame
 
 '''
     The traildetector node has two subscriptions(lidar and camera) and one publisher(trail position). After it receives msgs from both lidar and camera,
@@ -180,12 +186,13 @@ class trailDetector(Node):
                 "x", "y", "z"), skip_nans=True)
         points = [[x, y, z] for x, y, z in point_gen]
         points = np.array(points)
-        points2d = convert_to_camera_frame(points)
+        points2d = convert_to_camera_frame(points) #u, v, depth
 
         # process camera msg
         cv_image = self.bridge.imgmsg_to_cv2(camera_msg, desired_encoding='passthrough')
+        #TODO: Undistort image to bring it to camera frame
         route = find_route(self.model, self.device, cv_image)
-        route_indices = list(zip(*np.nonzero(route)))
+        route_indices = list(zip(*np.nonzero(route))) #list of indices of centrelines in camera frame
 
         if not route_indices:
             print("No centerline found!")
@@ -196,7 +203,7 @@ class trailDetector(Node):
         for index in route_indices:
             point = []
             u = index[1]
-            v = image_height - index[0]
+            v = image_height - index[0] #TODO: Check why image_height is subtracted and where indices poit to
             point.append(u)
             point.append(v)
             point.append(estimate_depth(u, v, points2d))
@@ -211,6 +218,7 @@ class trailDetector(Node):
 
         # find the corresponding lidar points using the center line pixels
         filtered_3dPoints = []
+        #TODO: eliminate for loop and convert to lidar frame through matrix mult
         for index in filtered_route_indices:
             point = []
             point.append(index[0])
