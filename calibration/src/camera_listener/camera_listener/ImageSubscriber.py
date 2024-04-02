@@ -23,9 +23,15 @@ class ImageSubscriber(Node):
         timestamp = msg.header.stamp
         # Get the image
         cv_image = self.bridge.imgmsg_to_cv2(msg, desired_encoding='passthrough')
-        cv2.imwrite(f"output_{self.i}.jpg", cv_image)
+
+
+        # Convert YUV422_YUY2 encoding (logitech) to RGB 
+        # cv_image_rgb = cv2.cvtColor(cv_image, cv2.COLOR_YUV2BGR_YUY2)
+        rbg_image = cv2.cvtColor(cv_image, cv2.COLOR_BGR2RGB) #colours were originally flipped in RGB
+        cv2.imwrite(f"output_{self.i}.jpg", rbg_image)
         
         #get the timestamp
+
         filename = f"output_{self.i}.txt"
         with open(filename, "w") as output_file:
            output_file.write(f"Timestamp: {timestamp}\n")

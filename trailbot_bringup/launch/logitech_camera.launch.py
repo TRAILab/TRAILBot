@@ -16,7 +16,7 @@ def generate_launch_description():
         "params.yaml",
     )
     # Launch usb_cam node with the provided argument
-    params_file_path = "/home/trailbot/trail_ws/src/TRAILBot/trailbot_bringup/logitech_camera/config/params.yaml"
+    # params_file_path = "/home/trailbot/trail_ws/src/TRAILBot/trailbot_bringup/logitech_camera/config/params.yaml"
     
     # Retrieve the package directory path
     package_dir = os.path.dirname(os.path.dirname(__file__))

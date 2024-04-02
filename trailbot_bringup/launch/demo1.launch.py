@@ -62,6 +62,7 @@ def generate_launch_description():
     ld.add_action(fsm_node)
     ld.add_action(navigator_node)
     ld.add_action(camera_launch)
+    
     ld.add_action(launch_voice_assistant)
     ld.add_action(human_detection_node)
 
