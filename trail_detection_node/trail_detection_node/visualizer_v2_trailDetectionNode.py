@@ -1,3 +1,6 @@
+#ARCHIVED ##########################
+#LATEST VISUALIZING CAPABILITIES TRANSFERRED TO v2_trailDetectionNode.py #######
+
 import torch
 from .model_loader import FCN8s, FCN32s, PSPNet, LEDNet
 from PIL import Image as ImagePIL
@@ -178,7 +181,7 @@ def equalize_hist_rgb(img):
 class trailDetector(Node):
     def __init__(self, model, device):
         super().__init__('trail_detector')
-        self.only_camera_mode = True
+        self.only_camera_mode = True #To be toggled
         self.bridge = CvBridge()
 
         # load model and device
@@ -321,7 +324,7 @@ class trailDetector(Node):
         cv2.imshow('circled image',visualize_cv_image)
         cv2.waitKey(25)
 
-        # publsih message
+        # publish message
         trail_location_msg = PoseStamped()
         trail_location_msg.header.stamp = lidar_msg.header.stamp
         trail_location_msg.header.frame_id = "velodyne"
