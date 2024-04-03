@@ -19,21 +19,30 @@ import message_filters
 '''
     The transformation matrix as well as the coordinate conversion and depth estimation functions are copied from human_detection_node
 '''
-camera_transformation_k = np.array([
-    [628.5359544,0,676.9575694],
-    [0,627.7249542,532.7206716],
-    [0,0,1]])
+CAM_INTRINSIC_K = np.array([
+                                    [1104.0, 0     , 615.34],
+                                    [0     , 1103.9, 310.33],
+                                    [0     , 0     , 1     ]
+                                ])
+#Transformation of points from camera to lidar frame
+T_LC = np.array([
+                                [0.99983  , 0.012464 , 0.013538 , -0.023072],
+                                [0.014029 , -0.040245, -0.99909 , -0.10742 ],
+                                [-0.011908, 0.99911  , -0.040413, -0.14859 ],
+                                [0        , 0        , 0        , 1        ]
+                            ])
+# rotation_matrix = np.array([
+#     [-0.007495781893,-0.0006277316155,0.9999717092],
+#     [-0.9999516401,-0.006361853422,-0.007499625104],
+#     [0.006366381192,-0.9999795662,-0.0005800141927]])
 
-rotation_matrix = np.array([
-    [-0.007495781893,-0.0006277316155,0.9999717092],
-    [-0.9999516401,-0.006361853422,-0.007499625104],
-    [0.006366381192,-0.9999795662,-0.0005800141927]])
+# rotation_matrix = rotation_matrix.T
 
-rotation_matrix = rotation_matrix.T
-
-translation_vector = np.array([-0.06024059837, -0.08180891509, -0.3117851288])
+# translation_vector = np.array([-0.06024059837, -0.08180891509, -0.3117851288])
 image_width=1280
 image_height=720
+
+radial_distortion = [0.2290977399, 1.277538781]
 
 
 '''
@@ -312,12 +321,12 @@ class trailDetector(Node):
             point_cloud = point_cloud.T
             point_cloud = rotation_matrix@point_cloud + translation
             #TODO: remove below, no need to bring lidar into undistorted camera frame
-            point_cloud = camera_transformation_k @ point_cloud
+            point_cloud = CAM_INTRINSIC_K @ point_cloud
 
             uv_coordinate = np.empty_like(point_cloud)
 
             """
-            uv = [x/z, y/z, z], and y is opposite so the minus imageheight
+            uv = [x/z, y/zLIDAR2CAM_EXTRINSICpposite so the minus imageheight
             """
             uv_coordinate[0] = point_cloud[0] / point_cloud[2]
             uv_coordinate[1] = image_height - point_cloud[1] / point_cloud[2]
@@ -389,14 +398,12 @@ class trailDetector(Node):
             point_cloud[1] = ( image_height - uv_coordinate[1] )*point_cloud[2]
             point_cloud[0] = uv_coordinate[0]*point_cloud[2]
 
-            inverse_camera_transformation_k = np.linalg.inv(camera_transformation_k)
+            inverse_CAM_INTRINSIC_K = np.linalg.inv(CAM_INTRINSIC_K)
             inverse_rotation_matrix = np.linalg.inv(rotation_matrix)
-            point_cloud = inverse_camera_transformation_k @ point_cloud
+            point_cloud = inverse_CAM_INTRINSIC_K @ point_cloud
             point_cloud = inverse_rotation_matrix @ (point_cloud-translation_vector) 
-            return point_cloud
-
-        filtered_3dPoints = []
-        #TODO: eliminate for loop and convert to lidar frame through matrix mult
+            retuLIDAR2CAM_EXTRINSIC        filtered_3dPoints = []
+        #TODO: eliminate for loop LIDAR2CAM_EXTRINSICidar frame through matrix mult
         for index in route_indices_near_lidar_pts:
             point = []
             point.append(index[0])
