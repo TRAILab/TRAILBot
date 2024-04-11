@@ -8,23 +8,16 @@ from launch.substitutions import LaunchConfiguration
 
 
 def generate_launch_description():
-    # Define the path you want to pass as an argument
-    config = os.path.join(
-        get_package_share_directory("trailbot_bringup"),
-        "logitech_camera",
-        "config",
-        "params.yaml",
-    )
-    # Launch usb_cam node with the provided argument
-    # params_file_path = "/home/trailbot/trail_ws/src/TRAILBot/trailbot_bringup/logitech_camera/config/params.yaml"
     
+    # TODO backlight_compensation cannot be controlled from params.yaml
+    # Temporary solution: use guvcview to set the usb camera params before launch
+   
     # Retrieve the package directory path
     package_dir = os.path.dirname(os.path.dirname(__file__))
 
     # Construct the path to the YAML parameter file
     params_file_path = os.path.join(package_dir, 'logitech_camera', 'config', 'params.yaml')
     
-
     # Ensure the parameter file exists
     if not os.path.exists(params_file_path):
         print(f"Parameter file {params_file_path} does not exist.")
