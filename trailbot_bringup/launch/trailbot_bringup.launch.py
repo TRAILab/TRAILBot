@@ -25,10 +25,18 @@ def generate_launch_description():
     ouster_launch_path = os.path.join(get_package_share_directory('ouster_ros'),'launch','driver.launch.py')
     ouster_launch = IncludeLaunchDescription(PythonLaunchDescriptionSource([ouster_launch_path]))
 
+    # Logitech Camera Launch File
+    camera_launch_path = os.path.join(get_package_share_directory('trailbot_bringup'),'launch','logitech_camera.launch.py')
+    camera_launch = IncludeLaunchDescription(PythonLaunchDescriptionSource([camera_launch_path])) 
 
     ld = LaunchDescription()
     
     ld.add_action(driving_launch)
     ld.add_action(ouster_launch)
+    
+    # ld.add_action(camera_launch)
+
+    # run logitech_camera.launch.py separately (ld.add_action() throws error)
+    # TODO create logitech_camera lifecylce node in this launch file
 
     return ld

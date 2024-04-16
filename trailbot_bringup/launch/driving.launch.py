@@ -93,8 +93,7 @@ def generate_launch_description():
     launch_husky_accessories = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(PathJoinSubstitution(
         [FindPackageShare("husky_bringup"), 'launch', 'accessories.launch.py'])))
-
-
+    
     ld = LaunchDescription()
     ld.add_action(node_robot_state_publisher)
     ld.add_action(node_controller_manager)
