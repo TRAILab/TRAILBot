@@ -56,7 +56,7 @@ class trailDetector(Node):
                  pre_proc_blur_k_size: int = 23, brightness: int = 10,
                  post_proc_blur_k_size: int = 31, min_contour_area: int = 150000,
                  poly_degree: int = 2, min_black_area_threshold: int = 50000,
-                 min_depth: float = 3.0, num_max_points_to_match: int = 400, dist_thresh_uv: float = 0.03,
+                 min_depth: float = 2.5, num_max_points_to_match: int = 400, dist_thresh_uv: float = 0.03,
                  pub_queue_size: int = 10, sync_queue_size: int = 30, 
                  cam_sub_queue_size: int = 10, max_time_diff: float = 0.5) -> None:
         
