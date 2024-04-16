@@ -83,7 +83,7 @@ def generate_launch_description():
     ld = LaunchDescription()
     # ld.add_action(fsm_node)
     # ld.add_action(fsm_nav_node)
-    # ld.add_action(camera_launch)
+    ld.add_action(camera_launch)
     # ld.add_action(slam_launch)
     # ld.add_action(nav_node)
     # ld.add_action(human_detection_node)
