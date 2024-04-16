@@ -20,10 +20,10 @@ def generate_launch_description():
     package_name = 'slam'
 
     #velodyne launch
-    velo_launch_path1 = os.path.join(get_package_share_directory('velodyne_driver'),'launch','velodyne_driver_node-VLP16-launch.py')
-    velo_launch1 = IncludeLaunchDescription(PythonLaunchDescriptionSource([velo_launch_path1]))
-    velo_launch_path2 = os.path.join(get_package_share_directory('velodyne_pointcloud'),'launch','velodyne_convert_node-VLP16-launch.py')
-    velo_launch2 = IncludeLaunchDescription(PythonLaunchDescriptionSource([velo_launch_path2]))
+    # velo_launch_path1 = os.path.join(get_package_share_directory('velodyne_driver'),'launch','velodyne_driver_node-VLP16-launch.py')
+    # velo_launch1 = IncludeLaunchDescription(PythonLaunchDescriptionSource([velo_launch_path1]))
+    # velo_launch_path2 = os.path.join(get_package_share_directory('velodyne_pointcloud'),'launch','velodyne_convert_node-VLP16-launch.py')
+    # velo_launch2 = IncludeLaunchDescription(PythonLaunchDescriptionSource([velo_launch_path2]))
     
     #rviz launch
     rviz_config_path = os.path.join(get_package_share_directory(package_name),'config','rviz_config.rviz')
@@ -52,7 +52,8 @@ def generate_launch_description():
         arguments=['-configuration_directory', cartographer_config_dir,
                    '-configuration_basename', configuration_basename],
         remappings=[('/husky_velocity_controller/odom', '/odom'),
-                    ('/points2', '/velodyne_points')],
+                    ('/scan', '/ouster/scan'),
+                    ('/imu', '/imu/data')],
     )
 
     occupancy_grid = IncludeLaunchDescription(
@@ -64,10 +65,10 @@ def generate_launch_description():
 
 
     ld = LaunchDescription()
-    ld.add_action(driving_launch)
+    # ld.add_action(driving_launch)
     ld.add_action(cartographer_node)
-    ld.add_action(velo_launch1)
-    ld.add_action(velo_launch2)
+    # ld.add_action(velo_launch1)
+    # ld.add_action(velo_launch2)
     ld.add_action(occupancy_grid)
     ld.add_action(rviz_node)
 

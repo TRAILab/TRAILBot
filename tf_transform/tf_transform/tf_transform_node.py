@@ -13,10 +13,10 @@ class TFTransformNode(Node):
 
     def transform_callback(self):
         try:
-                # Look up the transformations between "map" and "velodyne"
-            trans_map = self.tf_buffer.lookup_transform("map", "velodyne", rclpy.time.Time())
+            # Look up the transformations between "map" and "velodyne"
+            trans_map = self.tf_buffer.lookup_transform("map", "os_sensor", rclpy.time.Time())
             #the base link is an identity transformation, hence the values are all 0 (not being computed), but am leaving for understanding
-            trans_base = self.tf_buffer.lookup_transform("velodyne", "velodyne", rclpy.time.Time())  # Identity transformation
+            trans_base = self.tf_buffer.lookup_transform("os_sensor", "os_sensor", rclpy.time.Time())  # Identity transformation
             
             translation_map = trans_map.transform.translation
             #rotation_map = trans_map.transform.rotation

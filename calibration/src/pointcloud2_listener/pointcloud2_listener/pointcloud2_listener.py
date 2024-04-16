@@ -8,7 +8,8 @@ class PointCloud2Listener(Node):
         super().__init__('pointcloud2_listener')
         self.subscription = self.create_subscription(
             PointCloud2,
-            'velodyne_points',  # Change this to the topic you're subscribing to
+            # 'velodyne_points',  # Change this to the topic you're subscribing to
+            '/ouster/points',
             self.listener_callback,
             10)
         self.subscription
