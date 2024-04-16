@@ -152,6 +152,7 @@ global_costmap:
       robot_radius: 0.5 # radius set and used, so no footprint points
       resolution: 0.05
       plugins: ["static_layer", "obstacle_layer", "inflation_layer"]
+
       obstacle_layer:
         plugin: "nav2_costmap_2d::ObstacleLayer"
         enabled: True
@@ -163,7 +164,7 @@ global_costmap:
           topic: /ouster/scan
           obstacle_max_range: 35.0
           obstacle_min_range: 0.0
-          raytrace_max_range: 2.5
+          raytrace_max_range: 35.0
           raytrace_min_range: 0.0
           max_obstacle_height: 2.0
           min_obstacle_height: 0.0
@@ -188,12 +189,11 @@ global_costmap:
         inflate_around_unknown: true
       always_send_full_costmap: True
 
-
 local_costmap:
   local_costmap:
     ros__parameters:
-      update_frequency: 1.0
-      publish_frequency: 1.0
+      update_frequency: 10.0
+      publish_frequency: 10.0
       global_frame: odom
       robot_base_frame: base_link
       use_sim_time: True
@@ -233,7 +233,6 @@ local_costmap:
   # local_costmap_rclcpp_node:
   #   ros__parameters:
   #     use_sim_time: True
-
 
 behavior_server:
   ros__parameters:
