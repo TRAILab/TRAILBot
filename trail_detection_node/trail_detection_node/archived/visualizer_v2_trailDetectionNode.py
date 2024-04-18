@@ -1,5 +1,8 @@
+#ARCHIVED ##########################
+#LATEST VISUALIZING CAPABILITIES TRANSFERRED TO v2_trailDetectionNode.py #######
+
 import torch
-from .model_loader import FCN8s, FCN32s, PSPNet
+from .model_loader import FCN8s, FCN32s, PSPNet, LEDNet
 from PIL import Image as ImagePIL
 from torchvision import transforms
 import cv2
@@ -100,14 +103,17 @@ def estimate_depth(x, y, np_2d_array):
 
 def load_model(device):
     # model = FCN32s(nclass=2, backbone='vgg16', pretrained_base=True, pretrained=True)
-    model = PSPNet(nclass=2, backbone='resnet50', pretrained_base=True)
+    # model = PSPNet(nclass=2, backbone='resnet50', pretrained_base=True)
+    model = LEDNet(nclass=2, backbone='resnet50', pretrained_base=True)
 
     # model_location = '32s_batch8/fcn32s_vgg16_pascal_voc_best_model.pth'
     # model_location = '32s_self_labelled/fcn32s_vgg16_pascal_voc_best_model.pth'
-    model_location = 'psp_resnet50_pascal_voc_best_model.pth'
+    model_location = 'lednet_resnet50_trails_best_model.pth' # previously: psp_resnet50_pascal_voc_best_model
 
     if os.path.isfile(f'src/TRAILBot/trail_detection_node/trail_detection_node/model/{model_location}'):
         model.load_state_dict(torch.load(f'src/TRAILBot/trail_detection_node/trail_detection_node/model/{model_location}',map_location=torch.device('cuda:0')))
+    elif os.path.isfile(f'~/.torch/models/{model_location}'):
+        model.load_state_dict(torch.load(f'~/.torch/models/{model_location}',map_location=torch.device('cuda:0'))) 
     else:
         model.load_state_dict(torch.load(f'trail_detection_node/model/{model_location}',map_location=torch.device('cuda:0')))
     model = model.to(device)
@@ -175,7 +181,7 @@ def equalize_hist_rgb(img):
 class trailDetector(Node):
     def __init__(self, model, device):
         super().__init__('trail_detector')
-        self.only_camera_mode = True
+        self.only_camera_mode = True #To be toggled
         self.bridge = CvBridge()
 
         # load model and device
@@ -318,7 +324,7 @@ class trailDetector(Node):
         cv2.imshow('circled image',visualize_cv_image)
         cv2.waitKey(25)
 
-        # publsih message
+        # publish message
         trail_location_msg = PoseStamped()
         trail_location_msg.header.stamp = lidar_msg.header.stamp
         trail_location_msg.header.frame_id = "velodyne"

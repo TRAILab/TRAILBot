@@ -1,5 +1,5 @@
 import torch
-from .model_loader import FCN8s, PSPNet
+from .model_loader import LEDNet
 from PIL import Image as ImagePIL
 from torchvision import transforms
 import cv2
@@ -12,221 +12,564 @@ import sensor_msgs_py.point_cloud2 as pc2
 import numpy as np
 import math
 from cv_bridge import CvBridge
+import os
 
 import message_filters
 
+''' TODO:
+    The transformation matrix as well as the coordinate conversion and depth estimation 
+    functions to be transferred to human_detection_node
 '''
-    The transformation matrix as well as the coordinate conversion and depth estimation functions are copied from human_detection_node
-'''
-camera_transformation_k = np.array([
-    [628.5359544,0,676.9575694],
-    [0,627.7249542,532.7206716],
-    [0,0,1]])
+ONLY_CAMERA_MODE = False # Only visualize path without publishing target pose
+VISUALIZE = True # Enable the cv2 visuals of pipeline
+CAM_INTRINSIC_K = np.array([
+                                    [1104.0, 0     , 615.34],
+                                    [0     , 1103.9, 310.33],
+                                    [0     , 0     , 1     ]
+                                ])
 
-rotation_matrix = np.array([
-    [-0.007495781893,-0.0006277316155,0.9999717092],
-    [-0.9999516401,-0.006361853422,-0.007499625104],
-    [0.006366381192,-0.9999795662,-0.0005800141927]])
+#Transformation of points from lidar to cam frame
+T_CL = np.array([
+                                [0.99983  , 0.012464 , 0.013538 , -0.023072],
+                                [0.014029 , -0.040245, -0.99909 , -0.10742 ],
+                                [-0.011908, 0.99911  , -0.040413, -0.14859 ],
+                                [0        , 0        , 0        , 1        ]
+                            ])
 
-rotation_matrix = rotation_matrix.T
+# RADIAL_DISTORTION = np.array([0.2290977399, 1.277538781, 0, 0])
+RADIAL_DISTORTION = np.array([0.0, 0.0, 0, 0])
 
-translation_vector = np.array([-0.06024059837, -0.08180891509, -0.3117851288])
-image_width=1280
-image_height=1024
-
-def convert_to_lidar_frame(uv_coordinate):
-    """
-    convert 2d camera coordinate + depth into 3d lidar frame
-    """
-    point_cloud = np.empty( (3,) , dtype=float)
-    point_cloud[2] = uv_coordinate[2]
-    point_cloud[1] = ( image_height - uv_coordinate[1] )*point_cloud[2]
-    point_cloud[0] = uv_coordinate[0]*point_cloud[2]
-
-    inverse_camera_transformation_k = np.linalg.inv(camera_transformation_k)
-    inverse_rotation_matrix = np.linalg.inv(rotation_matrix)
-    point_cloud = inverse_camera_transformation_k @ point_cloud
-    point_cloud = inverse_rotation_matrix @ (point_cloud-translation_vector) 
-    return point_cloud
-
-def convert_to_camera_frame(point_cloud):
-    """
-    convert 3d lidar data into 2d coordinate of the camera frame + depth
-    """
-    length = point_cloud.shape[0]
-    translation = np.tile(translation_vector, (length, 1)).T
-    
-    point_cloud = point_cloud.T
-    point_cloud = rotation_matrix@point_cloud + translation
-    point_cloud = camera_transformation_k @ point_cloud
-
-    uv_coordinate = np.empty_like(point_cloud)
-
-    """
-    uv = [x/z, y/z, z], and y is opposite so the minus imageheight
-    """
-    uv_coordinate[0] = point_cloud[0] / point_cloud[2]
-    uv_coordinate[1] = image_height - point_cloud[1] / point_cloud[2]
-    uv_coordinate[2] = point_cloud[2]
-
-    uv_depth = uv_coordinate[2, :]
-    filtered_uv_coordinate = uv_coordinate[:, uv_depth >= 0]
-    return filtered_uv_coordinate
-
-def estimate_depth(x, y, np_2d_array):
-    """
-    estimate the depth by finding points closest to x,y from thhe 2d array
-    """
-    # Calculate the distance between each point and the target coordinates (x, y)
-    distances_sq = (np_2d_array[0,:] - x) ** 2 + (np_2d_array[1,:] - y) ** 2
-
-    # Find the indices of the k nearest points
-    k = 5     # Number of nearest neighbors we want
-    closest_indices = np.argpartition(distances_sq, k)[:k]
-    pixel_distance_threshold = 2000
-
-    valid_indices = [idx for idx in closest_indices if distances_sq[idx]<=pixel_distance_threshold]
-    if len(valid_indices) == 0:
-        # lidar points disappears usually around 0.4m
-        distance_where_lidar_stops_working = -1
-        return distance_where_lidar_stops_working
-
-    filtered_indices = np.array(valid_indices)
-    # Get the depth value of the closest point
-    closest_depths = np_2d_array[2,filtered_indices]
-
-    return np.mean(closest_depths)
-
-def load_model(device):
-    # model = FCN8s(nclass=6, backbone='vgg16', pretrained_base=True, pretrained=True)
-    model = PSPNet(nclass=2, backbone='resnet50', pretrained_base=True)
-    model_location = 'psp_resnet50_pascal_voc_best_model.pth'
-    model.load_state_dict(torch.load(f'src/TRAILBot/trail_detection_node/trail_detection_node/model/{model_location}',map_location=torch.device('cuda:0')))
-    model = model.to(device)
-    model.eval()
-    print('Finished loading model!')
-
-    return model
-
-def find_route(model, device, cv_image):
-    PIL_image = ImagePIL.fromarray(cv2.cvtColor(cv_image, cv2.COLOR_BGR2RGB))
-    transform = transforms.Compose([
-        transforms.ToTensor(),
-        transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
-    ])
-    image = transform(PIL_image).unsqueeze(0).to(device)
-    with torch.no_grad():
-        output = model(image)
-    # pred is prediction generated by the model, route is the variable for the center line
-    pred = torch.argmax(output[0], 1).squeeze(0).cpu().data.numpy()
-    pred[pred == 0] = 255 # only see the trail
-    pred[pred == 1] = 0
-    pred = np.array(pred, dtype=np.uint8)
-    route = np.zeros_like(pred)
-    # calculate the center line by taking the average
-    row_num = 0
-    for row in pred:
-        white_pixels = list(np.nonzero(row)[0])
-        if white_pixels:
-            average = (white_pixels[0] + white_pixels[-1]) / 2
-            route[row_num][round(average)] = 255
-        row_num = row_num + 1
-    return route
-
-'''
+"""
+Description:
     The traildetector node has two subscriptions(lidar and camera) and one publisher(trail position). After it receives msgs from both lidar and camera,
     it detects the trail in the image and sends the corresponding lidar position as the trail location.
     The msgs are synchornized before processing, using buffer and sync function.
-    To find the path, the node will process the image, find a line to follow (by taking the average of left and right of the path), estimate the lidar points depth, 
-    and choose to go to the closest point. 
-    V1_traildetection assumes that the path is pointing frontward and has only one path in front.
-'''
+    To find the path, the node will process the image, fit a line to follow, estimate the lidar points depth, 
+    and choose to go to a valid point along the centreline. 
+    Assumes that the path is pointing frontward and has only one path in front.
+"""
+
+# TODO: optimize speed and performance, check double contour in post, tune params
+
 class trailDetector(Node):
-    def __init__(self, model, device):
+    def __init__(self, only_camera_mode: bool, visualize: bool,
+                 pre_proc_blur_k_size: int = 23, brightness: int = 10,
+                 post_proc_blur_k_size: int = 31, min_contour_area: int = 150000,
+                 poly_degree: int = 2, min_black_area_threshold: int = 50000,
+                 min_depth: float = 2.5, num_max_points_to_match: int = 400, dist_thresh_uv: float = 0.03,
+                 pub_queue_size: int = 10, sync_queue_size: int = 30, 
+                 cam_sub_queue_size: int = 10, max_time_diff: float = 0.5) -> None:
+        
+        """
+        Initializes the trail detector node.
+
+        Args:
+            only_camera_mode (bool): Flag indicating whether to operate in camera-only mode.
+            visualize (bool): Flag indicating whether to enable visualization.
+            pre_proc_blur_k_size (int): Kernel size for pre-processing Gaussian blur.
+            brightness (int): Brightness adjustment value for pre-processing.
+            post_proc_blur_k_size (int): Kernel size for post-processing Gaussian blur.
+            min_contour_area (int): Minimum contour area threshold for post-processing.
+            poly_degree (int): Degree of polynomial for fitting the path.
+            min_black_area_threshold (int): Minimum area threshold for removing small black regions.
+            min_depth (float): Minimum depth threshold for filtering usable route points.
+            num_max_points_to_match (int): Maximum number of points to match for filtering usable route points.
+            dist_thresh_uv (float): Distance threshold for UV route points.
+            pub_queue_size (int): Queue size for the trail publisher.
+            sync_queue_size (int): Queue size for message synchronization.
+            cam_sub_queue_size (int): Queue size for camera subscription.
+            max_time_diff (float): Maximum time difference for message synchronization.
+        """
+
         super().__init__('trail_detector')
-        # define trail publisher
+        
+        # Set visualization mode
+        self.only_camera_mode = only_camera_mode
+        self.visualize = visualize
+
+        # Tunable parameters
+        self.pre_proc_blur_k_size = pre_proc_blur_k_size
+        self.brightness = brightness
+        self.post_proc_blur_k_size = post_proc_blur_k_size
+        self.min_contour_area = min_contour_area
+        self.poly_degree = poly_degree
+        self.min_black_area_threshold = min_black_area_threshold
+        self.min_depth = min_depth
+        self.num_max_points_to_match = num_max_points_to_match
+        self.dist_thresh_uv = dist_thresh_uv
+
+        # Camera properties
+        self.image_width = None
+        self.image_height = None
+        self.c_x = CAM_INTRINSIC_K[0, 2]
+        self.c_y = CAM_INTRINSIC_K[1, 2]
+        self.f_x = CAM_INTRINSIC_K[0, 0]
+        self.f_y = CAM_INTRINSIC_K[1, 1]
+
+        #CvBridge
+        self.bridge = CvBridge()
+
+        # Load model and device
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.model = self.load_model()
+
+        # Define trail publisher
         self.trail_publisher = self.create_publisher(
             PoseStamped,
             'trail_location',
-            10)
+            pub_queue_size)
 
-        # create subscribers
-        self.image_sub = message_filters.Subscriber(self, Image, 'camera')
-        self.lidar_sub = message_filters.Subscriber(self, PointCloud2, 'velodyne_points')
+        if self.only_camera_mode:
+            # Define camera subscription
+            print("Mode: Only Camera")
+            self.camera_subscription = self.create_subscription(
+                Image,
+                'camera',
+                self.only_camera_callback,
+                cam_sub_queue_size)
+            self.camera_subscription
+        else:
+            # Create subscribers and synchronizer
+            print("Mode: Lidar and Camera")
+            # create subscribers
+            self.image_sub = message_filters.Subscriber(self, Image, 'camera')
+            self.lidar_sub = message_filters.Subscriber(self, PointCloud2, 'ouster/points')
 
-        self.bridge = CvBridge()
+            # create callback
+            ts = message_filters.ApproximateTimeSynchronizer([self.image_sub, self.lidar_sub], sync_queue_size, max_time_diff)
+            ts.registerCallback(self.trail_callback)
 
-        # load model and device
-        self.model = model
-        self.device = device
+    #-----SEMANTIC SEGMENTATION MODEL-------------------------------------------------------
+            
+    def load_model(self) -> LEDNet:
+        """
+        Loads the LEDNet model for semantic segmentation.
 
-        # create callback
-        queue_size = 30
-        ts = message_filters.ApproximateTimeSynchronizer([self.image_sub, self.lidar_sub], queue_size, 0.5)
-        ts.registerCallback(self.trail_callback)  
+        Returns:
+            LEDNet: Loaded LEDNet model trained on trail segmentation data.
+        """
+
+        # Initialize semantic segmentation model and load dictionary
+        model = LEDNet(nclass=2, backbone='resnet50', pretrained_base=True)
+        model_location = 'lednet_resnet50_trails_best_model.pth'
+        full_path = os.path.expanduser(f'~/.torch/models/{model_location}')
+        if os.path.isfile(full_path):
+            try:
+                model.load_state_dict(torch.load(full_path, map_location=self.device))
+            except Exception as e:
+                print(f"Error loading model: {e}")
+                return None            
+        else:
+            print("Model file not found, ensure it exists as: ", full_path)
+            return None
+        model = model.to(self.device)
+        model.eval()
+        print('Finished loading model')
+
+        return model
+
+    #-----CAMERA/FIND ROUTE METHODS---------------------------------------------------------
+    def convert_pix2uv(self, route_indices: np.ndarray) -> np.ndarray:
+        """
+        Converts pixels (image indices) to UV coordinates.
+
+        Args:
+            route_indices (numpy.ndarray): Array of route pixels.
+                Note: first col indicates pixel along width of image, and second col indicates along height.
+
+        Returns:
+            numpy.ndarray: UV coordinates of the route.
+        """
+
+        # Use camera properties to convert pixels to uv
+        uv_route = np.empty_like(route_indices).astype(float) #N, 2 
+        uv_route[:, 0] = (route_indices[:, 0] - self.c_x) / self.f_x
+        uv_route[:, 1] = (route_indices[:, 1] - self.c_y) / self.f_y
+        return uv_route
     
-    def trail_callback(self, camera_msg, lidar_msg):
-        print("Message received!")
-        # process lidar msg
-        point_gen = pc2.read_points(
-            lidar_msg, field_names=(
-                "x", "y", "z"), skip_nans=True)
-        points = [[x, y, z] for x, y, z in point_gen]
-        points = np.array(points)
-        points2d = convert_to_camera_frame(points)
+    def compute_route_uv_and_img(self, camera_msg: Image) -> tuple[np.ndarray, np.ndarray]:
+        """
+        Computes the planned route in uv coordinates and produces the image for visualization.
 
-        # process camera msg
-        cv_image = self.bridge.imgmsg_to_cv2(camera_msg, desired_encoding='passthrough')
-        route = find_route(self.model, self.device, cv_image)
-        route_indices = list(zip(*np.nonzero(route)))
+        Args:
+            camera_msg (sensor_msgs.msg.Image): Camera message.
 
-        if not route_indices:
-            print("No centerline found!")
-            return
+        Returns:
+            tuple: Tuple containing route in uv coordinates(numpy.ndarray) and image with trail and centreline (numpy.ndarray).
+        """
 
-        #filter points that have no lidar points near it
-        filtered_route_indices = []
-        for index in route_indices:
-            point = []
-            u = index[1]
-            v = image_height - index[0]
-            point.append(u)
-            point.append(v)
-            point.append(estimate_depth(u, v, points2d))
-            if point[2] == -1:
-                continue
-            else:
-                filtered_route_indices.append(point)
+        def get_rgb_undistorted_img(camera_msg: Image) -> np.ndarray:
+            """
+            Processes the camera message to retrieve the undistorted RGB image.
 
-        if not filtered_route_indices:
-            print("No usable centerline found!")
-            return
+            Args:
+                camera_msg (sensor_msgs.msg.Image): Camera message.
 
-        # find the corresponding lidar points using the center line pixels
-        filtered_3dPoints = []
-        for index in filtered_route_indices:
-            point = []
-            point.append(index[0])
-            point.append(index[1])
-            point.append(index[2])
-            point_3d = convert_to_lidar_frame(point)
-            filtered_3dPoints.append(point_3d)
+            Returns:
+                numpy.ndarray: Undistorted RGB image.
+            """
+            # process camera msg and set to RGB
+            cv_image = self.bridge.imgmsg_to_cv2(camera_msg, desired_encoding='passthrough')
+            cv_image = cv2.cvtColor(cv_image, cv2.COLOR_BGR2RGB)
 
-        filtered_3dPoints = np.array(filtered_3dPoints)
-        # find the nearest 3d point and set that as goal
-        distances_sq = filtered_3dPoints[:,0]**2 + filtered_3dPoints[:,1]**2 + filtered_3dPoints[:,2]**2
-        smallest_index = np.argmin(distances_sq)
+            # Undistort image
+            if not self.image_height:
+                self.image_height, self.image_width = cv_image.shape[:2]
+            new_K, _ = cv2.getOptimalNewCameraMatrix(CAM_INTRINSIC_K, RADIAL_DISTORTION, (self.image_width, self.image_height), 1, (self.image_width, self.image_height))  
+            cv_image = cv2.undistort(cv_image, CAM_INTRINSIC_K, RADIAL_DISTORTION, None, new_K)
+            return cv_image
 
-        # publsih message
+        def pre_process_img(image: np.ndarray, pre_proc_blur_k_size: int, brightness: int) -> np.ndarray:
+            """
+            Pre-processes the image for segmentation model.
+            Applies equalization, Gaussian Blur, and brightness increase.
+
+            Args:
+                image (numpy.ndarray): RGB undistorted input image.
+                pre_proc_blur_k_size (int): Kernel size for Gaussian blur.
+                brightness (int): Brightness adjustment value.
+
+            Returns:
+                numpy.ndarray: Pre-processed image.
+            """
+
+            # Split the image into its color channels
+            r, g, b = cv2.split(image)
+
+            # Equalize the histograms for each channel
+            r_eq = cv2.equalizeHist(r)
+            g_eq = cv2.equalizeHist(g)
+            b_eq = cv2.equalizeHist(b)
+
+            # Merge the channels
+            image = cv2.merge((r_eq, g_eq, b_eq))
+
+            # Apply Gaussian Blur
+            image = cv2.GaussianBlur(image, (pre_proc_blur_k_size, pre_proc_blur_k_size), 0)
+
+            # # Increase Brightness
+            M = np.ones(image.shape, dtype='uint8') * brightness  # Increase brightness by 50 
+            image = cv2.add(image, M)
+
+            return image
+        
+        def model_output(model: LEDNet, device: torch.device, cv_image: np.ndarray) -> np.ndarray:
+            """
+            Obtains model output for the given image.
+
+            Args:
+                model (LEDNet): Semantic segmentation model.
+                device (torch.device): Device to run the model.
+                cv_image (numpy.ndarray): Input image.
+
+            Returns:
+                numpy.ndarray: Model output prediction mask.
+            """
+
+            # Prepare image to be model input format
+            PIL_image = ImagePIL.fromarray(cv2.cvtColor(cv_image, cv2.COLOR_BGR2RGB))
+            transform = transforms.Compose([
+                transforms.ToTensor(),
+                transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
+            ])
+            image = transform(PIL_image).unsqueeze(0).to(device)
+
+            # Output results from model
+            with torch.no_grad():
+                output = model(image)
+            
+            # Pred is prediction mask generated by the model, white == trail
+            model_pred = torch.argmax(output[0], 1).squeeze(0).cpu().data.numpy()
+            model_pred[model_pred == 0] = 0
+            model_pred[model_pred == 1] = 255
+            model_pred = np.array(model_pred, dtype=np.uint8)
+            return model_pred
+
+        def remove_small_black_regions(mask: np.ndarray, min_black_area_threshold: int) -> np.ndarray:
+            """
+            Removes small black regions from the mask.
+
+            Args:
+                mask (numpy.ndarray): Input mask.
+                min_black_area_threshold (int): Minimum pixel area threshold for regions to be retained.
+
+            Returns:
+                numpy.ndarray: Mask with small black regions removed.
+            """
+
+            #Set non-trail area to be white
+            inverted_mask = ~mask
+    
+            # Find contours of the inverted mask
+            contours, _ = cv2.findContours(inverted_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+            
+            # Iterate through contours and add small non-trail areas to the original mask
+            for contour in contours:
+                area = cv2.contourArea(contour)
+                if area < min_black_area_threshold:
+                    cv2.drawContours(mask, [contour], -1, (255), cv2.FILLED)
+
+            return mask
+        
+        def post_processing(model_pred: np.ndarray, post_proc_blur_k_size: int, min_contour_area: int,
+                            min_black_area_threshold: int) -> np.ndarray:
+            """
+            Performs post-processing on the model prediction.
+            Find the contours of the image, blur the contours, and find the smoothened contours.
+            TODO: Check if the first contour check is necessary.
+            Only maintain contours above a threshold size.
+
+            Args:
+                model_pred (numpy.ndarray): Model prediction.
+                post_proc_blur_k_size (int): Kernel size for Gaussian blur.
+                min_contour_area (int): Minimum contour area threshold.
+
+            Returns:
+                numpy.ndarray: Processed model prediction.
+            """
+
+            orig_contours, _ = cv2.findContours(model_pred, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+            mask = np.zeros_like(model_pred)
+            post_blur_mask = np.zeros_like(model_pred)
+            cv2.drawContours(mask, orig_contours, -1, (255), cv2.FILLED)
+
+            
+            # Apply Gaussian blur to the mask
+            mask = cv2.GaussianBlur(mask, (post_proc_blur_k_size, post_proc_blur_k_size), 0)
+            
+            contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+            # Don't include small white regions as trail
+            for contour in contours:
+                # Calculate the area of each contour
+                area = cv2.contourArea(contour)
+                
+                # Draw contours above a certain size
+                if area > min_contour_area:
+                    cv2.drawContours(post_blur_mask, [contour], -1, (255), cv2.FILLED)
+
+            # Show the contour image
+            post_blur_mask = remove_small_black_regions(post_blur_mask, min_black_area_threshold)
+            return post_blur_mask
+        
+        def compute_centreline_path(model_pred: np.ndarray, poly_degree: int) -> np.ndarray:
+            """
+            Computes the polynomial fit centreline on the model prediction.
+
+            Args:
+                model_pred (numpy.ndarray): Model prediction.
+                poly_degree (int): Degree of polynomial for fitting the path.
+
+            Returns:
+                numpy.ndarray: centreline path pixel.
+                    Note: x_idx represents pixel along width of image
+                          y_idx represents pixel along height of image
+            """
+            x_idx = []
+            y_idx = []
+            pixel_route = None
+        
+            # calculate the center line by taking the average
+            for i, row in enumerate(model_pred):
+                white_pixels = list(np.nonzero(row)[0])
+                if white_pixels:
+                    average = (white_pixels[0] + white_pixels[-1]) // 2
+                    x_idx.append(average)
+                    y_idx.append(i)
+            if len(x_idx) > 0:
+                x_idx = np.array(x_idx)
+                y_idx = np.array(y_idx)
+
+                coefficients = np.polyfit(y_idx, x_idx, deg=poly_degree)  # Third-degree polynomial (adjust degree as needed)
+                x_new_idx = np.polyval(coefficients, y_idx).astype(int)
+                x_new_idx = np.clip(x_new_idx, a_min=0, a_max=self.image_width-1)
+
+                # route_image = np.zeros_like(model_pred)
+                pixel_route = np.hstack((x_new_idx[:, np.newaxis], y_idx[:, np.newaxis]))
+            return pixel_route
+
+        def find_route(model: LEDNet, device: torch.device, cv_image: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+            """
+            Finds the pixel route in the image using the semantic segmentation model.
+
+            Args:
+                model (LEDNet): Semantic segmentation model.
+                device (torch.device): Device to run the model.
+                cv_image (numpy.ndarray): Input image after pre-processing.
+
+            Returns:
+                tuple: Tuple containing model prediction mask (numpy.ndarray) and centreline path pixels (numpy.ndarray).
+            """
+
+            model_pred = model_output(model, device, cv_image)
+            model_pred = post_processing(model_pred, self.post_proc_blur_k_size, self.min_contour_area, self.min_black_area_threshold)
+            pixel_route = compute_centreline_path(model_pred, self.poly_degree)
+
+            return model_pred, pixel_route
+
+        
+
+        wait_time_max = 1
+        cv_image = get_rgb_undistorted_img(camera_msg)
+        
+        undistorted_image = cv_image.copy()
+        if self.visualize:
+            cv2.imshow('Undistorted', cv_image)
+            cv2.waitKey(wait_time_max)
+
+        #Pre process image to prepare for segmentation model
+        cv_image = pre_process_img(cv_image, self.pre_proc_blur_k_size, self.brightness)
+        # if self.visualize:
+        #     cv2.imshow('pre-processed', cv_image)
+        #     cv2.waitKey(wait_time_max)
+
+        model_pred, pixel_route = find_route(self.model, self.device, cv_image)
+        uv_route = None
+        if self.visualize:
+            #To visualize prediction
+                        
+            # cv2.imshow('segmentation_ouput',model_pred)
+            # cv2.waitKey(wait_time_max)
+
+            # Highlight red where is predicted as road
+            sign = cv2.cvtColor(model_pred, cv2.COLOR_GRAY2RGB) /255 * 200
+            sign = sign.astype(undistorted_image.dtype)  # Convert sign to the data type of undistorted_image
+            sign[:, :, :2] = 0
+            cv_image = cv2.add(undistorted_image, sign)
+            # cv2.imshow('highlighted_route', cv_image)
+            # cv2.waitKey(wait_time_max)
+            if isinstance(pixel_route, np.ndarray):
+                for centre_dot in pixel_route:
+                    cv2.circle(cv_image, (centre_dot[0], centre_dot[1]), radius=5, color=(255, 0, 0), thickness=-1)
+                # cv2.imshow('final_path', cv_image)
+                # cv2.waitKey(wait_time_max)
+
+        if isinstance(pixel_route, np.ndarray): uv_route = self.convert_pix2uv(pixel_route)
+        return uv_route, cv_image
+    
+    #-----POINTCLOUD TRANSFORMATION AND FILTERING-------------------------------------------
+    
+    def lidar_pts_in_cam_uv(self, points3d: np.ndarray) -> np.ndarray:
+        """
+        Transforms lidar points to camera frame uvcoordinates.
+
+        Args:
+            points3d (numpy.ndarray): Array of lidar points. size: (N, 4), (x, y, z, 1)
+
+        Returns:
+            numpy.ndarray: Transformed points in camera frame uv coordinates. (u, v, depth)
+        """
+        # Transform from lidar to cam frame
+        N = points3d.shape[0]
+        points3d = points3d.T #(4, N)
+        points3d_cam_frame = T_CL @ points3d # (4, N)
+
+
+        # Convert from cam cartesian to uv
+        uv_coordinate = np.zeros((3, N))
+
+        uv_coordinate[0] = points3d_cam_frame[0] / points3d_cam_frame[2] #x / z
+        uv_coordinate[1] = points3d_cam_frame[1] / points3d_cam_frame[2] #y / z
+        uv_coordinate[2] = points3d_cam_frame[2] # z
+
+        points2d = uv_coordinate.T
+        return points2d
+    
+    def get_target_point_location(self, uv_route: np.ndarray, points2d: np.ndarray) -> tuple[int, np.ndarray]:
+        """
+        Filters usable route points based on uv route and lidar points. target must be within
+        dist_thresh_uv of a lidar point and over min_depth distance away.
+
+        Args:
+            uv_route (numpy.ndarray): centreline array in uv coordiantes. (u, v)
+            points2d (numpy.ndarray): Lidar points in camera frame. (N, 3) u, v, depth
+            self.min_depth (float): Minimum depth threshold.
+            self.num_max_points_to_match (int): Maximum number of points to match.
+            self.dist_thresh_uv (float): Distance threshold for UV route points.
+
+        Returns:
+            tuple: Index of target point in lidar point cloud and corresponding UV coordinates.
+        """
+        
+        # Filter out the points with a negative depth, and add a col that has the corresponding index
+        # in the unfiltered array
+        N = points2d.shape[0]
+        row_indices = np.arange(N)[:, np.newaxis]
+        points2d = np.hstack((points2d, row_indices)) #u, v, depth, idx
+        filtered_points2d = points2d[points2d[:, 2] >= 0]
+
+        # Only consider the last num_max_points_to_match points or less (points starting from bottom)
+        if len(uv_route) < self.num_max_points_to_match: uv_route = uv_route[::-1]
+        else: uv_route = uv_route[-self.num_max_points_to_match:][::-1]
+
+        
+        best_depth = float('inf')
+        lidar_point_uv = np.empty(4)
+        target_pcl_index = -1
+
+        # Find the closest target that is aligned with a lidar point and over min_depth away
+        for i, uv_point in enumerate(uv_route):
+            euclid_distances = np.linalg.norm(filtered_points2d[:, :2] - uv_point, axis=1)
+            closest_filtered_idx = np.argmin(euclid_distances)
+            dist = euclid_distances[closest_filtered_idx]
+
+            if dist < self.dist_thresh_uv: #lidar point close to path
+                lidar_point_uv = filtered_points2d[closest_filtered_idx]
+                depth = lidar_point_uv[2]
+                if self.min_depth <= depth < best_depth:
+                    target_pcl_index = int(lidar_point_uv[3])
+                    best_depth = depth
+        return target_pcl_index, lidar_point_uv[:2]
+    
+    def uv2pixel(self, target_uv: np.ndarray, image: np.ndarray) -> None:
+        """
+        Converts UV coordinates to pixel coordinates and visualizes them on the image.
+
+        Args:
+            target_uv (numpy.ndarray): UV coordinates of the target point.
+            image (numpy.ndarray): Image for visualization.
+        """
+
+        if not self.visualize: return
+
+        # Covert uv coordinates to pixels
+        u, v = target_uv
+        pix_x = u * self.f_x + self.c_x
+        pix_y = v * self.f_y + self.c_y
+        pix_x = np.clip(pix_x, 0, self.image_width - 1).astype(int)
+        pix_y = np.clip(pix_y, 0, self.image_height - 1).astype(int)
+
+        # Display the target pose image
+        image = cv2.circle(image, (pix_x, pix_y), 10, (0, 255, 0), thickness=3)
+        cv2.imshow("Target point", image)
+        cv2.waitKey(1)
+
+    #-----CREATE PUBLISH MESSAGE------------------------------------------------------------
+
+    def publish_trail_target_point(self, lidar_msg: PointCloud2, target_point: np.ndarray) -> None:
+        """
+        Publishes the trail target pose.
+
+        Args:
+            lidar_msg (sensor_msgs.msg.PointCloud2): Lidar message.
+            target_point (numpy.ndarray): Target point coordinates.
+        """
+
+        x, y, z = target_point
+
+        # publish message
         trail_location_msg = PoseStamped()
         trail_location_msg.header.stamp = lidar_msg.header.stamp
-        trail_location_msg.header.frame_id = "velodyne"
+        trail_location_msg.header.frame_id = "os_lidar"
+        
         # position
-        trail_location_msg.pose.position.x = filtered_3dPoints[smallest_index][0]  
-        trail_location_msg.pose.position.y = filtered_3dPoints[smallest_index][1]
-        trail_location_msg.pose.position.z = filtered_3dPoints[smallest_index][2]
+        trail_location_msg.pose.position.x = x
+        trail_location_msg.pose.position.y = y
+        trail_location_msg.pose.position.z = z
+
         # orientation
-        yaw = math.atan2(filtered_3dPoints[smallest_index][1], filtered_3dPoints[smallest_index][0])
+        yaw = math.atan2(y, x)
         trail_location_msg.pose.orientation.x = 0.0  
         trail_location_msg.pose.orientation.y = 0.0 
         trail_location_msg.pose.orientation.z = math.sin(yaw/2)
@@ -234,19 +577,70 @@ class trailDetector(Node):
         self.trail_publisher.publish(trail_location_msg)
         
         # logging
-        self.get_logger().info("location published!")
-        self.get_logger().info(f"Point: {filtered_3dPoints[smallest_index][0]}, {filtered_3dPoints[smallest_index][1]}, {filtered_3dPoints[smallest_index][2]}")
+        self.get_logger().info(f"Location published as Point: {x}, {y}, {z}")
+        return
+    
+    #-----CALLBACK FUNCTIONS----------------------------------------------------------------
+
+    def trail_callback(self, camera_msg: Image, lidar_msg: PointCloud2) -> None:
+        """
+        Callback function for processing camera and lidar messages and publishing a target path pose.
+
+        Args:
+            camera_msg (sensor_msgs.msg.Image): Camera message.
+            lidar_msg (sensor_msgs.msg.PointCloud2): Lidar message.
+        """
+
+        print("Camera and Lidar Message received!")
+
+        # process camera msg to retrieve path
+        uv_route, cv_image = self.compute_route_uv_and_img(camera_msg)
+        if not isinstance(uv_route, np.ndarray):
+            print("No centerline found!")
+            return
+
+        # process lidar msg
+        point_gen = pc2.read_points(
+            lidar_msg, field_names=(
+                "x", "y", "z"), skip_nans=True)
+        points3d = np.array([[x, y, z, 1] for x, y, z in point_gen])
+        # points3d = np.array(points3d)
         
+        #Convert pointcloud to camera uv coordinates
+        points2d = self.lidar_pts_in_cam_uv(points3d)
 
+        target_pcl_index,  target_uv = self.get_target_point_location(uv_route, points2d)
+        if target_pcl_index == -1:
+            print("No usable centerline found!")
+            return
+        
+        self.uv2pixel(target_uv, cv_image)
+        target_point = points3d[target_pcl_index][:3] #array of [x, y, z]
 
+        self.publish_trail_target_point(lidar_msg, target_point)
+        return
+
+    def only_camera_callback(self, camera_msg: Image) -> None:
+        """
+        Callback function for processing only camera messages and visualizing path.
+
+        Args:
+            camera_msg (sensor_msgs.msg.Image): Camera message.
+        """
+
+        print("Camera Message received!")
+        uv_route, _ = self.compute_route_uv_and_img(camera_msg)
+        if not isinstance(uv_route, np.ndarray):
+            print("No centerline found!")
+        return
+
+#-----MAIN----------------------------------------------------------------------------------
 
 def main(args=None):
-    print(torch.cuda.is_available())
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model = load_model(device)
+    print("cuda is available: ", torch.cuda.is_available())
     
     rclpy.init(args=args)
-    trailDetectorNode = trailDetector(model, device)
+    trailDetectorNode = trailDetector(ONLY_CAMERA_MODE, VISUALIZE)
     rclpy.spin(trailDetectorNode)
 
     trailDetectorNode.destroy_node()

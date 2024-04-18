@@ -87,7 +87,7 @@ def generate_launch_description():
     # ld.add_action(slam_launch)
     # ld.add_action(nav_node)
     # ld.add_action(human_detection_node)
-    # ld.add_action(trail_detection_node)
+    ld.add_action(trail_detection_node)
     # ld.add_action(launch_voice_assistant)
 
     logging = False
