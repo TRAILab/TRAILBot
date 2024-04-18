@@ -3,15 +3,15 @@
 <package format="3">
   <name>fsm</name>
   <version>0.0.0</version>
-  <description>Finite State Machine and Nav Stack Monitor</description>
-  <maintainer email="danielwjkhoo@gmail.com">Daniel Khoo</maintainer>
-  <license>None</license>
+  <description>FSM for TRAILBot</description>
+  <maintainer email="danielwjkhoo@gmail.com">dynamight</maintainer>
+  <license>Apache-2.0</license>
 
   <test_depend>ament_copyright</test_depend>
   <test_depend>ament_flake8</test_depend>
   <test_depend>ament_pep257</test_depend>
   <test_depend>python3-pytest</test_depend>
-
+  
   <export>
     <build_type>ament_python</build_type>
   </export>

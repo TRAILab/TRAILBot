@@ -1,13 +1,15 @@
 import os
 from glob import glob
-from setuptools import setup
+from setuptools import setup, find_packages
+
 
 package_name = 'fsm'
 
 setup(
     name=package_name,
     version='0.0.0',
-    packages=[package_name],
+    # packages=[package_name],
+    packages=find_packages(),
     data_files=[
         ('share/ament_index/resource_index/packages',
             ['resource/' + package_name]),
@@ -24,11 +26,8 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            # "trailbot_fsm = fsm.trailbot_fsm:main",
-            "trailbot_fsm = fsm.trailnav_fsm:main",
-            "navigator_cmd_node = fsm.trailnav_cmd:main",
-            "fsm_test = fsm.nav_fsm_test_file:main",
-            "navigator_node = fsm.navigator_node:main",
+            "trailbot_fsm = fsm.trailbot_fsm:main",
+            # "trailbot_fsm = fsm.trailnav_fsm:main",
         ],
     },
 )
