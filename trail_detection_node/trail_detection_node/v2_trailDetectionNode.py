@@ -429,16 +429,16 @@ class trailDetector(Node):
         if self.visualize:
             #To visualize prediction
                         
-            # cv2.imshow('segmentation_ouput',model_pred)
-            # cv2.waitKey(wait_time_max)
+            cv2.imshow('segmentation_ouput',model_pred)
+            cv2.waitKey(wait_time_max)
 
             # Highlight red where is predicted as road
             sign = cv2.cvtColor(model_pred, cv2.COLOR_GRAY2RGB) /255 * 200
             sign = sign.astype(undistorted_image.dtype)  # Convert sign to the data type of undistorted_image
             sign[:, :, :2] = 0
             cv_image = cv2.add(undistorted_image, sign)
-            # cv2.imshow('highlighted_route', cv_image)
-            # cv2.waitKey(wait_time_max)
+            cv2.imshow('highlighted_route', cv_image)
+            cv2.waitKey(wait_time_max)
             if isinstance(pixel_route, np.ndarray):
                 for centre_dot in pixel_route:
                     cv2.circle(cv_image, (centre_dot[0], centre_dot[1]), radius=5, color=(255, 0, 0), thickness=-1)
