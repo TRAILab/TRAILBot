@@ -157,7 +157,7 @@ global_costmap:
         enabled: True
         observation_sources: scan
         footprint_clearing_enabled: true
-        max_obstacle_height: 2.0
+        max_obstacle_height: 1.0
         combination_method: 1
         scan:
           topic: /ouster/scan
@@ -165,8 +165,8 @@ global_costmap:
           obstacle_min_range: 0.0
           raytrace_max_range: 35.0
           raytrace_min_range: 0.0
-          max_obstacle_height: 2.0
-          min_obstacle_height: 0.0
+          max_obstacle_height: 0.5
+          min_obstacle_height: -1.0
           clearing: True
           marking: True
           data_type: "LaserScan"
