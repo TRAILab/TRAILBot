@@ -21,7 +21,7 @@ import message_filters
     functions to be transferred to human_detection_node
 '''
 ONLY_CAMERA_MODE = False # Only visualize path without publishing target pose
-VISUALIZE = False # Enable the cv2 visuals of pipeline
+VISUALIZE = True # Enable the cv2 visuals of pipeline
 CAM_INTRINSIC_K = np.array([
                                     [1104.0, 0     , 615.34],
                                     [0     , 1103.9, 310.33],
@@ -56,7 +56,7 @@ class trailDetector(Node):
                  pre_proc_blur_k_size: int = 11, brightness: int = 20,
                  post_proc_blur_k_size: int = 31, min_contour_area: int = 150000,
                  poly_degree: int = 2, min_black_area_threshold: int = 50000,
-                 min_depth: float = 2.5, num_max_points_to_match: int = 400, dist_thresh_uv: float = 0.03,
+                 min_depth: float = 1.0, num_max_points_to_match: int = 400, dist_thresh_uv: float = 0.03,
                  pub_queue_size: int = 10, sync_queue_size: int = 30, 
                  cam_sub_queue_size: int = 10, max_time_diff: float = 0.5) -> None:
         
@@ -433,24 +433,24 @@ class trailDetector(Node):
 
         #Pre process image to prepare for segmentation model
         cv_image = pre_process_img(cv_image, self.pre_proc_blur_k_size, self.brightness)
-        if self.visualize:
-            cv2.imshow('pre-processed', cv_image)
-            cv2.waitKey(wait_time_max)
+        # if self.visualize:
+            # cv2.imshow('pre-processed', cv_image)
+            # cv2.waitKey(wait_time_max)
 
         model_pred, pixel_route = find_route(self.model, self.device, cv_image)
         uv_route = None
         if self.visualize:
                         
-            cv2.imshow('segmentation_ouput',model_pred)
-            cv2.waitKey(wait_time_max)
+            # cv2.imshow('segmentation_ouput',model_pred)
+            # cv2.waitKey(wait_time_max)
 
             # Highlight red where is predicted as road
             sign = cv2.cvtColor(model_pred, cv2.COLOR_GRAY2RGB) /255 * 200
             sign = sign.astype(undistorted_image.dtype)  # Convert sign to the data type of undistorted_image
             sign[:, :, :2] = 0
             cv_image = cv2.add(undistorted_image, sign)
-            cv2.imshow('highlighted_route', cv_image)
-            cv2.waitKey(wait_time_max)
+            # cv2.imshow('highlighted_route', cv_image)
+            # cv2.waitKey(wait_time_max)
             if isinstance(pixel_route, np.ndarray):
                 for centre_dot in pixel_route:
                     cv2.circle(cv_image, (centre_dot[0], centre_dot[1]), radius=5, color=(255, 0, 0), thickness=-1)
@@ -567,12 +567,12 @@ class trailDetector(Node):
             lidar_msg (sensor_msgs.msg.PointCloud2): Lidar message.
             target_point (numpy.ndarray): Target point coordinates.
         """
-
         x, y, z = target_point
 
         # publish message
         trail_location_msg = PoseStamped()
         trail_location_msg.header.stamp = lidar_msg.header.stamp
+        # trail_location_msg.header.stamp = self.get_clock().now().to_msg()
         trail_location_msg.header.frame_id = "os_lidar"
         
         # position
