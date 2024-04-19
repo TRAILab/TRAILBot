@@ -21,7 +21,7 @@ import message_filters
     functions to be transferred to human_detection_node
 '''
 ONLY_CAMERA_MODE = False # Only visualize path without publishing target pose
-VISUALIZE = True # Enable the cv2 visuals of pipeline
+VISUALIZE = False # Enable the cv2 visuals of pipeline
 CAM_INTRINSIC_K = np.array([
                                     [1104.0, 0     , 615.34],
                                     [0     , 1103.9, 310.33],
@@ -53,7 +53,7 @@ Description:
 
 class trailDetector(Node):
     def __init__(self, only_camera_mode: bool, visualize: bool,
-                 pre_proc_blur_k_size: int = 23, brightness: int = 10,
+                 pre_proc_blur_k_size: int = 11, brightness: int = 20,
                  post_proc_blur_k_size: int = 31, min_contour_area: int = 150000,
                  poly_degree: int = 2, min_black_area_threshold: int = 50000,
                  min_depth: float = 3.0, num_max_points_to_match: int = 400, dist_thresh_uv: float = 0.03,
@@ -232,24 +232,30 @@ class trailDetector(Node):
             Returns:
                 numpy.ndarray: Pre-processed image.
             """
+            # Does not seem like pre-processing is necessary in test runs to date
+            equalize = False
+            pre_blur = True
+            increase_brightness = True
 
-            # Split the image into its color channels
-            r, g, b = cv2.split(image)
+            if equalize:
+                # Split the image into its color channels
+                r, g, b = cv2.split(image)
 
-            # Equalize the histograms for each channel
-            r_eq = cv2.equalizeHist(r)
-            g_eq = cv2.equalizeHist(g)
-            b_eq = cv2.equalizeHist(b)
+                # Equalize the histograms for each channel
+                r_eq = cv2.equalizeHist(r)
+                g_eq = cv2.equalizeHist(g)
+                b_eq = cv2.equalizeHist(b)
 
-            # Merge the channels
-            image = cv2.merge((r_eq, g_eq, b_eq))
+                # Merge the channels
+                image = cv2.merge((r_eq, g_eq, b_eq))
+            if pre_blur:
+                # Apply Gaussian Blur
+                image = cv2.GaussianBlur(image, (pre_proc_blur_k_size, pre_proc_blur_k_size), 0)
 
-            # Apply Gaussian Blur
-            image = cv2.GaussianBlur(image, (pre_proc_blur_k_size, pre_proc_blur_k_size), 0)
-
-            # # Increase Brightness
-            M = np.ones(image.shape, dtype='uint8') * brightness  # Increase brightness by 50 
-            image = cv2.add(image, M)
+            if increase_brightness:
+                # # Increase Brightness
+                M = np.ones(image.shape, dtype='uint8') * brightness  # Increase brightness by 50 
+                image = cv2.add(image, M)
 
             return image
         
@@ -327,31 +333,38 @@ class trailDetector(Node):
             Returns:
                 numpy.ndarray: Processed model prediction.
             """
+            apply_post_blur = False
+            remove_small_white_noise = True
+            remove_small_black_blobs = True
 
-            orig_contours, _ = cv2.findContours(model_pred, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-
+            contours, _ = cv2.findContours(model_pred, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
             mask = np.zeros_like(model_pred)
-            post_blur_mask = np.zeros_like(model_pred)
-            cv2.drawContours(mask, orig_contours, -1, (255), cv2.FILLED)
 
-            
-            # Apply Gaussian blur to the mask
-            mask = cv2.GaussianBlur(mask, (post_proc_blur_k_size, post_proc_blur_k_size), 0)
-            
-            contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+            if apply_post_blur:               
+                pre_blur_mask = np.zeros_like(model_pred)
+                cv2.drawContours(pre_blur_mask, contours, -1, (255), cv2.FILLED)
+                # Apply Gaussian blur to the pre_blur_mask
+                pre_blur_mask = cv2.GaussianBlur(pre_blur_mask, (post_proc_blur_k_size, post_proc_blur_k_size), 0)
+                contours, _ = cv2.findContours(pre_blur_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
-            # Don't include small white regions as trail
-            for contour in contours:
-                # Calculate the area of each contour
-                area = cv2.contourArea(contour)
+            if remove_small_white_noise:
+                # Don't include small white regions as trail
+                for contour in contours:
+                    # Calculate the area of each contour
+                    area = cv2.contourArea(contour)
+                    
+                    # Draw contours above a certain size
+                    if area > min_contour_area:
+                        cv2.drawContours(mask, [contour], -1, (255), cv2.FILLED)
+            else:
+                mask = model_pred
+
+            if remove_small_black_blobs:
+                # Show the contour image
+                mask = remove_small_black_regions(mask, min_black_area_threshold)
                 
-                # Draw contours above a certain size
-                if area > min_contour_area:
-                    cv2.drawContours(post_blur_mask, [contour], -1, (255), cv2.FILLED)
 
-            # Show the contour image
-            post_blur_mask = remove_small_black_regions(post_blur_mask, min_black_area_threshold)
-            return post_blur_mask
+            return mask
         
         def compute_centreline_path(model_pred: np.ndarray, poly_degree: int) -> np.ndarray:
             """
@@ -414,20 +427,19 @@ class trailDetector(Node):
         cv_image = get_rgb_undistorted_img(camera_msg)
         
         undistorted_image = cv_image.copy()
-        if self.visualize:
-            cv2.imshow('Undistorted', cv_image)
-            cv2.waitKey(wait_time_max)
+        # if self.visualize:
+        #     cv2.imshow('Undistorted', cv_image)
+        #     cv2.waitKey(wait_time_max)
 
         #Pre process image to prepare for segmentation model
         cv_image = pre_process_img(cv_image, self.pre_proc_blur_k_size, self.brightness)
-        # if self.visualize:
-        #     cv2.imshow('pre-processed', cv_image)
-        #     cv2.waitKey(wait_time_max)
+        if self.visualize:
+            cv2.imshow('pre-processed', cv_image)
+            cv2.waitKey(wait_time_max)
 
         model_pred, pixel_route = find_route(self.model, self.device, cv_image)
         uv_route = None
         if self.visualize:
-            #To visualize prediction
                         
             # cv2.imshow('segmentation_ouput',model_pred)
             # cv2.waitKey(wait_time_max)
@@ -442,8 +454,8 @@ class trailDetector(Node):
             if isinstance(pixel_route, np.ndarray):
                 for centre_dot in pixel_route:
                     cv2.circle(cv_image, (centre_dot[0], centre_dot[1]), radius=5, color=(255, 0, 0), thickness=-1)
-                # cv2.imshow('final_path', cv_image)
-                # cv2.waitKey(wait_time_max)
+                cv2.imshow('final_path', cv_image)
+                cv2.waitKey(wait_time_max)
 
         if isinstance(pixel_route, np.ndarray): uv_route = self.convert_pix2uv(pixel_route)
         return uv_route, cv_image
@@ -577,7 +589,7 @@ class trailDetector(Node):
         self.trail_publisher.publish(trail_location_msg)
         
         # logging
-        self.get_logger().info(f"Location published as Point: {x}, {y}, {z}")
+        self.get_logger().info(f"Trail waypoint published as Point: {x}, {y}, {z}")
         return
     
     #-----CALLBACK FUNCTIONS----------------------------------------------------------------
