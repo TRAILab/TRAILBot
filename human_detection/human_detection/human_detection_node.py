@@ -223,7 +223,7 @@ class LidarCameraSubscriber(Node):
 
         self.lidar_subscription = self.create_subscription(
             PointCloud2,
-            '/ouster/points',  
+            'ouster/points',  
             self.lidar_callback,
             10)
         self.lidar_subscription
@@ -324,6 +324,7 @@ class LidarCameraSubscriber(Node):
 
         self.cv_image = self.bridge.imgmsg_to_cv2(
             msg, desired_encoding='passthrough')
+        self.cv_image = cv2.cvtColor(self.cv_image, cv2.COLOR_BGR2RGB) #Added for colour correction to RGB
         self.person_array = process_frame(self.model, self.cv_image, self.configs)
         self.is_there_anyone = len(self.person_array)>0
         self.timestamp = msg.header.stamp
