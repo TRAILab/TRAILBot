@@ -56,7 +56,7 @@ class trailDetector(Node):
                  pre_proc_blur_k_size: int = 11, brightness: int = 20,
                  post_proc_blur_k_size: int = 31, min_contour_area: int = 150000,
                  poly_degree: int = 2, min_black_area_threshold: int = 50000,
-                 min_depth: float = 1.0, num_max_points_to_match: int = 400, dist_thresh_uv: float = 0.03,
+                 min_depth: float = 6.0, num_max_points_to_match: int = 400, dist_thresh_uv: float = 0.03,
                  pub_queue_size: int = 10, sync_queue_size: int = 30, 
                  cam_sub_queue_size: int = 10, max_time_diff: float = 0.5) -> None:
         
@@ -518,21 +518,25 @@ class trailDetector(Node):
         
         best_depth = float('inf')
         lidar_point_uv = np.empty(4)
+        final_lidar_point_uv = np.empty(4)
         target_pcl_index = -1
 
         # Find the closest target that is aligned with a lidar point and over min_depth away
         for i, uv_point in enumerate(uv_route):
             euclid_distances = np.linalg.norm(filtered_points2d[:, :2] - uv_point, axis=1)
             closest_filtered_idx = np.argmin(euclid_distances)
-            dist = euclid_distances[closest_filtered_idx]
+            dist = euclid_distances[closest_filtered_idx]               
 
             if dist < self.dist_thresh_uv: #lidar point close to path
                 lidar_point_uv = filtered_points2d[closest_filtered_idx]
                 depth = lidar_point_uv[2]
                 if self.min_depth <= depth < best_depth:
                     target_pcl_index = int(lidar_point_uv[3])
+                    final_lidar_point_uv = lidar_point_uv
                     best_depth = depth
-        return target_pcl_index, lidar_point_uv[:2]
+                    # print("target_pcl_index", target_pcl_index)
+                    # print("depth: ", depth)
+        return target_pcl_index, final_lidar_point_uv[:2]
     
     def uv2pixel(self, target_uv: np.ndarray, image: np.ndarray) -> None:
         """
@@ -551,7 +555,6 @@ class trailDetector(Node):
         pix_y = v * self.f_y + self.c_y
         pix_x = np.clip(pix_x, 0, self.image_width - 1).astype(int)
         pix_y = np.clip(pix_y, 0, self.image_height - 1).astype(int)
-
         # Display the target pose image
         image = cv2.circle(image, (pix_x, pix_y), 10, (0, 255, 0), thickness=3)
         cv2.imshow("Target point", image)
