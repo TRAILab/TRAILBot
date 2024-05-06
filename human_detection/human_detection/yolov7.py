@@ -268,7 +268,7 @@ if __name__ == '__main__':
     parser.add_argument('--weights-file', nargs='+', type=str, default='yolov7.pt', help='model.pt path(s)')
     parser.add_argument('--no-trace', action='store_true', help='don`t trace model (if traced_model.pt already exist this can save time)') # Model tracing determines all the operations that are executed when a model parses input data through its linear layers. Just like downloading a model, it only needs to run once. Once the traced_model.pt is generated, this operation is no longer needed
     parser.add_argument('--source', type=str, default='inference/images', help='video source to process')  # mp4 file/folder, 'webcam' for webcam
-    parser.add_argument('--device', default='', help='cuda device, i.e. 0 or 0,1,2,3 or cpu')
+    parser.add_argument('--device', default='0', help='cuda device, i.e. 0 or 0,1,2,3 or cpu')
     # Hyperparameters:
     parser.add_argument('--img-size', type=int, default=640, help='inference size (pixels)')
     parser.add_argument('--conf-thres', type=float, default=0.25, help='object confidence threshold')

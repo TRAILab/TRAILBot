@@ -26,6 +26,7 @@ current_directory = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(current_directory)
 
 import yolov7
+from geometry_msgs.msg import PoseStamped
 
 def parse_arguments():
     """
@@ -114,25 +115,7 @@ def get_heading_angle(
     x_angle_radian = math.atan(
         (centroid_x - (image_width / 2)) / (image_width / 2) * math.tan(math.radians(fov / 2)))
     return offset + scaling * math.degrees(x_angle_radian)
-def process_frame(model,image,configs):
-    """
-    process a frame. Determine keypoints and number of people and
-    heading angle.
-    """
-    # Run model inference
-    person_array = []
-    bounding_boxes, identities, confidences=model.process_frame(image,view_img=False)
-    if identities is None:
-        return []
-    for i in range(len(bounding_boxes)):
-        person = Person()
-        centroid = xyxy_to_centroid(bounding_boxes[i])
-        person.heading_angle = get_heading_angle(centroid)
-        person.x, person.y = centroid 
-        person.on_screen=True
-        person.id = identities[i]
-        person_array.append(person)
-    return person_array
+
 
 
 class Person:
@@ -142,10 +125,11 @@ class Person:
     def __init__(self):
         self.x = -1.0
         self.y = -1.0
-        self.z = -1.0
+        self.world_xyz = None
         self.on_screen = False
         self.heading_angle = 0.0
         self.id = 0
+        self.is_valid = False
 
 
 class internalState:
@@ -207,10 +191,21 @@ class LidarCameraSubscriber(Node):
         camera_transformation_k = configs['camera_transformation_k']
         self.camera_transformation_k = read_space_separated_matrix(camera_transformation_k)
         rotation_matrix = configs['rotation_matrix']
-        self.rotation_matrix = read_space_separated_matrix(rotation_matrix).T
-        self.translation_vector = np.array(configs['translation_vector'])
-        self.inverse_camera_transformation_k = np.linalg.inv(self.camera_transformation_k)
-        self.inverse_rotation_matrix = np.linalg.inv(self.rotation_matrix)
+        # self.rotation_matrix = read_space_separated_matrix(rotation_matrix).T
+        # self.translation_vector = np.array(configs['translation_vector'])
+        # self.inverse_camera_transformation_k = np.linalg.inv(self.camera_transformation_k)
+        # self.inverse_rotation_matrix = np.linalg.inv(self.rotation_matrix)
+        self.radial_distortion = np.array([0.0, 0.0, 0, 0])
+
+        self.T_CL = np.zeros((3,4))
+        self.T_CL[:,:3] = read_space_separated_matrix(rotation_matrix)
+        self.T_CL[:,3] = np.array(configs['translation_vector'])
+
+        print(self.camera_transformation_k)
+
+        self.image_height = configs['image_height']
+        self.image_width = configs['image_width']
+        self.new_K, _ = cv2.getOptimalNewCameraMatrix(self.camera_transformation_k, self.radial_distortion, (self.image_width, self.image_height), 1, (self.image_width, self.image_height))  
 
         super().__init__('image_subscriber')
         self.camera_subscription = self.create_subscription(
@@ -249,48 +244,82 @@ class LidarCameraSubscriber(Node):
             'detection_location', 
             10)
 
+        self.detection3DArray_subscriber = self.create_subscription(
+            Detection3DArray,
+            'detection_location',
+            self.array_callback,
+            10)
+
+        self.detectionSinglePose_publisher = self.create_publisher(
+            PoseStamped,
+            'person_target', 
+            10)
+
+
         self.timestamp = 0
 
         # if this is -1, node will publish constantly (as camera FPS)
-        self.publishing_frequency = configs['publishing_frequency']
+        # self.publishing_frequency = configs['publishing_frequency']
+        self.publishing_frequency = -1
 
         #run the publish_message function according to publishing_frequency
-        self.create_timer(1/self.publishing_frequency, self.publish_message)
+        # self.create_timer(1/self.publishing_frequency, self.publish_message)
         self.print_and_log('Human Detection ready...')
         
-        ascii_numbers = r"""
-        ____ _ _  _ ____                 
-        |___ | |  | |___                 
-        |    |  \/  |___                 
+        # ascii_numbers = r"""
+        # ____ _ _  _ ____                 
+        # |___ | |  | |___                 
+        # |    |  \/  |___                 
 
-        ____ ____ _  _ ____              
-        |___ |  | |  | |__/              
-        |    |__| |__| |  \              
+        # ____ ____ _  _ ____              
+        # |___ |  | |  | |__/              
+        # |    |__| |__| |  \              
 
-        ___ _  _ ____ ____ ____          
-         |  |__| |__/ |___ |___          
-         |  |  | |  \ |___ |___          
+        # ___ _  _ ____ ____ ____          
+        #  |  |__| |__/ |___ |___          
+        #  |  |  | |  \ |___ |___          
 
-        ___ _ _ _ ____                   
-         |  | | | |  |                   
-         |  |_|_| |__|                   
+        # ___ _ _ _ ____                   
+        #  |  | | | |  |                   
+        #  |  |_|_| |__|                   
 
-        ____ _  _ ____                   
-        |  | |\ | |___                   
-        |__| | \| |___                   
+        # ____ _  _ ____                   
+        # |  | |\ | |___                   
+        # |__| | \| |___                   
 
-        ____ ___ ____ ____ ___ ____ ___  
-        [__   |  |__| |__/  |  |___ |  \  |
-        ___]  |  |  | |  \  |  |___ |__/  .
-        """.strip().split('\n\n')
+        # ____ ___ ____ ____ ___ ____ ___  
+        # [__   |  |__| |__/  |  |___ |  \  |
+        # ___]  |  |  | |  \  |  |___ |__/  .
+        # """.strip().split('\n\n')
 
-        for num in ascii_numbers[-6:]:
-            self.print_and_log(f"\n{num}\n")
-            time.sleep(1)
+        # for num in ascii_numbers[-6:]:
+        #     self.print_and_log(f"\n{num}\n")
+        #     time.sleep(1)
         show_image_window = True 
         if show_image_window:
             cv2.namedWindow("Camera Image", cv2.WINDOW_NORMAL)
             # cv2.setWindowProperty("Camera Image", cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
+
+    def process_frame(self,image):
+        """
+        process a frame. Determine keypoints and number of people and
+        heading angle.
+        """
+        # Run model inference
+
+        person_array = []
+        bounding_boxes, identities, confidences=self.model.process_frame(image,view_img=False)
+        if identities is None:
+            return []
+        for i in range(len(bounding_boxes)):
+            person = Person()
+            centroid = xyxy_to_centroid(bounding_boxes[i])
+            person.heading_angle = get_heading_angle(centroid)
+            person.x, person.y = centroid 
+            person.on_screen=True
+            person.id = identities[i]
+            person_array.append(person)
+        return person_array
 
     def visualize_camera(self,show_image_window=True):
         if show_image_window:
@@ -305,6 +334,8 @@ class LidarCameraSubscriber(Node):
                     cv2.circle(image_with_dots, (int(person.x), int(person.y)), 5, (0, 0, 255), -1)  # Draw a red circle at (x, y)
                     cv2.putText(image_with_dots, str(person.id),  (int(person.x), int(person.y)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2) 
 
+                for i in range(self.points_lidar.shape[0]):
+                    cv2.circle(image_with_dots, (int(self.points_lidar[i,0]), int(self.points_lidar[i,1])), 5, (255, 0, 0), -1)  # Draw a red circle at (x, y)
                 
                 cv2.imshow("Camera Image", image_with_dots)
                 # Check for the 'q' key press to exit the loop
@@ -318,6 +349,7 @@ class LidarCameraSubscriber(Node):
 
 
     def camera_callback(self, msg):
+        print('cam',self.timestamp, self.get_clock().now())
 
         if self.cur_state!="SearchState" and self.cur_state!="ApproachState":
             return 
@@ -325,7 +357,8 @@ class LidarCameraSubscriber(Node):
         self.cv_image = self.bridge.imgmsg_to_cv2(
             msg, desired_encoding='passthrough')
         self.cv_image = cv2.cvtColor(self.cv_image, cv2.COLOR_BGR2RGB) #Added for colour correction to RGB
-        self.person_array = process_frame(self.model, self.cv_image, self.configs)
+        self.cv_image = cv2.undistort(self.cv_image, self.camera_transformation_k, self.radial_distortion, None, self.new_K)
+        self.person_array = self.process_frame(self.cv_image)
         self.is_there_anyone = len(self.person_array)>0
         self.timestamp = msg.header.stamp
 
@@ -343,28 +376,29 @@ class LidarCameraSubscriber(Node):
             msg, field_names=(
                 "x", "y", "z"), skip_nans=True)
         # points = np.array(list(point_gen))
-        points = [[x, y, z] for x, y, z in point_gen]
+        # points = [[x, y, z, 1] for x, y, z in point_gen]
+        points = [[x, y, z, 1] for x, y, z in point_gen if any([i!=0 for i in [x,y,z]])]
         points = np.array(points)
-        points2d = convert_to_camera_frame(
-            points,
-            self.camera_transformation_k,
-            self.rotation_matrix,
-            self.translation_vector,
-            self.configs)
+        points2d, ids_fov = self.convert_to_camera_frame(points)
+        points_fov = points[ids_fov,:]
 
         #update depth for every person
         for person in self.person_array:
-            if not person.on_screen:
-                person.z = -1.0
-            else:
-                person.z = estimate_depth(person.x, person.y, points2d,self.configs)
+            if person.on_screen:
+                print('on screen')
+                person.world_xyz = self.estimate_position(person, points2d, points_fov)
+                if type(person.world_xyz) == list:
+                    person.is_valid = True
+                else:
+                    print(person.world_xyz)
         self.timestamp = msg.header.stamp
         # if this is -1, node will publish constantly (as camera FPS)
+        print('lidar',self.timestamp, self.get_clock().now())
         if not self.publishing_frequency>0:
-            self.publish_message("lidar")
+            self.publish_message()
 
-    def publish_message(self,source_str="timer"):
-        """ publish message is somebody is detected"""
+    def publish_message(self):
+        """ publish message if somebody is detected"""
         if self.cur_state!="SearchState" and self.cur_state!="ApproachState":
             return 
         if not self.is_there_anyone:
@@ -376,24 +410,21 @@ class LidarCameraSubscriber(Node):
         self.is_person_publisher.publish(is_person_msg)
 
         detection_array = Detection3DArray()
-        detection_array.header.frame_id = 'velodyne'
+        detection_array.header.frame_id = 'os_lidar'
         for person in self.person_array:
-
-            message = f"id {person.id} coord: {round(person.x,2)},{round(person.y,2)},{round(person.z,2)}"
-            # print_verbose_only(self.parser_args, message)
+            print(person.is_valid,person.world_xyz)
+            if not person.is_valid:
+                return
+            # print(person.world_xyz)
+        #     # message = f"id {person.id} coord: {round(person.world_xyz[0],2)},{round(person.world_xyz[1],2)},{round(person.world_xyz[2],2)}"
+            message = "id: {0}, coord: [{1:.2f},{2:.2f},{3:.2f}]".format(person.id, person.world_xyz[0], person.world_xyz[1], person.world_xyz[2])
+        #     # print_verbose_only(self.parser_args, message)
             self.print_and_log(message)
 
             detection3d = Detection3D()
-            lidar_x,lidar_y,lidar_z = convert_to_lidar_frame(
-                (person.x,person.y,person.z),
-                self.inverse_camera_transformation_k,
-                self.inverse_rotation_matrix,
-                self.translation_vector,
-                self.configs)
-
-            detection3d.bbox.center.position.x = float(lidar_x)
-            detection3d.bbox.center.position.y = float(lidar_y)
-            detection3d.bbox.center.position.z = float(lidar_z)
+            detection3d.bbox.center.position.x = person.world_xyz[0]
+            detection3d.bbox.center.position.y = person.world_xyz[1]
+            detection3d.bbox.center.position.z = person.world_xyz[2]
             detection3d.id = str(person.id)
             # detection3d.bbox.size.x = float(0)
             # detection3d.bbox.size.y = float(0) 
@@ -402,6 +433,7 @@ class LidarCameraSubscriber(Node):
             detection_array.detections.append(detection3d)
         self.visualize_camera()
         self.detection3DArray_publisher.publish(detection_array)
+        print('d3d', self.get_clock().now())
 
 
         # pose_stamped_msg = PoseStamped()
@@ -429,6 +461,132 @@ class LidarCameraSubscriber(Node):
         
         # self.pose_publisher.publish(pose_stamped_msg)
 
+    def array_callback(self, msg):
+        print('array', self.get_clock().now())
+        if msg.detections:
+            trail_pose = PoseStamped()
+            trail_pose.header.stamp = msg.header.stamp
+            trail_pose.header.frame_id = "os_lidar"
+
+            trail_pose.pose.position = msg.detections[0].bbox.center.position
+            x = msg.detections[0].bbox.center.position.x
+            y = msg.detections[0].bbox.center.position.y
+            
+            # # position
+            # pose.pose.position.x = x
+            # pose.pose.position.y = y
+            # pose.pose.position.z = z
+
+            # orientation
+            yaw = math.atan2(y, x)
+            trail_pose.pose.orientation.x = 0.0  
+            trail_pose.pose.orientation.y = 0.0 
+            trail_pose.pose.orientation.z = math.sin(yaw/2)
+            trail_pose.pose.orientation.w = math.cos(yaw / 2)
+            self.detectionSinglePose_publisher.publish(trail_pose)
+
+    def convert_to_lidar_frame(self,
+        uv_coordinate, 
+        inverse_camera_transformation_k,
+        inverse_rotation_matrix,
+        translation_vector,
+        configs):
+        """
+        convert 2d camera coordinate + depth into 3d lidar frame
+        """
+        image_height = configs['image_height']
+
+        point_cloud = np.empty( (3,) , dtype=float)
+        point_cloud[2] = uv_coordinate[2]
+        point_cloud[1] = ( image_height - uv_coordinate[1] )*point_cloud[2]
+        point_cloud[0] = uv_coordinate[0]*point_cloud[2]
+
+        point_cloud = inverse_camera_transformation_k @ point_cloud
+        point_cloud = inverse_rotation_matrix @ (point_cloud-translation_vector) 
+        return point_cloud
+
+
+    def convert_to_camera_frame(self, point_cloud):
+        """
+        convert 3d lidar data into 2d coordinate of the camera frame + depth
+        """
+        N = point_cloud.shape[0]
+        # print(point_cloud.shape)
+        points3d_cam_frame = self.T_CL @ point_cloud.T # (3, N)
+
+        uv_coordinate = np.zeros((3, N))
+
+        uv_coordinate[0,:] = points3d_cam_frame[0,:] / points3d_cam_frame[2,:] #x / z
+        uv_coordinate[1,:] = points3d_cam_frame[1,:] / points3d_cam_frame[2,:] #y / z
+        # uv_coordinate[2,:] = points3d_cam_frame[2,:] # z
+        uv_coordinate[2,:] = 1
+
+        pixel_coords = self.camera_transformation_k @ uv_coordinate
+        # pixel_coords[1,:] = 720 - pixel_coords[1,:]
+
+        points2d = pixel_coords.T
+        dist = np.sqrt((point_cloud[:,:3]**2).sum(axis=1))
+        ids = (points2d[:,0]>0) * (points2d[:,0]<1280) * (points2d[:,1]>0) * (points2d[:,1]<720) * (dist > 0.5)
+        filtered_points = points2d[ids,:]#[point_cloud[:,2] > 0,:]
+        # self.filtered = points2d[ids,:]
+        # self.filtered[:,2] = np.sqrt((point_cloud[ids,:]**2).sum(axis=1))/10*255
+        # print(np.hstack((point_cloud[ids,:],np.array([dist[ids]]).T)))
+        return filtered_points, ids
+
+
+        # length = point_cloud.shape[0]
+        # translation = np.tile(translation_vector, (length, 1)).T
+        
+        # point_cloud = point_cloud.T
+        # point_cloud = rotation_matrix@point_cloud + translation
+        # point_cloud = camera_transformation_k @ point_cloud
+
+        # uv_coordinate = np.empty_like(point_cloud)
+
+        # """
+        # uv = [x/z, y/z, z], and y is opposite so the minus imageheight
+        # """
+        # uv_coordinate[0] = point_cloud[0] / point_cloud[2]
+        # uv_coordinate[1] = self.image_height - point_cloud[1] / point_cloud[2]
+        # uv_coordinate[2] = point_cloud[2]
+
+        # uv_depth = uv_coordinate[2, :]
+        # filtered_uv_coordinate = uv_coordinate[:, uv_depth >= 0]
+        # return filtered_uv_coordinate
+
+
+    def estimate_position(self, person, points_pix, points_xyz):
+        """
+        estimate the position by finding points closest to x,y from thhe 2d array and averaging the points
+        """
+        # Calculate the distance between each point and the target coordinates (x, y)
+        x = person.x
+        y = person.y
+        distances_sq = (points_pix[:,0] - x) ** 2 + (points_pix[:,1] - y) ** 2
+
+        # Find the indices of the k nearest points
+        k = 5     # Number of nearest neighbors we want
+        closest_indices = np.argpartition(distances_sq, k)[:k]
+        pixel_distance_threshold = 2000
+        # print(points_uv[:10,0],x,y)
+
+        self.points_lidar = points_pix[closest_indices,:2]
+
+        valid_indices = [idx for idx in closest_indices if distances_sq[idx]<=pixel_distance_threshold]
+        if len(valid_indices) == 0:
+            print(points_pix[closest_indices,:],x,y)
+            # lidar points disappears usually around 0.4m
+            distance_where_lidar_stops_working = self.configs['distance_where_lidar_stops_working']
+            return distance_where_lidar_stops_working
+
+        filtered_indices = np.array(valid_indices)
+        # Get the depth value of the closest point
+        closest_points = points_xyz[filtered_indices,:3]
+        mean_val = np.mean(closest_points, axis=0).tolist()
+
+        print(person.x, person.y, closest_points)
+        return mean_val
+
 def read_space_separated_matrix(string):
     """
     convert space separated matrix string to np matrix
@@ -440,85 +598,6 @@ def read_space_separated_matrix(string):
         matrix.append([float(value) for value in values])
     numpy_matrix = np.array(matrix)
     return numpy_matrix
-
-
-def convert_to_lidar_frame(
-    uv_coordinate, 
-    inverse_camera_transformation_k,
-    inverse_rotation_matrix,
-    translation_vector,
-    configs):
-    """
-    convert 2d camera coordinate + depth into 3d lidar frame
-    """
-    image_height = configs['image_height']
-
-    point_cloud = np.empty( (3,) , dtype=float)
-    point_cloud[2] = uv_coordinate[2]
-    point_cloud[1] = ( image_height - uv_coordinate[1] )*point_cloud[2]
-    point_cloud[0] = uv_coordinate[0]*point_cloud[2]
-
-    point_cloud = inverse_camera_transformation_k @ point_cloud
-    point_cloud = inverse_rotation_matrix @ (point_cloud-translation_vector) 
-    return point_cloud
-
-
-def convert_to_camera_frame(
-    point_cloud,
-    camera_transformation_k,
-    rotation_matrix,
-    translation_vector,
-    configs):
-    """
-    convert 3d lidar data into 2d coordinate of the camera frame + depth
-    """
-    image_height = configs['image_height']
-
-    length = point_cloud.shape[0]
-    translation = np.tile(translation_vector, (length, 1)).T
-    
-    point_cloud = point_cloud.T
-    point_cloud = rotation_matrix@point_cloud + translation
-    point_cloud = camera_transformation_k @ point_cloud
-
-    uv_coordinate = np.empty_like(point_cloud)
-
-    """
-    uv = [x/z, y/z, z], and y is opposite so the minus imageheight
-    """
-    uv_coordinate[0] = point_cloud[0] / point_cloud[2]
-    uv_coordinate[1] = image_height - point_cloud[1] / point_cloud[2]
-    uv_coordinate[2] = point_cloud[2]
-
-    uv_depth = uv_coordinate[2, :]
-    filtered_uv_coordinate = uv_coordinate[:, uv_depth >= 0]
-    return filtered_uv_coordinate
-
-
-def estimate_depth(x, y, np_2d_array,configs):
-    """
-    estimate the depth by finding points closest to x,y from thhe 2d array
-    """
-    # Calculate the distance between each point and the target coordinates (x, y)
-    distances_sq = (np_2d_array[0,:] - x) ** 2 + (np_2d_array[1,:] - y) ** 2
-
-    # Find the indices of the k nearest points
-    k = 5     # Number of nearest neighbors we want
-    closest_indices = np.argpartition(distances_sq, k)[:k]
-    pixel_distance_threshold = 2000
-
-    valid_indices = [idx for idx in closest_indices if distances_sq[idx]<=pixel_distance_threshold]
-    if len(valid_indices) == 0:
-        # lidar points disappears usually around 0.4m
-        distance_where_lidar_stops_working = configs['distance_where_lidar_stops_working']
-        return distance_where_lidar_stops_working
-
-    filtered_indices = np.array(valid_indices)
-    # Get the depth value of the closest point
-    closest_depths = np_2d_array[2,filtered_indices]
-
-    return np.mean(closest_depths)
-
 
 def main(args=None, debug_mode=False):
 
@@ -534,10 +613,11 @@ def main(args=None, debug_mode=False):
     #     download_model(SAVED_MODEL_PATH,MODEL_URL)
 
     with torch.no_grad():
-        yolo_sort_tracker=yolov7.Yolo_sort_tracker(save_result=False) 
+        yolo_sort_tracker=yolov7.Yolo_sort_tracker(save_result=False)
 
     rclpy.init(args=args)
     subscriber = LidarCameraSubscriber(parser_args,yolo_sort_tracker,configs)
+    subscriber.set_parameters([rclpy.parameter.Parameter("use_sim_time", rclpy.Parameter.Type.BOOL, True)])
     rclpy.spin(subscriber)
     subscriber.destroy_node()
     rclpy.shutdown()
