@@ -28,6 +28,8 @@ sys.path.append(current_directory)
 import yolov7
 from geometry_msgs.msg import PoseStamped
 
+SHOW_IMAGE_WINDOW = True 
+
 def parse_arguments():
     """
     handle command line arguments
@@ -295,8 +297,8 @@ class LidarCameraSubscriber(Node):
         # for num in ascii_numbers[-6:]:
         #     self.print_and_log(f"\n{num}\n")
         #     time.sleep(1)
-        show_image_window = True 
-        if show_image_window:
+        
+        if SHOW_IMAGE_WINDOW:
             cv2.namedWindow("Camera Image", cv2.WINDOW_NORMAL)
             # cv2.setWindowProperty("Camera Image", cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
 
@@ -431,7 +433,7 @@ class LidarCameraSubscriber(Node):
             # detection3d.bbox.center.orientation.w = float(0)
 
             detection_array.detections.append(detection3d)
-        self.visualize_camera()
+        self.visualize_camera(SHOW_IMAGE_WINDOW)
         self.detection3DArray_publisher.publish(detection_array)
         print('d3d', self.get_clock().now())
 

@@ -21,7 +21,8 @@ import message_filters
     functions to be transferred to human_detection_node
 '''
 ONLY_CAMERA_MODE = False # Only visualize path without publishing target pose
-VISUALIZE = True # Enable the cv2 visuals of pipeline
+VISUALIZE = False # Enable the cv2 visuals of pipeline
+TARGET_DISTANCE = 6.0 #Distance away along trail for target point to navigate towards on trail
 CAM_INTRINSIC_K = np.array([
                                     [1104.0, 0     , 615.34],
                                     [0     , 1103.9, 310.33],
@@ -56,7 +57,7 @@ class trailDetector(Node):
                  pre_proc_blur_k_size: int = 11, brightness: int = 20,
                  post_proc_blur_k_size: int = 31, min_contour_area: int = 150000,
                  poly_degree: int = 2, min_black_area_threshold: int = 50000,
-                 min_depth: float = 6.0, num_max_points_to_match: int = 400, dist_thresh_uv: float = 0.03,
+                 min_depth: float = TARGET_DISTANCE, num_max_points_to_match: int = 400, dist_thresh_uv: float = 0.03,
                  pub_queue_size: int = 10, sync_queue_size: int = 30, 
                  cam_sub_queue_size: int = 10, max_time_diff: float = 0.5) -> None:
         

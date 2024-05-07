@@ -11,48 +11,64 @@ from launch_ros.substitutions import FindPackageShare
 from datetime import date
 from datetime import datetime
 
+#alias in ~/.bashrc: bot
 
 def generate_launch_description():
 
-    # Launching SLAM (also includes driving and all other needed nodes)
-    slam_launch_path = os.path.join(get_package_share_directory('trailbot_bringup'),'launch','slam_3D.launch.py')
-    slam_launch = IncludeLaunchDescription(PythonLaunchDescriptionSource([slam_launch_path]))          
+    # # Launching SLAM (also includes driving and all other needed nodes)
+    # slam_launch_path = os.path.join(get_package_share_directory('trailbot_bringup'),'launch','slam_3D.launch.py')
+    # slam_launch = IncludeLaunchDescription(PythonLaunchDescriptionSource([slam_launch_path]))          
 
-    #the nav configs 
-    package_name = 'nav'
+    # #the nav configs 
+    # package_name = 'nav'
 
-    # Nav node
-    nav_launch_path = os.path.join(get_package_share_directory(package_name),'launch','navigation_launch.py')
-    nav_params_path = os.path.join(get_package_share_directory(package_name),'config','nav2_params_points.yaml')
-    nav_node = IncludeLaunchDescription(PythonLaunchDescriptionSource([nav_launch_path]),
-                                        launch_arguments={'namespace': '',
-                                                        # 'use_sim_time': 'true',
-                                                         'autostart': 'true',
-                                                        'params_file': nav_params_path,
-                                                        # 'use_lifecycle_mgr': 'false',
-                                                        #'map_subscribe_transient_local': 'true'
-                                                        }
-                                                        .items())
+    # # Nav node
+    # nav_launch_path = os.path.join(get_package_share_directory(package_name),'launch','navigation_launch.py')
+    # nav_params_path = os.path.join(get_package_share_directory(package_name),'config','nav2_params_points.yaml')
+    # nav_node = IncludeLaunchDescription(PythonLaunchDescriptionSource([nav_launch_path]),
+    #                                     launch_arguments={'namespace': '',
+    #                                                     # 'use_sim_time': 'true',
+    #                                                      'autostart': 'true',
+    #                                                     'params_file': nav_params_path,
+    #                                                     # 'use_lifecycle_mgr': 'false',
+    #                                                     #'map_subscribe_transient_local': 'true'
+    #                                                     }
+    #                                                     .items())
 
-    fsm_node = Node(
-        package='fsm',
-        # executable='trailbot_fsm',
-        executable='trailbot_fsm',
-        name='fsm',
-        output='screen'
-    )
+    #Camera, ouster, driving Launch File
+    bringup_launch_path = os.path.join(get_package_share_directory('trailbot_bringup'),'launch','trailbot_bringup.launch.py')
+    bringup_launch = IncludeLaunchDescription(PythonLaunchDescriptionSource([bringup_launch_path])) 
 
-    fsm_nav_node = Node(
-        package='fsm',
-        # executable='navigator_node',
-        executable='fsm_test',
-        name='test_cmd_vel_node',
-        output='screen'
-    )
+    #FSM Launch File
+    fsm_launch_path = os.path.join(get_package_share_directory('fsm'),'launch','fsm_launch.launch.py')
+    fsm_launch = IncludeLaunchDescription(PythonLaunchDescriptionSource([fsm_launch_path]))
+    
+    #Nav3D and SLAM3D Launch File
+    nav_3D_launch_path = os.path.join(get_package_share_directory('trailbot_bringup'),'launch','nav_3D.launch.py')
+    nav_3D_launch = IncludeLaunchDescription(PythonLaunchDescriptionSource([nav_3D_launch_path])) 
 
-    #Logitech Camera Launch File
-    camera_launch_path = os.path.join(get_package_share_directory('trailbot_bringup'),'launch','logitech_camera.launch.py')
-    camera_launch = IncludeLaunchDescription(PythonLaunchDescriptionSource([camera_launch_path])) 
+
+
+    # fsm_node = Node(
+    #     package='fsm',
+    #     # executable='trailbot_fsm',
+    #     executable='trailbot_fsm',
+    #     name='fsm',
+    #     output='screen'
+    # )
+
+    # fsm_nav_node = Node(
+    #     package='fsm',
+    #     # executable='navigator_node',
+    #     executable='fsm_test',
+    #     name='test_cmd_vel_node',
+    #     output='screen'
+    # )
+
+    # #Logitech Camera Launch File
+    # camera_launch_path = os.path.join(get_package_share_directory('trailbot_bringup'),'launch','logitech_camera.launch.py')
+    # camera_launch = IncludeLaunchDescription(PythonLaunchDescriptionSource([camera_launch_path]))
+
 
     # Launch voice_assistant/voice_assistant.launch.py which is voice interaction.
     launch_voice_assistant = IncludeLaunchDescription(
@@ -83,10 +99,14 @@ def generate_launch_description():
     ld = LaunchDescription()
     # ld.add_action(fsm_node)
     # ld.add_action(fsm_nav_node)
-    ld.add_action(camera_launch)
+    # ld.add_action(camera_launch)
     # ld.add_action(slam_launch)
     # ld.add_action(nav_node)
-    # ld.add_action(human_detection_node)
+
+    ld.add_action(bringup_launch)
+    ld.add_action(fsm_launch)
+    ld.add_action(nav_3D_launch)
+    ld.add_action(human_detection_node)
     ld.add_action(trail_detection_node)
     # ld.add_action(launch_voice_assistant)
 
