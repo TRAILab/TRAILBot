@@ -27,7 +27,7 @@ class FSM(Node):
     self.state_publisher_ = self.create_publisher(String, "trailbot_state", 10)
 
     # subscribe to goal pose topic
-    self.goal_subscriber_ = self.create_subscription(PoseStamped, "target_pose", self.target_callback, 10)
+    self.goal_subscriber_ = self.create_subscription(PoseStamped, "person_target", self.target_callback, 10)
     
     # # subscribe to trail pose topic
     self.trail_subscriber_ = self.create_subscription(PoseStamped, "trail_location", self.trail_callback, 10)
@@ -54,8 +54,14 @@ class FSM(Node):
     self.sm.execute(self.blackboard)
     
   def target_callback(self, msg):
-    self.blackboard["target_found"] = True
-    self.blackboard["target_location"] = msg
+    try:
+      new_target_point = self.tf_buffer.transform(msg, 'map')
+      self.blackboard["target_location"] = new_target_point
+      self.blackboard["target_found"] = True
+    except tf2_ros.TransformException as ex:
+      # self.get_logger().info('Keep old trail location', throttle_duration_sec=1)
+      self.get_logger().info('Could not transform os_lidar to map: {0}'.format(ex))
+      return
 
     # def parse_trail_point(self, new_point):
     #     new_point_map = self.tf_buffer.transform(new_point, 'map')

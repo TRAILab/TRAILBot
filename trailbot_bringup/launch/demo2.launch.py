@@ -87,14 +87,42 @@ def generate_launch_description():
         executable='trail_detection'
     )
 
+    # List of topics for bag that can run trail/human detection and navigation 
+    record_topics = ['/camera',
+                    '/camera/compressed',
+                    '/camera_info',
+                    '/diagnostics',
+                    '/dynamic_joint_states',
+                    '/events/read_split',
+                    '/husky_velocity_controller/cmd_vel_unstamped',
+                    '/husky_velocity_controller/transition_event',
+                    '/joint_state_broadcaster/transition_event',
+                    '/joint_states',
+                    '/joy_teleop/cmd_vel',
+                    '/joy_teleop/joy',
+                    '/odom',
+                    '/ouster/imu',
+                    '/ouster/metadata',
+                    '/ouster/os_driver/transition_event',
+                    '/ouster/points',
+                    '/ouster/scan',
+                    '/ouster/signal_image',
+                    '/parameter_events',
+                    '/robot_description',
+                    '/rosout',
+                    '/tf',
+                    '/tf_static']
+
     # Launch file logging
     current_date = date.today()
     current_time = datetime.now().time()
     formatted_time = current_time.strftime("%H:%M")
     file_logging = ExecuteProcess(
-        cmd=['ros2', 'bag', 'record', '--include-hidden-topics', '-o', f'/home/trailbot/bags/{current_date}-{formatted_time}','/camera/compressed','/velodyne_points','/circle_marker','/circle_marker_array','/global_costmap/costmap','/global_costmap/costmap_updates','/parameter_events','/scan','trailbot_state','target_location','imu/data'],
-        output='screen'
+        cmd=['ros2', 'bag', 'record', '--include-hidden-topics', '-o', f'/home/trailbot/bags/{current_date}-{formatted_time}'] + record_topics
     )
+
+    
+    
 
     ld = LaunchDescription()
     # ld.add_action(fsm_node)
@@ -107,7 +135,7 @@ def generate_launch_description():
     ld.add_action(fsm_launch)
     ld.add_action(nav_3D_launch)
     ld.add_action(human_detection_node)
-    ld.add_action(trail_detection_node)
+    # ld.add_action(trail_detection_node)
     # ld.add_action(launch_voice_assistant)
 
     logging = False

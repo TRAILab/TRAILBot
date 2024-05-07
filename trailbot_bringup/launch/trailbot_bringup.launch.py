@@ -34,7 +34,7 @@ def generate_launch_description():
     # Create an event handler to launch the ouster after X seconds
     camera_after_timer = TimerAction(
         period=4.0,  # Time to wait before executing the action (in seconds)
-        actions=[camera_launch]  # Action to execute after the delay
+        actions=[driving_launch]  # Action to execute after the delay
     )
 
     # Define the event handler to trigger the action when the IO message is received, check camera stdout
@@ -50,7 +50,7 @@ def generate_launch_description():
     
     ld.add_action(driving_launch)
     ld.add_action(ouster_launch)
-    ld.add_action(camera_after_timer) #ld.add_action(ouster_launch)
+    # ld.add_action(camera_after_timer) #ld.add_action(ouster_launch)
     
     # run logitech_camera.launch.py separately (ld.add_action() throws error)
     # TODO create logitech_camera lifecylce node in this launch file

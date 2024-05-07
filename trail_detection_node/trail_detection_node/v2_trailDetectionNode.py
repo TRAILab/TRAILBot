@@ -428,9 +428,9 @@ class trailDetector(Node):
         cv_image = get_rgb_undistorted_img(camera_msg)
         
         undistorted_image = cv_image.copy()
-        if self.visualize:
-            cv2.imshow('Undistorted', cv_image)
-            cv2.waitKey(wait_time_max)
+        # if self.visualize:
+        #     cv2.imshow('Undistorted', cv_image)
+        #     cv2.waitKey(wait_time_max)
 
         #Pre process image to prepare for segmentation model
         cv_image = pre_process_img(cv_image, self.pre_proc_blur_k_size, self.brightness)
@@ -455,8 +455,8 @@ class trailDetector(Node):
             if isinstance(pixel_route, np.ndarray):
                 for centre_dot in pixel_route:
                     cv2.circle(cv_image, (centre_dot[0], centre_dot[1]), radius=5, color=(255, 0, 0), thickness=-1)
-                cv2.imshow('final_path', cv_image)
-                cv2.waitKey(wait_time_max)
+                # cv2.imshow('final_path', cv_image)
+                # cv2.waitKey(wait_time_max)
 
         if isinstance(pixel_route, np.ndarray): uv_route = self.convert_pix2uv(pixel_route)
         return uv_route, cv_image

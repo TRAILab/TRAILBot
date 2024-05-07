@@ -312,6 +312,7 @@ class LidarCameraSubscriber(Node):
         person_array = []
         bounding_boxes, identities, confidences=self.model.process_frame(image,view_img=False)
         if identities is None:
+            print("identities is none")
             return []
         for i in range(len(bounding_boxes)):
             person = Person()
@@ -350,12 +351,10 @@ class LidarCameraSubscriber(Node):
                 pass
 
     def state_callback(self, msg):
-        self.cur_state = msg.data
+        self.cur_state = msg.data[11:] # Removes timestamp in front of string, ex: [17:44:37] 
 
 
     def camera_callback(self, msg):
-        print('cam',self.timestamp, self.get_clock().now())
-
         if self.cur_state!="SearchState" and self.cur_state!="ApproachState":
             return 
 
@@ -375,7 +374,6 @@ class LidarCameraSubscriber(Node):
 
         if not self.is_there_anyone:
             return
-            
         # Deserialize PointCloud2 data into xyz points
         point_gen = pc2.read_points(
             msg, field_names=(
@@ -403,7 +401,7 @@ class LidarCameraSubscriber(Node):
             self.publish_message()
 
     def publish_message(self):
-        """ publish message if somebody is detected"""
+        """ publish message if human is detected"""
         if self.cur_state!="SearchState" and self.cur_state!="ApproachState":
             return 
         if not self.is_there_anyone:
@@ -467,7 +465,6 @@ class LidarCameraSubscriber(Node):
         # self.pose_publisher.publish(pose_stamped_msg)
 
     def array_callback(self, msg):
-        print('array', self.get_clock().now())
         if msg.detections:
             trail_pose = PoseStamped()
             trail_pose.header.stamp = msg.header.stamp
@@ -622,7 +619,7 @@ def main(args=None, debug_mode=False):
 
     rclpy.init(args=args)
     subscriber = LidarCameraSubscriber(parser_args,yolo_sort_tracker,configs)
-    subscriber.set_parameters([rclpy.parameter.Parameter("use_sim_time", rclpy.Parameter.Type.BOOL, True)])
+    subscriber.set_parameters([rclpy.parameter.Parameter("use_sim_time", rclpy.Parameter.Type.BOOL, False)])
     rclpy.spin(subscriber)
     subscriber.destroy_node()
     rclpy.shutdown()
