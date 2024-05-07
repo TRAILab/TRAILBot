@@ -339,6 +339,9 @@ class LidarCameraSubscriber(Node):
                 for i in range(self.points_lidar.shape[0]):
                     cv2.circle(image_with_dots, (int(self.points_lidar[i,0]), int(self.points_lidar[i,1])), 5, (255, 0, 0), -1)  # Draw a red circle at (x, y)
                 
+                # for i in range(self.filtered.shape[0]):
+                    # cv2.circle(image_with_dots, (int(self.filtered[i,0]), int(self.filtered[i,1])), 5, (int(self.filtered[i,2]), 0, 0), -1)  # Draw a red circle at (x, y)
+                
                 cv2.imshow("Camera Image", image_with_dots)
                 # Check for the 'q' key press to exit the loop
                 if cv2.waitKey(1) & 0xFF == ord('q'):
@@ -531,7 +534,7 @@ class LidarCameraSubscriber(Node):
         ids = (points2d[:,0]>0) * (points2d[:,0]<1280) * (points2d[:,1]>0) * (points2d[:,1]<720) * (dist > 0.5)
         filtered_points = points2d[ids,:]#[point_cloud[:,2] > 0,:]
         # self.filtered = points2d[ids,:]
-        # self.filtered[:,2] = np.sqrt((point_cloud[ids,:]**2).sum(axis=1))/10*255
+        # self.filtered[:,2] = dist[ids]/10*255
         # print(np.hstack((point_cloud[ids,:],np.array([dist[ids]]).T)))
         return filtered_points, ids
 

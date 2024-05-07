@@ -21,7 +21,7 @@ import message_filters
     functions to be transferred to human_detection_node
 '''
 ONLY_CAMERA_MODE = False # Only visualize path without publishing target pose
-VISUALIZE = False # Enable the cv2 visuals of pipeline
+VISUALIZE = True # Enable the cv2 visuals of pipeline
 TARGET_DISTANCE = 6.0 #Distance away along trail for target point to navigate towards on trail
 CAM_INTRINSIC_K = np.array([
                                     [1104.0, 0     , 615.34],
