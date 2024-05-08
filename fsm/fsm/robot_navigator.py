@@ -144,7 +144,8 @@ class BasicNavigator(Node):
         goal_msg = NavigateToPose.Goal()
         goal_msg.pose = pose
         # goal_msg.behavior_tree = behavior_tree
-        goal_msg.behavior_tree = '/home/trailbot/trail_ws/src/TRAILBot/nav/config/navigate_to_pose_truncated_update.xml'
+        # goal_msg.behavior_tree = '/home/trailbot/trail_ws/src/TRAILBot/nav/config/navigate_to_pose_truncated_update.xml'
+        goal_msg.behavior_tree = '/home/trailbot/trail_ws/src/TRAILBot/nav/config/navigate_to_pose_truncated_simple.xml'
 
         self.info('Navigating to goal: ' + str(pose.pose.position.x) + ' ' +
                   str(pose.pose.position.y) + '...')

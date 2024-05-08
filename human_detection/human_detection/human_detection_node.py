@@ -259,13 +259,16 @@ class LidarCameraSubscriber(Node):
 
 
         self.timestamp = 0
+        self.cv_image = None
+        self.curr_msg = Detection3DArray()
+        self.offset = 0.5
 
         # if this is -1, node will publish constantly (as camera FPS)
         # self.publishing_frequency = configs['publishing_frequency']
         self.publishing_frequency = -1
 
         #run the publish_message function according to publishing_frequency
-        # self.create_timer(1/self.publishing_frequency, self.publish_message)
+        self.create_timer(2, self.det_out_callback)
         self.print_and_log('Human Detection ready...')
         
         # ascii_numbers = r"""
@@ -324,31 +327,27 @@ class LidarCameraSubscriber(Node):
             person_array.append(person)
         return person_array
 
-    def visualize_camera(self,show_image_window=True):
-        if show_image_window:
+    def visualize_camera(self,show_image_window=True, is_person=False, is_valid=0):
+        if show_image_window and self.cv_image is not None:
             print("CAMERA")
-            try:
-                # Create a copy of the image to draw the red dots on
-                image_with_dots = self.cv_image.copy()
-                
+            image_with_dots = self.cv_image.copy()
 
-                # Draw red dots on the image at specified xy coordinates
+            if is_person:
                 for person in self.person_array:
                     cv2.circle(image_with_dots, (int(person.x), int(person.y)), 5, (0, 0, 255), -1)  # Draw a red circle at (x, y)
                     cv2.putText(image_with_dots, str(person.id),  (int(person.x), int(person.y)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2) 
 
+            if is_valid:
+                for i in range(self.filtered.shape[0]):
+                    cv2.circle(image_with_dots, (int(self.filtered[i,0]), int(self.filtered[i,1])), 5, (int(self.filtered[i,2]), 0, 0), -1)  # Draw a red circle at (x, y)
                 for i in range(self.points_lidar.shape[0]):
-                    cv2.circle(image_with_dots, (int(self.points_lidar[i,0]), int(self.points_lidar[i,1])), 5, (255, 0, 0), -1)  # Draw a red circle at (x, y)
-                
-                # for i in range(self.filtered.shape[0]):
-                    # cv2.circle(image_with_dots, (int(self.filtered[i,0]), int(self.filtered[i,1])), 5, (int(self.filtered[i,2]), 0, 0), -1)  # Draw a red circle at (x, y)
-                
-                cv2.imshow("Camera Image", image_with_dots)
-                # Check for the 'q' key press to exit the loop
-                if cv2.waitKey(1) & 0xFF == ord('q'):
-                    return
-            except:
-                pass
+                    cv2.circle(image_with_dots, (int(self.points_lidar[i,0]), int(self.points_lidar[i,1])), 5, (0, 255, 255), -1)  # Draw a red circle at (x, y)                
+    
+            cv2.imshow("Camera Image", image_with_dots)
+            # Check for the 'q' key press to exit the loop
+            if cv2.waitKey(1) & 0xFF == ord('q'):
+                return
+
 
     def state_callback(self, msg):
         self.cur_state = msg.data[11:] # Removes timestamp in front of string, ex: [17:44:37] 
@@ -370,9 +369,11 @@ class LidarCameraSubscriber(Node):
 
     def lidar_callback(self, msg):
         if self.cur_state!="SearchState" and self.cur_state!="ApproachState":
+            self.visualize_camera(SHOW_IMAGE_WINDOW)
             return 
 
         if not self.is_there_anyone:
+            self.visualize_camera(SHOW_IMAGE_WINDOW)
             return
         # Deserialize PointCloud2 data into xyz points
         point_gen = pc2.read_points(
@@ -392,19 +393,21 @@ class LidarCameraSubscriber(Node):
                 person.world_xyz = self.estimate_position(person, points2d, points_fov)
                 if type(person.world_xyz) == list:
                     person.is_valid = True
-                else:
-                    print(person.world_xyz)
+                # else:
+                #     print(person.world_xyz)
         self.timestamp = msg.header.stamp
         # if this is -1, node will publish constantly (as camera FPS)
-        print('lidar',self.timestamp, self.get_clock().now())
+        # print('lidar',self.timestamp, self.get_clock().now())
         if not self.publishing_frequency>0:
             self.publish_message()
 
     def publish_message(self):
         """ publish message if human is detected"""
         if self.cur_state!="SearchState" and self.cur_state!="ApproachState":
+            self.visualize_camera(SHOW_IMAGE_WINDOW)
             return 
         if not self.is_there_anyone:
+            self.visualize_camera(SHOW_IMAGE_WINDOW)
             return
 
         # Publish the message
@@ -416,8 +419,8 @@ class LidarCameraSubscriber(Node):
         detection_array.header.frame_id = 'os_lidar'
         for person in self.person_array:
             print(person.is_valid,person.world_xyz)
-            if not person.is_valid:
-                return
+            if not person.is_valid or type(person.world_xyz) != list:
+                continue
             # print(person.world_xyz)
         #     # message = f"id {person.id} coord: {round(person.world_xyz[0],2)},{round(person.world_xyz[1],2)},{round(person.world_xyz[2],2)}"
             message = "id: {0}, coord: [{1:.2f},{2:.2f},{3:.2f}]".format(person.id, person.world_xyz[0], person.world_xyz[1], person.world_xyz[2])
@@ -434,9 +437,9 @@ class LidarCameraSubscriber(Node):
             # detection3d.bbox.center.orientation.w = float(0)
 
             detection_array.detections.append(detection3d)
-        self.visualize_camera(SHOW_IMAGE_WINDOW)
+        self.visualize_camera(SHOW_IMAGE_WINDOW, is_person=True, is_valid=len(detection_array.detections))
         self.detection3DArray_publisher.publish(detection_array)
-        print('d3d', self.get_clock().now())
+        # print('d3d', self.get_clock().now())
 
 
         # pose_stamped_msg = PoseStamped()
@@ -465,14 +468,18 @@ class LidarCameraSubscriber(Node):
         # self.pose_publisher.publish(pose_stamped_msg)
 
     def array_callback(self, msg):
-        if msg.detections:
+        self.curr_msg = msg
+
+    def det_out_callback(self):
+        print('det_out')
+        if self.curr_msg.detections:
             trail_pose = PoseStamped()
-            trail_pose.header.stamp = msg.header.stamp
+            trail_pose.header.stamp = self.curr_msg.header.stamp
             trail_pose.header.frame_id = "os_lidar"
 
-            trail_pose.pose.position = msg.detections[0].bbox.center.position
-            x = msg.detections[0].bbox.center.position.x
-            y = msg.detections[0].bbox.center.position.y
+            trail_pose.pose.position = self.curr_msg.detections[0].bbox.center.position
+            x = self.curr_msg.detections[0].bbox.center.position.x
+            y = self.curr_msg.detections[0].bbox.center.position.y
             
             # # position
             # pose.pose.position.x = x
@@ -530,8 +537,8 @@ class LidarCameraSubscriber(Node):
         dist = np.sqrt((point_cloud[:,:3]**2).sum(axis=1))
         ids = (points2d[:,0]>0) * (points2d[:,0]<1280) * (points2d[:,1]>0) * (points2d[:,1]<720) * (dist > 0.5)
         filtered_points = points2d[ids,:]#[point_cloud[:,2] > 0,:]
-        # self.filtered = points2d[ids,:]
-        # self.filtered[:,2] = dist[ids]/10*255
+        self.filtered = points2d[ids,:]
+        self.filtered[:,2] = dist[ids]/10*255
         # print(np.hstack((point_cloud[ids,:],np.array([dist[ids]]).T)))
         return filtered_points, ids
 
@@ -562,6 +569,8 @@ class LidarCameraSubscriber(Node):
         estimate the position by finding points closest to x,y from thhe 2d array and averaging the points
         """
         # Calculate the distance between each point and the target coordinates (x, y)
+        if points_pix.shape[0] < 5:
+            return 0
         x = person.x
         y = person.y
         distances_sq = (points_pix[:,0] - x) ** 2 + (points_pix[:,1] - y) ** 2
@@ -576,7 +585,7 @@ class LidarCameraSubscriber(Node):
 
         valid_indices = [idx for idx in closest_indices if distances_sq[idx]<=pixel_distance_threshold]
         if len(valid_indices) == 0:
-            print(points_pix[closest_indices,:],x,y)
+            # print(points_pix[closest_indices,:],x,y)
             # lidar points disappears usually around 0.4m
             distance_where_lidar_stops_working = self.configs['distance_where_lidar_stops_working']
             return distance_where_lidar_stops_working
@@ -584,10 +593,12 @@ class LidarCameraSubscriber(Node):
         filtered_indices = np.array(valid_indices)
         # Get the depth value of the closest point
         closest_points = points_xyz[filtered_indices,:3]
-        mean_val = np.mean(closest_points, axis=0).tolist()
+        mean_val = np.mean(closest_points, axis=0)
+        dist = mean_val.dot(mean_val)**.5
+        mean_val = mean_val * (dist - self.offset)/dist
 
-        print(person.x, person.y, closest_points)
-        return mean_val
+        # print(person.x, person.y, closest_points)
+        return mean_val.tolist()
 
 def read_space_separated_matrix(string):
     """
