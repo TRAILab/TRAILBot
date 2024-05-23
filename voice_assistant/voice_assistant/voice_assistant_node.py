@@ -102,7 +102,7 @@ class VoiceAssistant(Node):
         self.snack_wanted_request = SnackWanted.Request()
         # if user has said bye (or one of the self.exit_cmd_options)
         self.end_chat = False
-        self.in_query_state = False  # True if robot's state is 'QueryState', False otherwise
+        self.in_query_state = True  # True if robot's state is 'QueryState', False otherwise
 
         # Subscriber: to detect the state of the robot
         self.state_subscriber = self.create_subscription(
@@ -151,6 +151,7 @@ class VoiceAssistant(Node):
         rclpy.spin_once(self)
         available_snack_options = [
             self.snack_options[i] for i, quantity in enumerate(self.snack_quantity) if quantity > 0]
+        self.get_logger().info(f"#################: {len(self.snack_quantity)}")
         return available_snack_options
 
     def get_available_snacks_str(self):

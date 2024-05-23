@@ -15,7 +15,7 @@ class Emojis():
         # Move window to the 2nd monitor
         cv2.moveWindow("GUI", remote_control_laptop_screen_width+1,0)
         # Set the window properties to full screen
-        cv2.setWindowProperty("GUI", cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
+        # cv2.setWindowProperty("GUI", cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
 
     def show_speaking(self):
         path = self.emoji_path / 'smile_emoji.png'
