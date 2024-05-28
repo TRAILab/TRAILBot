@@ -16,6 +16,8 @@ import os
 
 import message_filters
 
+import tf2_ros
+
 ''' TODO:
     The transformation matrix as well as the coordinate conversion and depth estimation 
     functions to be transferred to human_detection_node
@@ -119,6 +121,14 @@ class trailDetector(Node):
             PoseStamped,
             'trail_location',
             pub_queue_size)
+        
+        self.ground_points_publisher = self.create_publisher(
+            PointCloud2,
+            'ground_points',
+            10)
+        
+        self.tf_buffer = tf2_ros.Buffer()
+        self.tf_listener = tf2_ros.TransformListener(self.tf_buffer, self)
 
         if self.only_camera_mode:
             # Define camera subscription
@@ -134,7 +144,8 @@ class trailDetector(Node):
             print("Mode: Lidar and Camera")
             # create subscribers
             self.image_sub = message_filters.Subscriber(self, Image, 'camera')
-            self.lidar_sub = message_filters.Subscriber(self, PointCloud2, 'ouster/points')
+            # self.lidar_sub = message_filters.Subscriber(self, PointCloud2, 'ouster/points')
+            self.lidar_sub = message_filters.Subscriber(self, PointCloud2, 'ground')
 
             # create callback
             ts = message_filters.ApproximateTimeSynchronizer([self.image_sub, self.lidar_sub], sync_queue_size, max_time_diff)
@@ -439,6 +450,7 @@ class trailDetector(Node):
             # cv2.waitKey(wait_time_max)
 
         model_pred, pixel_route = find_route(self.model, self.device, cv_image)
+        self.model_pred = model_pred
         uv_route = None
         if self.visualize:
                         
@@ -556,8 +568,18 @@ class trailDetector(Node):
         pix_y = v * self.f_y + self.c_y
         pix_x = np.clip(pix_x, 0, self.image_width - 1).astype(int)
         pix_y = np.clip(pix_y, 0, self.image_height - 1).astype(int)
+
+
+        # convert points in uv to pixels
+        print(self.model_pred.shape)
+        print(self.points2d[:,0].min(),self.points2d[:,0].max(),self.points2d[:,1].min(),self.points2d[:,1].max())
+        self.ground_ids = [int(self.model_pred[x[1],x[0]]) for x in self.points2d[:,:2].astype(int)]
+        # print(check)
+
         # Display the target pose image
         image = cv2.circle(image, (pix_x, pix_y), 10, (0, 255, 0), thickness=3)
+        for i in range(len(self.ground_ids)):
+            cv2.circle(image, (self.points2d[i,0].astype(int), self.points2d[i,1].astype(int)), 5, (self.ground_ids[i], 0, 0), -1)
         cv2.imshow("Target point", image)
         cv2.waitKey(1)
 
@@ -624,6 +646,11 @@ class trailDetector(Node):
         
         #Convert pointcloud to camera uv coordinates
         points2d = self.lidar_pts_in_cam_uv(points3d)
+        self.points2d = np.copy(points2d)
+        self.points2d[:,0] = self.points2d[:,0]*self.f_x+self.c_x
+        self.points2d[:,1] = self.points2d[:,1]*self.f_y+self.c_y
+        self.fov_ids = (self.points2d[:,0] > 0) * (self.points2d[:,0] < 1280) * (self.points2d[:,1] > 0) * (self.points2d[:,1] < 720) * (self.points2d[:,2] > 0.5)
+        self.points2d = self.points2d[self.fov_ids,:]
 
         target_pcl_index,  target_uv = self.get_target_point_location(uv_route, points2d)
         if target_pcl_index == -1:
@@ -634,6 +661,7 @@ class trailDetector(Node):
         target_point = points3d[target_pcl_index][:3] #array of [x, y, z]
 
         self.publish_trail_target_point(lidar_msg, target_point)
+        self.publish_ground_points(lidar_msg)
         return
 
     def only_camera_callback(self, camera_msg: Image) -> None:
@@ -649,6 +677,18 @@ class trailDetector(Node):
         if not isinstance(uv_route, np.ndarray):
             print("No centerline found!")
         return
+
+    def publish_ground_points(self, lidar_msg):
+        points3d_ground = lidar_msg
+        print(type(lidar_msg.data), lidar_msg.data)#[self.fov_ids,:][self.ground_ids,:])
+        try:
+            map_points = self.tf_buffer.transform(points3d_ground, 'map')
+            self.ground_points_publisher.publish(map_points)
+        except tf2_ros.TransformException as ex:
+            self.get_logger().info('Could not transform os_lidar to map: {0}'.format(ex))
+            self.ground_points_publisher.publish(points3d_ground)
+        return 
+
 
 #-----MAIN----------------------------------------------------------------------------------
 
