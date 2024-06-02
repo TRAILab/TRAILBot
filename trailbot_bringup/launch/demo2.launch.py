@@ -43,8 +43,9 @@ def generate_launch_description():
     fsm_launch_path = os.path.join(get_package_share_directory('fsm'),'launch','fsm_launch.launch.py')
     fsm_launch = IncludeLaunchDescription(PythonLaunchDescriptionSource([fsm_launch_path]))
     
-    #Nav3D and SLAM3D Launch File
-    nav_3D_launch_path = os.path.join(get_package_share_directory('trailbot_bringup'),'launch','nav_3D.launch.py')
+    # Nav3D and SLAM3D Launch File
+    # nav_3D_launch_path = os.path.join(get_package_share_directory('trailbot_bringup'),'launch','nav_3D.launch.py')
+    nav_3D_launch_path = os.path.join(get_package_share_directory('trailbot_bringup'),'launch','nav_2D.launch.py')
     nav_3D_launch = IncludeLaunchDescription(PythonLaunchDescriptionSource([nav_3D_launch_path])) 
 
 
@@ -135,7 +136,7 @@ def generate_launch_description():
     ld.add_action(fsm_launch)
     ld.add_action(nav_3D_launch)
     ld.add_action(human_detection_node)
-    # ld.add_action(trail_detection_node)
+    ld.add_action(trail_detection_node)
     # ld.add_action(launch_voice_assistant)
 
     logging = False

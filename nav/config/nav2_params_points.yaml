@@ -73,7 +73,7 @@ bt_navigator_navigate_to_pose_rclcpp_node:
 controller_server:
   ros__parameters:
     use_sim_time: True
-    controller_frequency: 20.0
+    controller_frequency: 2.0
     min_x_velocity_threshold: 0.001
     min_y_velocity_threshold: 0.5
     min_theta_velocity_threshold: 0.001
@@ -120,7 +120,7 @@ controller_server:
       linear_granularity: 0.05
       angular_granularity: 0.025
       transform_tolerance: 0.2
-      xy_goal_tolerance: 0.25
+      xy_goal_tolerance: 0.50
       trans_stopped_velocity: 0.25
       short_circuit_trajectory_evaluation: True
       stateful: True
@@ -183,8 +183,8 @@ global_costmap:
       inflation_layer:
         plugin: "nav2_costmap_2d::InflationLayer"
         enabled: true
-        inflation_radius: 0.25
-        cost_scaling_factor: 1.0
+        inflation_radius: 0.025 # 0.25
+        cost_scaling_factor: 1.0 # 1.0
         inflate_unknown: false
         inflate_around_unknown: true
       always_send_full_costmap: True
@@ -266,7 +266,7 @@ robot_state_publisher:
 waypoint_follower:
   ros__parameters:
     use_sim_time: True
-    loop_rate: 20
+    loop_rate: 10
     stop_on_failure: false
     waypoint_task_executor_plugin: "wait_at_waypoint"
     wait_at_waypoint:

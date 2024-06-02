@@ -103,6 +103,7 @@ def xyxy_to_centroid(xyxy):
     centroid_x = (x1 + x2) / 2
     centroid_y = (y1 + y2) / 2
     return (centroid_x, centroid_y)
+
 def get_heading_angle(
         centroid,
         fov=90,

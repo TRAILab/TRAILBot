@@ -47,12 +47,12 @@ MAP_BUILDER.num_background_threads = 16 --originally 4
 
 -- POSE_GRAPH.optimization_problem.huber_scale = 5e2 --originally 100 
 POSE_GRAPH.optimization_problem.huber_scale = 100
-POSE_GRAPH.optimize_every_n_nodes = 0 --originally 90
+POSE_GRAPH.optimize_every_n_nodes = 50 --originally 90
 POSE_GRAPH.constraint_builder.sampling_ratio = 0.3 --originally 0.3
 
 POSE_GRAPH.optimization_problem.ceres_solver_options.max_num_iterations = 200 --oroiginally 200
 
-POSE_GRAPH.constraint_builder.min_score = 0.80 --originally 0.55
+POSE_GRAPH.constraint_builder.min_score = 0.62 --originally 0.55
 POSE_GRAPH.constraint_builder.global_localization_min_score = 0.66 --originally 0.6
 -- POSE_GRAPH.constraint_builder.min_score = 0.2 --originally 0.55
 -- POSE_GRAPH.constraint_builder.global_localization_min_score = 0.2 --originally 0.6

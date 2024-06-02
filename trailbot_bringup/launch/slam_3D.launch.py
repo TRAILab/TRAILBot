@@ -85,6 +85,6 @@ def generate_launch_description():
     ld.add_action(occupancy_grid)
     ld.add_action(rviz_node)
     # ld.add_action(IMU_node) 
-    ld.add_action(robot_transform_publisher)
+    # ld.add_action(robot_transform_publisher)
 
     return ld
