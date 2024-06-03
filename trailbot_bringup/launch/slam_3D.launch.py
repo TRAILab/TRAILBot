@@ -40,7 +40,7 @@ def generate_launch_description():
 
     # Cartographer node
     # use_sim_time = LaunchConfiguration('use_sim_time', default='false')
-    use_sim_time = LaunchConfiguration('use_sim_time', default='true')
+    use_sim_time = LaunchConfiguration('use_sim_time', default='false')
     trailbot_cartographer_prefix = get_package_share_directory(package_name)
     cartographer_config_dir = LaunchConfiguration('cartographer_config_dir', default=os.path.join(
                                                   trailbot_cartographer_prefix, 'config'))

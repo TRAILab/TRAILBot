@@ -52,7 +52,9 @@ class VoiceAssistant(Node):
             f'use_whisper: {use_whisper}, exit_cmd_options: {self.exit_cmd_options}')
 
         # openAI set-up
-        personality = "You are a helpful assistant."
+        personality = "Your name is Trailbot. You are a helpful autonomous robot. You navigate around trails and deliver snacks. \
+            In your inventory, you have chips, candies, chocolates and more. You should try to limit your \
+                conversation to delivering these snacks."
         openai.api_key = os.environ.get('OPENAI_API_KEY')
         self.messages = [{"role": "system", "content": f"{personality}"}]
 
@@ -102,21 +104,21 @@ class VoiceAssistant(Node):
         self.snack_wanted_request = SnackWanted.Request()
         # if user has said bye (or one of the self.exit_cmd_options)
         self.end_chat = False
-        self.in_query_state = True  # True if robot's state is 'QueryState', False otherwise
+        self.in_query_state = False  # True if robot's state is 'QueryState', False otherwise
 
         # Subscriber: to detect the state of the robot
         self.state_subscriber = self.create_subscription(
             String,
-            'trailbot_state',
+            '/trailbot_state',
             self.state_listener_callback,
-            5)
+            10)
         self.state_subscriber  # To prevent unused variable warning
 
         # Publisher: to let behaviour planner know that the user has ended the chat
         self.publisher = self.create_publisher(Bool, 'query_complete', 10)
-        timer_period = 0.1  # seconds
-        self.timer = self.create_timer(
-            timer_period, self.publisher_timer_callback)
+        # timer_period = 0.1  # seconds
+        # self.timer = self.create_timer(
+        #     timer_period, self.publisher_timer_callback)
 
         # Subscriber: receive the current snack inventory
         self.snacks_inventory_subscriber = self.create_subscription(
@@ -125,40 +127,45 @@ class VoiceAssistant(Node):
             self.available_snacks_listener_callback,
             10)
         self.snacks_inventory_subscriber  # prevent unused variable warning
-        self.state = 'None'
+        self.state = None
 
     def available_snacks_listener_callback(self, msg):
         self.snack_options = msg.snacks
         self.snack_quantity = msg.quantity
 
-    def publisher_timer_callback(self):
-        msg = Bool()
-        msg.data = self.end_chat
-        self.publisher.publish(msg)
+    # def publisher_timer_callback(self):
+    #     msg = Bool()
+    #     msg.data = self.end_chat
+    #     self.publisher.publish(msg)
 
     def state_listener_callback(self, msg):
         # Activate chatbot if in 'QueryState'
-        if msg.data == 'QueryState' and self.state != 'QueryState':
-            self.state = msg.data
+        parsed_msg = msg.data[11:]
+        if parsed_msg == 'QueryState' and self.state == "ApproachState":
+            self.state = parsed_msg
             self.in_query_state = True
             self.end_chat = False
-            self.get_logger().info('State changed to: "%s"' % msg.data)
+            self.get_logger().info('State changed to: "%s"' % parsed_msg)
             self.get_logger().info('Activating chatbot!')
         else:
+            self.state = parsed_msg
             self.in_query_state = False
+        
 
     def get_available_snacks(self):
         rclpy.spin_once(self)
         available_snack_options = [
             self.snack_options[i] for i, quantity in enumerate(self.snack_quantity) if quantity > 0]
-        self.get_logger().info(f"#################: {len(self.snack_quantity)}")
         return available_snack_options
 
     def get_available_snacks_str(self):
         available_snack_options = self.get_available_snacks()
-        available_snack_options[-1] = 'and ' + available_snack_options[-1]
-        available_snack_options_str = " ".join(available_snack_options)
-        # print('Available snacks: ', available_snack_options_str)
+        try:
+            available_snack_options[-1] = "and " + available_snack_options[-1]
+            available_snack_options_str = " ".join(available_snack_options)
+        except:
+            available_snack_options_str = "Oh wait, let me have a look."
+
         return available_snack_options_str
 
     def send_request(self, snack_wanted):
@@ -228,6 +235,11 @@ class VoiceAssistant(Node):
     def say_bye(self):
         self.speak(f'Nice chatting with you. Have a nice day!')
         self.end_chat = True
+        msg = Bool()
+        msg.data = self.end_chat
+        self.state = None
+        self.in_query_state = False
+        self.publisher.publish(msg)
 
     def find_bye(self, user_input):
         end_chat, _ = self.look_for_keywords(user_input, self.exit_cmd_options)
@@ -260,7 +272,8 @@ class VoiceAssistant(Node):
         self.speak(f'{response}')
 
     def process_user_input(self, user_input):
-        # Keep chatting until user goes silent
+        # Keep chatting until user goes silentmsg = Bool()
+        self.end_chat = False
         while rclpy.ok() and user_input is not None:
 
             if self.find_bye(user_input):
@@ -288,7 +301,9 @@ class VoiceAssistant(Node):
             self.say_bye()
 
     def run(self):
+
         if self.in_query_state:
+            # self.say_bye()
 
             # Introduce upon reaching the human
             available_snacks = self.get_available_snacks_str()

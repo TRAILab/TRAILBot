@@ -168,8 +168,8 @@
     {
         "azimuth_window": 
         [
-            0,
-            360000
+            310000,
+            230000
         ],
         "columns_per_packet": 16,
         "lidar_mode": "1024x20",
@@ -189,8 +189,8 @@
         "sync_pulse_out_pulse_width": 10,
         "timestamp_mode": "TIME_FROM_INTERNAL_OSC",
         "udp_dest": "169.254.27.158",
-        "udp_port_imu": 56384,
-        "udp_port_lidar": 37663,
+        "udp_port_imu": 46413,
+        "udp_port_lidar": 56954,
         "udp_profile_imu": "LEGACY",
         "udp_profile_lidar": "RNG19_RFL8_SIG16_NIR16"
     },
@@ -220,8 +220,8 @@
     {
         "column_window": 
         [
-            0,
-            1023
+            370,
+            142
         ],
         "columns_per_frame": 1024,
         "columns_per_packet": 16,
@@ -328,7 +328,7 @@
         "build_date": "2023-07-14T19:57:51Z",
         "build_rev": "v2.5.2",
         "image_rev": "ousteros-image-prod-aries-v2.5.2+20230714195410",
-        "initialization_id": 8247307,
+        "initialization_id": 2573214,
         "prod_line": "OS-0-64-U13",
         "prod_pn": "840-105460-06",
         "prod_sn": "662318000056",

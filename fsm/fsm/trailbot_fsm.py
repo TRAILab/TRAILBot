@@ -13,7 +13,7 @@ from yasmin import StateMachine
 from yasmin_ros.basic_outcomes import SUCCEED, ABORT, CANCEL
 from fsm.robot_navigator import BasicNavigator
 # from fsm.trailbot_states import SearchState, ApproachState, QueryState
-from fsm.trailbot_states import SearchState, ApproachState, QueryState
+from fsm.trailbot_states import SearchState, ApproachState, QueryState, StandbyState
 
 import time
 
@@ -35,14 +35,20 @@ class FSM(Node):
     self.trail_subscriber_ = self.create_subscription(PoseStamped, "trail_location", self.trail_callback, 10)
 
     # subscribe to dispenser client
-    self.dispenser_subscriber_ = self.create_subscription(Bool, "client_state", self.client_callback, 10)
+    self.dispenser_subscriber_ = self.create_subscription(Bool, "query_complete", self.client_callback, 10)
 
     # self.timer = self.create_timer(1.0, self.trail_callback()) # seconds
 
 
     # create state machine (yasmin) and blackboard (dict)
     self.sm = StateMachine(outcomes=["finished"])
-    self.blackboard = {"target_found":False, "target_location":None, "dispensed":False, "new_trail_pose":False, "trail_pose":None} 
+
+    self.blackboard = {"target_found":False,
+                        "target_location":None,
+                        "dispensed":False,
+                        "new_trail_pose":False,
+                        "trail_pose":None} 
+    
     self.trail_update_dist = -1
 
     # add states
@@ -51,7 +57,9 @@ class FSM(Node):
     self.sm.add_state("APPROACH", ApproachState(self.state_publisher_, self.nav, self.get_logger()),
                       transitions={"arrived": "QUERY", "not_arrived": "APPROACH"})
     self.sm.add_state("QUERY", QueryState(self.state_publisher_, self.get_logger()),
-                      transitions={"snack_dispensed": "SEARCH", "snack_not_dispensed": "QUERY"})
+                      transitions={"snack_dispensed": "STANDBY", "snack_not_dispensed": "QUERY"})
+    self.sm.add_state("STANDBY", StandbyState(self.state_publisher_, self.get_logger()),
+                      transitions={"time_elapsed": "SEARCH", "time_left": "STANDBY"})
 
     # run state machine
     self.sm.execute(self.blackboard)
@@ -59,6 +67,10 @@ class FSM(Node):
     
   def target_callback(self, msg):
     try:
+      if msg.header.frame_id == "base_link":
+        self.blackboard["target_location"] = None
+        self.blackboard["target_found"] = False
+        return
       new_target_point = self.tf_buffer.transform(msg, 'map')
       self.blackboard["target_location"] = new_target_point
       self.blackboard["target_found"] = True
@@ -145,6 +157,7 @@ class FSM(Node):
   def client_callback(self, msg):
     if msg.data:
       self.blackboard["dispensed"] = True
+      
 
 def main(args=None):
   rclpy.init(args=args)

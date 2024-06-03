@@ -269,7 +269,7 @@ class LidarCameraSubscriber(Node):
         self.publishing_frequency = -1
 
         #run the publish_message function according to publishing_frequency
-        self.create_timer(2, self.det_out_callback)
+        # self.create_timer(5, self.det_out_callback)
         self.print_and_log('Human Detection ready...')
         
         # ascii_numbers = r"""
@@ -330,7 +330,7 @@ class LidarCameraSubscriber(Node):
 
     def visualize_camera(self,show_image_window=True, is_person=False, is_valid=0):
         if show_image_window and self.cv_image is not None:
-            print("CAMERA")
+            # print("CAMERA")
             image_with_dots = self.cv_image.copy()
 
             if is_person:
@@ -355,9 +355,11 @@ class LidarCameraSubscriber(Node):
 
 
     def camera_callback(self, msg):
-        if self.cur_state!="SearchState" and self.cur_state!="ApproachState":
+        if self.cur_state!="SearchState" and self.cur_state!="ApproachState" and self.cur_state!="StandbyState":
+            print('is query?', self.cur_state)
             return 
 
+        print('is not query?', self.cur_state)
         self.cv_image = self.bridge.imgmsg_to_cv2(
             msg, desired_encoding='passthrough')
         self.cv_image = cv2.cvtColor(self.cv_image, cv2.COLOR_BGR2RGB) #Added for colour correction to RGB
@@ -369,7 +371,7 @@ class LidarCameraSubscriber(Node):
 
 
     def lidar_callback(self, msg):
-        if self.cur_state!="SearchState" and self.cur_state!="ApproachState":
+        if self.cur_state!="SearchState" and self.cur_state!="ApproachState" and self.cur_state!="StandbyState":
             self.visualize_camera(SHOW_IMAGE_WINDOW)
             return 
 
@@ -401,10 +403,11 @@ class LidarCameraSubscriber(Node):
         # print('lidar',self.timestamp, self.get_clock().now())
         if not self.publishing_frequency>0:
             self.publish_message()
+        self.det_out_callback()
 
     def publish_message(self):
         """ publish message if human is detected"""
-        if self.cur_state!="SearchState" and self.cur_state!="ApproachState":
+        if self.cur_state!="SearchState" and self.cur_state!="ApproachState" and self.cur_state!="StandbyState":
             self.visualize_camera(SHOW_IMAGE_WINDOW)
             return 
         if not self.is_there_anyone:
@@ -472,15 +475,14 @@ class LidarCameraSubscriber(Node):
         self.curr_msg = msg
 
     def det_out_callback(self):
-        print('det_out')
-        if self.curr_msg.detections:
+        if self.cur_state == "StandbyState":
             trail_pose = PoseStamped()
             trail_pose.header.stamp = self.curr_msg.header.stamp
-            trail_pose.header.frame_id = "os_lidar"
+            trail_pose.header.frame_id = "base_link"
 
-            trail_pose.pose.position = self.curr_msg.detections[0].bbox.center.position
-            x = self.curr_msg.detections[0].bbox.center.position.x
-            y = self.curr_msg.detections[0].bbox.center.position.y
+            trail_pose.pose.position.x = 0.0
+            trail_pose.pose.position.y = 0.0
+            trail_pose.pose.position.z = 0.0
             
             # # position
             # pose.pose.position.x = x
@@ -488,12 +490,35 @@ class LidarCameraSubscriber(Node):
             # pose.pose.position.z = z
 
             # orientation
-            yaw = math.atan2(y, x)
             trail_pose.pose.orientation.x = 0.0  
             trail_pose.pose.orientation.y = 0.0 
-            trail_pose.pose.orientation.z = math.sin(yaw/2)
-            trail_pose.pose.orientation.w = math.cos(yaw / 2)
+            trail_pose.pose.orientation.z = 0.0
+            trail_pose.pose.orientation.w = 0.0
             self.detectionSinglePose_publisher.publish(trail_pose)
+            
+        else:
+            print('det_out')
+            if self.curr_msg.detections:
+                trail_pose = PoseStamped()
+                trail_pose.header.stamp = self.curr_msg.header.stamp
+                trail_pose.header.frame_id = "os_lidar"
+
+                trail_pose.pose.position = self.curr_msg.detections[0].bbox.center.position
+                x = self.curr_msg.detections[0].bbox.center.position.x
+                y = self.curr_msg.detections[0].bbox.center.position.y
+                
+                # # position
+                # pose.pose.position.x = x
+                # pose.pose.position.y = y
+                # pose.pose.position.z = z
+
+                # orientation
+                yaw = math.atan2(y, x)
+                trail_pose.pose.orientation.x = 0.0  
+                trail_pose.pose.orientation.y = 0.0 
+                trail_pose.pose.orientation.z = math.sin(yaw/2)
+                trail_pose.pose.orientation.w = math.cos(yaw / 2)
+                self.detectionSinglePose_publisher.publish(trail_pose)
 
     def convert_to_lidar_frame(self,
         uv_coordinate, 

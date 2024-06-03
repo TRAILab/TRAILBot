@@ -122,10 +122,10 @@ class trailDetector(Node):
             'trail_location',
             pub_queue_size)
         
-        self.ground_points_publisher = self.create_publisher(
-            PointCloud2,
-            'ground_points',
-            10)
+        # self.ground_points_publisher = self.create_publisher(
+        #     PointCloud2,
+        #     'ground_points',
+        #     10)
         
         self.tf_buffer = tf2_ros.Buffer()
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer, self)
@@ -144,8 +144,8 @@ class trailDetector(Node):
             print("Mode: Lidar and Camera")
             # create subscribers
             self.image_sub = message_filters.Subscriber(self, Image, 'camera')
-            # self.lidar_sub = message_filters.Subscriber(self, PointCloud2, 'ouster/points')
-            self.lidar_sub = message_filters.Subscriber(self, PointCloud2, 'ground')
+            self.lidar_sub = message_filters.Subscriber(self, PointCloud2, 'ouster/points')
+            # self.lidar_sub = message_filters.Subscriber(self, PointCloud2, 'ground')
 
             # create callback
             ts = message_filters.ApproximateTimeSynchronizer([self.image_sub, self.lidar_sub], sync_queue_size, max_time_diff)
@@ -439,9 +439,9 @@ class trailDetector(Node):
         cv_image = get_rgb_undistorted_img(camera_msg)
         
         undistorted_image = cv_image.copy()
-        # if self.visualize:
-        #     cv2.imshow('Undistorted', cv_image)
-        #     cv2.waitKey(wait_time_max)
+        if self.visualize:
+            cv2.imshow('Undistorted', cv_image)
+            cv2.waitKey(wait_time_max)
 
         #Pre process image to prepare for segmentation model
         cv_image = pre_process_img(cv_image, self.pre_proc_blur_k_size, self.brightness)
@@ -571,15 +571,15 @@ class trailDetector(Node):
 
 
         # convert points in uv to pixels
-        print(self.model_pred.shape)
-        print(self.points2d[:,0].min(),self.points2d[:,0].max(),self.points2d[:,1].min(),self.points2d[:,1].max())
-        self.ground_ids = [int(self.model_pred[x[1],x[0]]) for x in self.points2d[:,:2].astype(int)]
+        # print(self.model_pred.shape)
+        # print(self.points2d[:,0].min(),self.points2d[:,0].max(),self.points2d[:,1].min(),self.points2d[:,1].max())
+        # self.ground_ids = [int(self.model_pred[x[1],x[0]]) for x in self.points2d[:,:2].astype(int)]
         # print(check)
 
         # Display the target pose image
         image = cv2.circle(image, (pix_x, pix_y), 10, (0, 255, 0), thickness=3)
-        for i in range(len(self.ground_ids)):
-            cv2.circle(image, (self.points2d[i,0].astype(int), self.points2d[i,1].astype(int)), 5, (self.ground_ids[i], 0, 0), -1)
+        # for i in range(len(self.ground_ids)):
+        #     cv2.circle(image, (self.points2d[i,0].astype(int), self.points2d[i,1].astype(int)), 5, (self.ground_ids[i], 0, 0), -1)
         cv2.imshow("Target point", image)
         cv2.waitKey(1)
 
@@ -661,7 +661,7 @@ class trailDetector(Node):
         target_point = points3d[target_pcl_index][:3] #array of [x, y, z]
 
         self.publish_trail_target_point(lidar_msg, target_point)
-        self.publish_ground_points(lidar_msg)
+        # self.publish_ground_points(lidar_msg)
         return
 
     def only_camera_callback(self, camera_msg: Image) -> None:
@@ -678,16 +678,16 @@ class trailDetector(Node):
             print("No centerline found!")
         return
 
-    def publish_ground_points(self, lidar_msg):
-        points3d_ground = lidar_msg
-        print(type(lidar_msg.data), lidar_msg.data)#[self.fov_ids,:][self.ground_ids,:])
-        try:
-            map_points = self.tf_buffer.transform(points3d_ground, 'map')
-            self.ground_points_publisher.publish(map_points)
-        except tf2_ros.TransformException as ex:
-            self.get_logger().info('Could not transform os_lidar to map: {0}'.format(ex))
-            self.ground_points_publisher.publish(points3d_ground)
-        return 
+    # def publish_ground_points(self, lidar_msg):
+    #     points3d_ground = lidar_msg
+    #     print(type(lidar_msg.data), lidar_msg.data)#[self.fov_ids,:][self.ground_ids,:])
+    #     try:
+    #         map_points = self.tf_buffer.transform(points3d_ground, 'map')
+    #         self.ground_points_publisher.publish(map_points)
+    #     except tf2_ros.TransformException as ex:
+    #         self.get_logger().info('Could not transform os_lidar to map: {0}'.format(ex))
+    #         self.ground_points_publisher.publish(points3d_ground)
+    #     return 
 
 
 #-----MAIN----------------------------------------------------------------------------------
