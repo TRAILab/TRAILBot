@@ -22,7 +22,7 @@ class SearchState(State):
     self.state_publisher_.publish(state_msg)
 
     if blackboard['new_trail_pose']:
-      # self.navigator.goToPose(blackboard.get("trail_pose"))
+      self.navigator.goToPose(blackboard.get("trail_pose"))
       # self.navigator.goToPose(blackboard.get("trail_out"))               # navigate to goal pose
       blackboard['new_trail_pose'] = False
 

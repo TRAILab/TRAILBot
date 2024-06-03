@@ -134,15 +134,15 @@ class FSM(Node):
         dist2 = delta.dot(delta)
         if dist2 > self.trail_update_dist:
           self.get_logger().info('Update trail location', throttle_duration_sec=1)
-          # self.blackboard["new_trail_pose"] = True
-          # self.blackboard["trail_pose"] = new_trail_point
+          self.blackboard["new_trail_pose"] = True
+          self.blackboard["trail_pose"] = new_trail_point
           # self.blackboard["trail_out"] = msg
         else:
           self.get_logger().info('Keep old trail location', throttle_duration_sec=1)
       else:
           self.get_logger().info('First trail location', throttle_duration_sec=1)
-          # self.blackboard["new_trail_pose"] = True
-          # self.blackboard["trail_pose"] = new_trail_point
+          self.blackboard["new_trail_pose"] = True
+          self.blackboard["trail_pose"] = new_trail_point
           # self.blackboard["trail_out"] = msg
     except tf2_ros.TransformException as ex:
       # self.get_logger().info('Keep old trail location', throttle_duration_sec=1)
