@@ -44,8 +44,8 @@ def generate_launch_description():
     fsm_launch = IncludeLaunchDescription(PythonLaunchDescriptionSource([fsm_launch_path]))
     
     # Nav3D and SLAM3D Launch File
-    # nav_3D_launch_path = os.path.join(get_package_share_directory('trailbot_bringup'),'launch','nav_3D.launch.py')
-    nav_3D_launch_path = os.path.join(get_package_share_directory('trailbot_bringup'),'launch','nav_2D.launch.py')
+    nav_3D_launch_path = os.path.join(get_package_share_directory('trailbot_bringup'),'launch','nav_3D.launch.py')
+    # nav_3D_launch_path = os.path.join(get_package_share_directory('trailbot_bringup'),'launch','nav_2D.launch.py')
     nav_3D_launch = IncludeLaunchDescription(PythonLaunchDescriptionSource([nav_3D_launch_path])) 
 
 
@@ -119,8 +119,9 @@ def generate_launch_description():
     current_time = datetime.now().time()
     formatted_time = current_time.strftime("%H:%M")
     file_logging = ExecuteProcess(
-        cmd=['ros2', 'bag', 'record', '--include-hidden-topics', '-o', f'/home/trailbot/bags/{current_date}-{formatted_time}'] + record_topics
-    )
+        # cmd=['ros2', 'bag', 'record', '--include-hidden-topics', '-o', f'/home/trailbot/bags/{current_date}-{formatted_time}'] + record_topics
+        cmd=['ros2', 'bag', 'record', '-a', '--include-hidden-topics', '-o' f'/home/trailbot/bags/{current_date}-{formatted_time}'])
+    # )
 
     
     
@@ -137,9 +138,9 @@ def generate_launch_description():
     ld.add_action(nav_3D_launch)
     ld.add_action(human_detection_node)
     ld.add_action(trail_detection_node)
-    # ld.add_action(launch_voice_assistant)
+    ld.add_action(launch_voice_assistant)
 
-    logging = False
+    logging = True
     if logging:
         ld.add_action(file_logging)
   
