@@ -58,3 +58,4 @@ POSE_GRAPH.constraint_builder.global_localization_min_score = 0.66 --originally 
 -- POSE_GRAPH.constraint_builder.global_localization_min_score = 0.2 --originally 0.6
 
 return options
+
