@@ -40,6 +40,8 @@ class ApproachState(State):
     self.logger = logger
     self.curr_time = None
     self.goal_time = -1
+    self.approach_buffer = 5.0 #in seconds, additional buffer to prevent the robot to transition from Approach to Query
+    self.distance_threshold = 1.25 # (m) threshold between goal (human) and robot's location
     self.logger.info('Init ApproachState')
 
   def execute(self, blackboard):
@@ -55,10 +57,7 @@ class ApproachState(State):
     if target_location is None:
       self.logger.info('target location is None')
       return "not_arrived"
-    # self.logger.info('before time check')
-    # if time.time() - self.goal_time > 2:
-    # if self.goal_time < 0:
-    # self.logger.info('new target location')
+
     if time.time() - self.goal_time > 0.2:
       self.logger.info("new goal dt {}".format(time.time() - self.goal_time))
       # self.navigator.cancelTask()
@@ -69,17 +68,9 @@ class ApproachState(State):
     # self.logger.info('checking task')
     feedback = self.navigator.getFeedback()
     if feedback is not None:
-      # print(f"[{datetime.datetime.now().strftime('%H:%M:%S')}] {feedback.distance_remaining=}")
-      # current_time = datetime.datetime.now().strftime('%H:%M:%S')
-      # state_msg.data = f"[{current_time}] {self.__class__.__name__}"
-      # self.state_publisher_.publish(state_msg)
-      # self.logger.info("{}".format(feedback.estimated_time_remaining.sec))
-      # if feedback.estimated_time_remaining.sec == 0 and feedback.navigation_time.sec > 1.0:
-      if feedback.distance_remaining <= 1.26 and time.time() - self.curr_time > 5.0: #and feedback.navigation_time.sec > 1.0:
-      # if 0 and feedback.navigation_time.sec > 1.0:
+      if feedback.distance_remaining <=  self.distance_threshold and time.time() - self.curr_time > self.approach_buffer: #and feedback.navigation_time.sec > 1.0:
         blackboard["arrived"] = True
         blackboard['target_location'] = None
-        self.logger.info("no time to target = arrived")
         self.navigator.cancelTask()
         self.logger.info(F" >>> INTO QUERY (A) {blackboard}")
         self.curr_time = None
@@ -95,28 +86,6 @@ class ApproachState(State):
       self.logger.info(F"  >>> INTO QUERY (B) {blackboard}")
       return "arrived"
     return "not_arrived"
-
-# class Nav2State(ActionState):
-#     def __init__(self, state_publisher) -> None:
-#         self.state_publisher_ = state_publisher
-#         super().__init__(
-#             NavigateToPose,  # action type
-#             "/navigate_to_pose",  # action name
-#             self.goal_pose_handler,  # cb to go to pose
-#             None,  # outcomes. Includes (SUCCEED, ABORT, CANCEL)
-#             self.process_reponse,  # cb to process the response
-#         )
-
-#     def goal_pose_handler(self, blackboard):
-#         target_location = blackboard.get("target_location")  # get goal pose
-#         goal_msg = NavigateToPose.Goal()
-#         goal_msg.pose = target_location
-#         goal_msg.behavior_tree = "/home/trailbot/trail_ws/src/TRAILBot/nav/config/navigate_to_pose_truncated_simple.xml"
-#         state_msg = String()
-#         current_time = datetime.datetime.now().strftime('%H:%M:%S')
-#         state_msg.data = f"[{current_time}] {self.__class__.__name__}"
-#         self.state_publisher_.publish(state_msg)
-#         return goal_msg
 
 class QueryState(State):
   def __init__(self, state_publisher, logger):
