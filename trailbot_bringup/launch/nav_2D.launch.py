@@ -33,7 +33,7 @@ def generate_launch_description():
 
 
     ld = LaunchDescription()
-    # ld.add_action(slam_launch)
+    ld.add_action(slam_launch)
     ld.add_action(nav_node)
 
     return ld
