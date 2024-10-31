@@ -16,6 +16,7 @@ from .text_to_speech_engine import ElevenLabsEngine, Pyttsx3Engine, OpenAITextTo
 from .show_emojis import Emojis
 from openai import OpenAI
 import base64
+import opensmile
 
 
 class VoiceAssistant(Node):
@@ -40,8 +41,8 @@ class VoiceAssistant(Node):
         self.declare_parameter('speech_recognizer.phrase_time_limit', 4)
         # if True, the node uses openai transcriber otherwise it uses google transcriber.
         self.declare_parameter('speech_recognizer.use_whisper', True)
-        # options: pyttsx3, elevenlabs
-        self.declare_parameter('text_to_speech_engine', 'elevenlabs')
+        # option: openaitts
+        self.declare_parameter('text_to_speech_engine', 'openaitts')
 
         # Get params
         self.exit_cmd_options = self.get_parameter('exit_cmd_options').value
@@ -61,8 +62,7 @@ class VoiceAssistant(Node):
         self.messages = {"role": "system", "content": f"{personality}"}
 
         # Text to Speech Generator set-up
-        text_to_speech_engine = self.get_parameter(
-            'text_to_speech_engine').value
+        text_to_speech_engine = self.get_parameter('text_to_speech_engine').value
         if text_to_speech_engine == 'pyttsx3':
             self.tts_engine = Pyttsx3Engine()
         elif text_to_speech_engine == 'elevenlabs':
@@ -270,16 +270,6 @@ class VoiceAssistant(Node):
         return want_snacks, snack_wanted
 
     def chat_with_user(self, user_input):
-        #self.messages.append({"role": "user", "content": user_input})
-
-        # Print available openai models with:
-        # print(openai.Model.list())
-        # completion = openai.ChatCompletion.create(
-        #     model="gpt-3.5-turbo",
-        #     messages=self.messages,
-        #     temperature=0.8
-        # )
-        # openAI set-up
         current = time.time()
         client = OpenAI()
         encoded_string = base64.b64encode(user_input).decode('utf-8')
@@ -318,6 +308,15 @@ class VoiceAssistant(Node):
         )
             
         wav_bytes = base64.b64decode(completion.choices[0].message.audio.data)
+        # Store the audio response in a .wav file
+        with open("gpt_audio_response.wav", "wb") as wav_file:
+            wav_file.write(wav_bytes)
+        smile = opensmile.Smile(
+            feature_set=opensmile.FeatureSet.ComParE_2016,
+            feature_level=opensmile.FeatureLevel.Functionals,
+        )
+        extracted_features = smile.process_file('audio.wav')
+        print(f"\n{extracted_features}\n")
         time_cost = time.time()-current
         self.get_logger().info(f"LLM spend: {time_cost} seconds for response")
         self.tts_engine.speak(wav_bytes)

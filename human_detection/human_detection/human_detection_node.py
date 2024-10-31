@@ -271,37 +271,7 @@ class LidarCameraSubscriber(Node):
         #run the publish_message function according to publishing_frequency
         # self.create_timer(5, self.det_out_callback)
         self.print_and_log('Human Detection ready...')
-        
-        # ascii_numbers = r"""
-        # ____ _ _  _ ____                 
-        # |___ | |  | |___                 
-        # |    |  \/  |___                 
-
-        # ____ ____ _  _ ____              
-        # |___ |  | |  | |__/              
-        # |    |__| |__| |  \              
-
-        # ___ _  _ ____ ____ ____          
-        #  |  |__| |__/ |___ |___          
-        #  |  |  | |  \ |___ |___          
-
-        # ___ _ _ _ ____                   
-        #  |  | | | |  |                   
-        #  |  |_|_| |__|                   
-
-        # ____ _  _ ____                   
-        # |  | |\ | |___                   
-        # |__| | \| |___                   
-
-        # ____ ___ ____ ____ ___ ____ ___  
-        # [__   |  |__| |__/  |  |___ |  \  |
-        # ___]  |  |  | |  \  |  |___ |__/  .
-        # """.strip().split('\n\n')
-
-        # for num in ascii_numbers[-6:]:
-        #     self.print_and_log(f"\n{num}\n")
-        #     time.sleep(1)
-        
+               
         if SHOW_IMAGE_WINDOW:
             cv2.namedWindow("Camera Image", cv2.WINDOW_NORMAL)
             # cv2.setWindowProperty("Camera Image", cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
@@ -592,7 +562,7 @@ class LidarCameraSubscriber(Node):
 
     def estimate_position(self, person, points_pix, points_xyz):
         """
-        estimate the position by finding points closest to x,y from thhe 2d array and averaging the points
+        estimate the position by finding points closest to x,y from the 2d array and averaging the points
         """
         # Calculate the distance between each point and the target coordinates (x, y)
         if points_pix.shape[0] < 5:

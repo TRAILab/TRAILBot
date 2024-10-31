@@ -2,7 +2,7 @@ import os
 import re
 import time
 
-# import openai
+import openai
 import rclpy
 from rclpy.node import Node
 from std_msgs.msg import Bool, String
@@ -12,10 +12,8 @@ from trailbot_interfaces.srv import SnackWanted
 
 from .conversation_handler import ConversationHandler
 from .speech_recognizer import SpeechRecognizer
-from .text_to_speech_engine import ElevenLabsEngine, Pyttsx3Engine, OpenAITextToSpeechEngine
+from .text_to_speech_engine import ElevenLabsEngine, Pyttsx3Engine
 from .show_emojis import Emojis
-from openai import OpenAI
-import base64
 
 
 class VoiceAssistant(Node):
@@ -53,12 +51,12 @@ class VoiceAssistant(Node):
         self.get_logger().info(
             f'use_whisper: {use_whisper}, exit_cmd_options: {self.exit_cmd_options}')
 
-        # # openAI set-up
-        personality = "Your name is Trailbot. You are a helpful autonomous robot. You navigate around open space environment and deliver snacks. \
+        # openAI set-up
+        personality = "Your name is Trailbot. You are a helpful autonomous robot. You navigate around trails and deliver snacks. \
             In your inventory, you have chips, candies, chocolates and more. You should try to limit your \
                 conversation to delivering these snacks."
-        # #openai.api_key = os.environ.get('OPENAI_API_KEY')
-        self.messages = {"role": "system", "content": f"{personality}"}
+        openai.api_key = os.environ.get('OPENAI_API_KEY')
+        self.messages = [{"role": "system", "content": f"{personality}"}]
 
         # Text to Speech Generator set-up
         text_to_speech_engine = self.get_parameter(
@@ -67,8 +65,8 @@ class VoiceAssistant(Node):
             self.tts_engine = Pyttsx3Engine()
         elif text_to_speech_engine == 'elevenlabs':
             self.tts_engine = ElevenLabsEngine()
-        elif text_to_speech_engine == 'openaitts':
-            self.tts_engine = OpenAITextToSpeechEngine()
+        # elif text_to_speech_engine == 'openaitts':
+        #     self.tts_engine = OpenAITextToSpeechEngine()
         else:
             raise NotImplementedError
 
@@ -213,13 +211,6 @@ class VoiceAssistant(Node):
         """
         self.gui.show_speaking()
         self.tts_engine.speak(msg_list)
-        # if isinstance(msg_list, str):
-        #     self.tts_engine.speak(msg_list)
-        # elif isinstance(msg_list, list):
-        #     self.tts_engine.speak(msg_list)
-        # else:
-        #     self.tts_engine.play_audio(msg_list)
-
 
     def look_for_keywords(self, user_input, keywords):
         """ Look for keywords in user's prompt
@@ -253,14 +244,9 @@ class VoiceAssistant(Node):
         self.publisher.publish(msg)
 
     def find_bye(self, user_input):
-        #!!!!
-        try:
-            end_chat, _ = self.look_for_keywords(user_input, self.exit_cmd_options)
-            if end_chat:
-                return True
-        except:
-            print('some thing wrong with find bye!!!')
-
+        end_chat, _ = self.look_for_keywords(user_input, self.exit_cmd_options)
+        if end_chat:
+            return True
         return False
 
     def find_snack_in_input(self, user_input):
@@ -270,75 +256,34 @@ class VoiceAssistant(Node):
         return want_snacks, snack_wanted
 
     def chat_with_user(self, user_input):
-        #self.messages.append({"role": "user", "content": user_input})
+        self.messages.append({"role": "user", "content": user_input})
 
         # Print available openai models with:
         # print(openai.Model.list())
-        # completion = openai.ChatCompletion.create(
-        #     model="gpt-3.5-turbo",
-        #     messages=self.messages,
-        #     temperature=0.8
-        # )
-        # openAI set-up
-        current = time.time()
-        client = OpenAI()
-        encoded_string = base64.b64encode(user_input).decode('utf-8')
-        
-        completion = client.chat.completions.create(
-            model="gpt-4o-audio-preview",
-            modalities=["text", "audio"],
-            audio={"voice": "alloy", "format": "wav"},
-            messages= [
-            {
-                "role": "system",
-                "content": 
-                [
-                    { 
-                        "type": "text",
-                        "text": "Your name is Trailbot. You are a helpful autonomous robot. You navigate around open environment and deliver snacks. \
-                In your inventory, you have chips, candies, chocolates and more. You are also an advanced conversational robot that can understand people's emotions based on their tone of voice. Try to answer the questions as much as possible, but keep your responses concise and as helpful as possible." #You should try to limit your conversation to delivering these snacks.
-                    }
-                ]
-            },
-            {
-                "role": "user",
-                "content": 
-                [
-                    {
-                        "type": "input_audio",
-                        "input_audio": 
-                        {
-                            "data": encoded_string,
-                            "format": "wav"
-                        }
-                    }
-                ]
-            }
-            ]
+        completion = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",
+            messages=self.messages,
+            temperature=0.8
         )
-            
-        wav_bytes = base64.b64decode(completion.choices[0].message.audio.data)
-        time_cost = time.time()-current
-        self.get_logger().info(f"LLM spend: {time_cost} seconds for response")
-        self.tts_engine.speak(wav_bytes)
-        # response = completion.choices[0].message.content
-        # self.messages.append({"role": "assistant", "content": response})
-        # # print(f"\n{response}\n")
-        # self.conversation_handler.save_inprogress(self.messages)
 
-        # self.play_audio(wav_bytes)
+        response = completion.choices[0].message.content
+        self.messages.append({"role": "assistant", "content": response})
+        # print(f"\n{response}\n")
+        self.conversation_handler.save_inprogress(self.messages)
 
-    def process_user_input(self, audio, user_input):
+        self.speak(f'{response}')
+
+    def process_user_input(self, user_input):
         # Keep chatting until user goes silentmsg = Bool()
         self.end_chat = False
         while rclpy.ok() and user_input is not None:
-            
+
             if self.find_bye(user_input):
                 self.say_bye()
                 break
 
-            want_snacks, snack_wanted = self.find_snack_in_input(user_input) 
-            #want_snacks = False
+            want_snacks, snack_wanted = self.find_snack_in_input(user_input)
+
             if want_snacks:
                 # Request snacks from behaviour planner
                 success = self.request_snacks(snack_wanted)
@@ -348,10 +293,10 @@ class VoiceAssistant(Node):
                     self.speak(
                         f'We have {self.get_available_snacks_str()}. What would you like?')
             else:
-                self.chat_with_user(audio)
+                self.chat_with_user(user_input)
 
             # Get user prompt
-            audio, user_input = self.speech_recognizer.get_input()
+            user_input = self.speech_recognizer.get_input()
 
         # If user_input is None i.e user is silent, say bye
         if user_input is None:
@@ -368,13 +313,13 @@ class VoiceAssistant(Node):
             self.speak(intro)
 
             # Get user prompt
-            audio, user_input = self.speech_recognizer.get_input()
+            user_input = self.speech_recognizer.get_input()
 
             # End conversation if user did not say anything
             if user_input is None:
                 self.say_bye()
             else:
-                self.process_user_input(audio, user_input)
+                self.process_user_input(user_input)
 
 
 def main(args=None):

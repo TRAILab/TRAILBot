@@ -1,5 +1,8 @@
 import os
-import openai
+# import openai
+from openai import OpenAI
+client = OpenAI()
+
 import speech_recognition as sr
 
 
@@ -17,8 +20,8 @@ class SpeechRecognizer:
         self.gui = gui
         self.logger.info(
             f'Inside Speech Recognizer: mic in use index: {mic_index}')
-
-        openai.api_key = os.environ.get('OPENAI_API_KEY')
+        #modify!!!
+        #openai.api_key = os.environ.get('OPENAI_API_KEY')
         with self.mic as source:
             self.logger.info("\nAmbient noise adjust...")
             self.speech_recognizer.adjust_for_ambient_noise(source)
@@ -32,14 +35,22 @@ class SpeechRecognizer:
         Returns:
             user_input (str): transcribed voice command
         """
+        import time
+        current = time.time()
         with open('speech.wav', 'wb') as f:
-            f.write(audio.get_wav_data())
+            f.write(audio)#.get_wav_data()
         speech = open('speech.wav', 'rb')
-        wcompletion = openai.Audio.transcribe(
-            model="whisper-1",
-            file=speech
+        # wcompletion = openai.Audio.transcribe(
+        #     model="whisper-1",
+        #     file=speech
+        # )
+        transcription = client.audio.transcriptions.create(
+        model="whisper-1", 
+        file=speech
         )
-        user_input = wcompletion['text']
+        user_input = transcription.text#wcompletion['text']
+        time_cost = time.time()-current
+        self.logger.info(f"whisper spends: {time_cost} seconds for transcribing")
         return user_input
 
     def get_input(self):
@@ -56,26 +67,29 @@ class SpeechRecognizer:
             try:
                 audio = self.speech_recognizer.listen(
                     source, timeout=self.timeout, phrase_time_limit=self.phrase_time_limit)
+                audio = audio.get_wav_data()
             except Exception as ex:
                 self.logger.info(f'Listening exception: {ex}')
-                return None
+                return None, None
 
             self.gui.show_thinking()
             self.logger.info("\nTranscribing...")
             try:
                 if self.use_whisper:
-                    user_input = self.whisper(audio)
-                    self.logger.info(f'Transcribed from whisper: {user_input}')
+                    user_input_text = self.whisper(audio)
+                    self.logger.info(f'Transcribed from whisper: {user_input_text}')
                 else:
                     user_input = self.speech_recognizer.recognize_google(audio)
                     self.logger.info(f'Transcribed from google: {user_input}')
-                if user_input == '':
-                    return None
-                return user_input
+                # user_input_text = 'other things'
+                if audio == '':
+                    return None, None
+                self.logger.info('Get audio!')
+                return audio, user_input_text
             except Exception as ex:
                 self.logger.info('Transcribing Failed!')
                 self.logger.info(ex)
-                return None
+                return None, None
 
     @staticmethod
     def list_mics():

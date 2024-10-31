@@ -17,7 +17,7 @@
       gain: -1
       auto_white_balance: true
       white_balance: -1
-      autoexposure: false
+      autoexposure: true
       exposure: 200
       autofocus: false
       focus: -1

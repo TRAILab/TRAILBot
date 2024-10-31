@@ -487,7 +487,7 @@ class trailDetector(Node):
 
         wait_time_max = 1
         cv_image = get_rgb_undistorted_img(camera_msg)
-        
+                
         undistorted_image = cv_image.copy()
         if self.visualize:
             cv2.imshow('Undistorted', cv_image)
