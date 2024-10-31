@@ -69,7 +69,7 @@ def generate_launch_description():
         launch_arguments={'resolution':resolution,
                           'publish_period_sec': publish_period_sec}.items(),)
 
-    robot_transform_publisher = Node(
+    # robot_transform_publisher = Node(
     robot_transform_publisher = Node(
         package='tf_transform',
         executable='tf_transform_node',
