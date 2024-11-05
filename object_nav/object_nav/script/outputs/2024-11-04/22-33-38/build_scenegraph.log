@@ -1,0 +1,2 @@
+[2024-11-04 22:33:43,401][faiss.loader][INFO] - Loading faiss with AVX2 support.
+[2024-11-04 22:33:43,422][faiss.loader][INFO] - Successfully loaded faiss with AVX2 support.

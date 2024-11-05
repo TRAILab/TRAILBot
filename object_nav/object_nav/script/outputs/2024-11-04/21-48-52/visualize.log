@@ -1,0 +1,2 @@
+[2024-11-04 21:48:53,018][sentence_transformers.SentenceTransformer][INFO] - Use pytorch device_name: cuda
+[2024-11-04 21:48:53,018][sentence_transformers.SentenceTransformer][INFO] - Load pretrained SentenceTransformer: /home/trailbot/trail_ws/src/TRAILBot/object_nav/third_parties/SBERT/all-MiniLM-L6-v2

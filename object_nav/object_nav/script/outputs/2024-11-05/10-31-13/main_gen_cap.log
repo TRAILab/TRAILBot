@@ -1,0 +1,6 @@
+[2024-11-05 10:31:29,196][root][INFO] - Reloaded SentencePiece model from /home/trailbot/.local/lib/python3.10/site-packages/tokenize_anything/modeling/text_tokenizer.model
+[2024-11-05 10:31:29,196][root][INFO] - #words: 32000 - BOS ID: 1 - EOS ID: 2
+[2024-11-05 10:31:33,019][sentence_transformers.SentenceTransformer][INFO] - Use pytorch device_name: cuda
+[2024-11-05 10:31:33,019][sentence_transformers.SentenceTransformer][INFO] - Load pretrained SentenceTransformer: sentence-transformers/all-MiniLM-L6-v2
+[2024-11-05 10:31:34,528][torch.distributed.nn.jit.instantiator][INFO] - Created a temporary directory at /tmp/tmp35ywweon
+[2024-11-05 10:31:34,529][torch.distributed.nn.jit.instantiator][INFO] - Writing /tmp/tmp35ywweon/_remote_module_non_scriptable.py
