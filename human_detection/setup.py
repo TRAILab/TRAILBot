@@ -18,7 +18,10 @@ setup(
     maintainer_email='zhaodong@todo.todo',
     description='TODO: Package description',
     license='TODO: License declaration',
-    tests_require=['pytest'],
+    extras_require={
+        'test': ['pytest'],
+    },
+    #tests_require=['pytest'],
     entry_points={
         'console_scripts': [
             'human_detection_node = human_detection.human_detection_node:main',

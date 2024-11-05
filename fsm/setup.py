@@ -23,7 +23,10 @@ setup(
     maintainer_email='danielwjkhoo@gmail.com',
     description='Finite State Machine and Navigation stack monitor node.',
     license='None',
-    tests_require=['pytest'],
+    extras_require={
+        'test': ['pytest'],
+    },
+    #tests_require=['pytest'],
     entry_points={
         'console_scripts': [
             "trailbot_fsm = fsm.trailbot_fsm:main",
