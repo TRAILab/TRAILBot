@@ -25,7 +25,10 @@ setup(
     maintainer_email='koenin1@mcmaster.ca',
     description='Package to launch other TRAILbot packages needed',
     license='TODO: License declaration',
-    tests_require=['pytest'],
+    extras_require={
+        'test': ['pytest'],
+    },
+    #tests_require=['pytest'],
     entry_points={
         'console_scripts': [
         ],

@@ -8,7 +8,8 @@ class PointCloud2Listener(Node):
         super().__init__('pointcloud2_listener')
         self.subscription = self.create_subscription(
             PointCloud2,
-            'velodyne_points',  # Change this to the topic you're subscribing to
+            # 'velodyne_points',  # Change this to the topic you're subscribing to
+            '/ouster/points',
             self.listener_callback,
             10)
         self.subscription
@@ -26,12 +27,12 @@ class PointCloud2Listener(Node):
             x, y, z = point
             points.append([x, y, z])
 
-        print(f"Received {len(points)} 3D points:")
+        # print(f"Received {len(points)} 3D points:")
         filename = f"points_{self.msgCount}.txt"
         with open(filename, "w") as output_file:
-            # output_file.write(f"Timestamp: {timestamp}\n")
+            output_file.write(f"Timestamp: {timestamp}\n")
             for idx, point in enumerate(points):
-                print(f"{idx + 1}: {point}")
+                # print(f"{idx + 1}: {point}")
                 output_file.write(f"{point[0]} {point[1]} {point[2]}\n")
         print("Total message:", self.msgCount)
 

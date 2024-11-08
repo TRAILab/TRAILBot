@@ -23,7 +23,7 @@ class ConversationHandler:
         Args:
             save_foldername (str) : Takes in the path to save the conversation to.
             messages (list of dicts): conversation 
-
+6.0
         Returns:
             suffix (int): suffix number to label the current conversation .txt file 
         '''

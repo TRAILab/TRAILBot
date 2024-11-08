@@ -2,6 +2,7 @@ import numpy as np
 import open3d as o3d
 
 # change set_number value so that it matches with your set number
+
 set_number = 1
 # in square bracket enter the indices that are selected for extrinsic calibration
 for i in []:

@@ -1,152 +1,126 @@
-#! /usr/bin/env python3
+#!/usr/bin/env python3
 import rclpy
+from rclpy.node import Node
 
 from std_msgs.msg import String, Bool
-from geometry_msgs.msg import PoseStamped
+# from geometry_msgs.msg import PoseStamped
+from tf2_geometry_msgs import PoseStamped
+import tf2_ros
+import numpy as np
 
 from simple_node import Node
-from yasmin import State 
 from yasmin import StateMachine
-from yasmin_viewer import YasminViewerPub
+from yasmin_ros.basic_outcomes import SUCCEED, ABORT, CANCEL
+from fsm.robot_navigator import BasicNavigator
+# from fsm.trailbot_states import SearchState, ApproachState, QueryState
+from fsm.trailbot_states import SearchState, ApproachState, QueryState, StandbyState
 
+import time
 
-class SearchState(State):
-    def __init__(self, state_publisher, blackboard):
-        super().__init__(outcomes=['target_found', 'target_not_found'])
-        self.state_publisher = state_publisher
-        self.blackboard = blackboard
-
-    def execute(self, blackboard):
-        state_msg = String()
-        state_msg.data = self.__class__.__name__
-        self.state_publisher.publish(state_msg)
-
-        if blackboard.get('target_found', False):
-            return 'target_found'
-        return 'target_not_found'
-
-class ApproachState(State):
-    def __init__(self, goal_publisher, state_publisher, blackboard):
-        super().__init__(outcomes=['arrived', 'not_arrived'])
-        self.goal_publisher = goal_publisher
-        self.state_publisher = state_publisher
-        self.blackboard = blackboard
-
-    def execute(self, blackboard):
-        state_msg = String()
-        state_msg.data = self.__class__.__name__
-        self.state_publisher.publish(state_msg)
-
-        target_location = blackboard.get('target_location', None)
-        if target_location is not None:
-            self.goal_publisher.publish(target_location)
-        
-        if blackboard.get('goal_reached', False):
-            return 'arrived'
-        return 'not_arrived'
-
-class QueryState(State):
-    def __init__(self, state_publisher, blackboard):
-        super().__init__(outcomes=['query_complete', 'query_not_complete'])
-        self.state_publisher = state_publisher
-        self.blackboard = blackboard
-
-    def execute(self, blackboard):
-        state_msg = String()
-        state_msg.data = self.__class__.__name__
-        self.state_publisher.publish(state_msg)
-
-        if blackboard.get('query_completed', False):
-            return 'query_complete'
-        return 'query_not_complete'
-
-class DoneState(State):
-    def __init__(self, state_publisher, blackboard):
-        super().__init__(outcomes=['done'])
-        self.state_publisher = state_publisher
-        self.blackboard = blackboard
-
-    def execute(self, blackboard):
-        state_msg = String()
-        state_msg.data = self.__class__.__name__
-        self.state_publisher.publish(state_msg)
-        print('Searchstate blackboard: ', blackboard)
-        
-        blackboard['target_found'] = False
-        blackboard['goal_reached'] = False
-        blackboard['query_completed'] = False
-        return 'done'
-    
 class FSM(Node):
-    def __init__(self):
-        super().__init__('trailbot_fsm')
+  def __init__(self):
+    super().__init__("trailbot_state_machine")
+    self.nav = BasicNavigator()
+    
+    self.tf_buffer = tf2_ros.Buffer()
+    self.tf_listener = tf2_ros.TransformListener(self.tf_buffer, self) 
+    
+    # publish trailbot state
+    self.state_publisher_ = self.create_publisher(String, "trailbot_state", 10)
 
-        self.blackboard = {}
-        self.current_state = 'SEARCH'
+    # subscribe to goal pose topic
+    self.goal_subscriber_ = self.create_subscription(PoseStamped, "person_target", self.target_callback, 10)
+    
+    # # subscribe to trail pose topic
+    self.trail_subscriber_ = self.create_subscription(PoseStamped, "trail_location", self.trail_callback, 10)
 
-        self.state_publisher = self.create_publisher(String, 'trailbot_state', 10)
-        self.goal_publisher = self.create_publisher(PoseStamped, 'goal_pose', 10)
+    # subscribe to dispenser client
+    self.dispenser_subscriber_ = self.create_subscription(Bool, "query_complete", self.client_callback, 10)
 
-        # Update subscriber topics to subsribe to the lidar and voice assistant nodes
-        self.goal_subscriber = self.create_subscription(
-            String,
-            'goal_status',
-            self.goal_status_callback,
-            10
-        )
-        self.target_subscriber = self.create_subscription(
-            PoseStamped,
-            'target_location',
-            self.target_callback,
-            10
-        )
-        self.query_complete_subscriber = self.create_subscription(
-            Bool,
-            'query_complete',
-            self.query_complete_listener_callback,
-            10
-        )
+    # self.timer = self.create_timer(1.0, self.trail_callback()) # seconds
 
-        self.sm = StateMachine(outcomes=['finished'])
 
-        self.sm.add_state('SEARCH', SearchState(self.state_publisher, self.blackboard), transitions={'target_found': 'APPROACH', 'target_not_found': 'SEARCH'})
-        self.sm.add_state('APPROACH', ApproachState(self.goal_publisher, self.state_publisher, self.blackboard), transitions={'arrived': 'QUERY', 'not_arrived': 'APPROACH'})
-        self.sm.add_state('QUERY', QueryState(self.state_publisher, self.blackboard), transitions={'query_complete': 'DONE', 'query_not_complete': 'QUERY'})
-        self.sm.add_state('DONE', DoneState(self.state_publisher, self.blackboard), transitions={'done': 'SEARCH'})
+    # create state machine (yasmin) and blackboard (dict)
+    self.sm = StateMachine(outcomes=["finished"])
 
-    def run(self):
-        while rclpy.ok():
-            outcome = self.sm.execute(self.blackboard)
-            self.current_state = outcome
-            self.update_state(self.current_state)
-            rclpy.spin_once(self)
+    self.blackboard = {"target_found":False,
+                        "target_location":None,
+                        "dispensed":False,
+                        "new_trail_pose":False,
+                        "trail_pose":None} 
+    
+    self.trail_update_dist = -1
 
-    def goal_status_callback(self, msg):
-        if msg.data == 'goal_reached':
-            self.blackboard['goal_reached'] = True
+    # add states
+    self.sm.add_state("SEARCH", SearchState(self.state_publisher_, self.nav, self.get_logger()),
+                      transitions={"target_found": "APPROACH", "target_not_found": "SEARCH"})
+    self.sm.add_state("APPROACH", ApproachState(self.state_publisher_, self.nav, self.get_logger()),
+                      transitions={"arrived": "QUERY", "not_arrived": "APPROACH"})
+    self.sm.add_state("QUERY", QueryState(self.state_publisher_, self.get_logger()),
+                      transitions={"snack_dispensed": "STANDBY", "snack_not_dispensed": "QUERY"})
+    self.sm.add_state("STANDBY", StandbyState(self.state_publisher_, self.get_logger()),
+                      transitions={"time_elapsed": "SEARCH", "time_left": "STANDBY"})
 
-    def target_callback(self, msg):
-        self.blackboard['target_location'] = msg
-        self.blackboard['target_found'] = True
+    # run state machine
+    self.sm.execute(self.blackboard)
+    
+    
+  def target_callback(self, msg):
+    try:
+      if msg.header.frame_id == "base_link":
+        self.blackboard["target_location"] = None
+        self.blackboard["target_found"] = False
+        return
+      new_target_point = self.tf_buffer.transform(msg, 'map')
+      self.blackboard["target_location"] = new_target_point
+      self.blackboard["target_found"] = True
+      # self.blackboard["target_found"] = False
 
-    def query_complete_listener_callback(self, msg):
-        if msg.data == True:
-            self.blackboard['query_completed'] = True
+    except tf2_ros.TransformException as ex:
+      # self.get_logger().info('Keep old trail location', throttle_duration_sec=1)
+      self.get_logger().info('Could not transform os_lidar to map: {0}'.format(ex))
+      return
 
-    def update_state(self, state):
-        if state != self.current_state:
-            self.current_state = state
-            state_msg = String()
-            state_msg.data = state.__class__.__name__
-            self.state_publisher.publish(state_msg)
+
+  def trail_callback(self, msg):
+    try:
+      new_trail_point = self.tf_buffer.transform(msg, 'map')
+      self.get_logger().info('New trail location', throttle_duration_sec=1)
+      if self.blackboard['trail_pose'] is not None:
+        old_trail_point = self.blackboard['trail_pose']
+        delta = np.array([old_trail_point.pose.position.x-old_trail_point.pose.position.x, new_trail_point.pose.position.y-new_trail_point.pose.position.y])
+        dist2 = delta.dot(delta)
+        if dist2 > self.trail_update_dist:
+          self.get_logger().info('Update trail location', throttle_duration_sec=1)
+          self.blackboard["new_trail_pose"] = True
+          self.blackboard["trail_pose"] = new_trail_point
+          # self.blackboard["trail_out"] = msg
+        else:
+          self.get_logger().info('Keep old trail location', throttle_duration_sec=1)
+      else:
+          self.get_logger().info('First trail location', throttle_duration_sec=1)
+          self.blackboard["new_trail_pose"] = True
+          self.blackboard["trail_pose"] = new_trail_point
+          # self.blackboard["trail_out"] = msg
+    except tf2_ros.TransformException as ex:
+      # self.get_logger().info('Keep old trail location', throttle_duration_sec=1)
+      self.get_logger().info('Could not transform os_lidar to map: {0}'.format(ex))
+      return
+    
+
+  def client_callback(self, msg):
+    if msg.data:
+      self.blackboard["dispensed"] = True
+      
 
 def main(args=None):
-    rclpy.init(args=args)
-    node = FSM()
-    node.run()
-    node.destroy_node()
-    rclpy.shutdown()
+  rclpy.init(args=args)
+  fsm = FSM()
+  rclpy.spin(fsm)
+  fsm.nav.lifecycleShutdown()
+  fsm.destroy_node()
+  rclpy.shutdown()
 
-if __name__ == '__main__':
-    main()
 
+if __name__ == "__main__":
+  main()

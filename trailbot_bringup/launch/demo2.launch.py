@@ -1,0 +1,147 @@
+import os
+
+from ament_index_python.packages import get_package_share_directory
+from launch import LaunchDescription
+from launch.actions import IncludeLaunchDescription, ExecuteProcess
+from launch.launch_description_sources import PythonLaunchDescriptionSource
+from launch.substitutions import (Command, FindExecutable, LaunchConfiguration,
+                                  PathJoinSubstitution)
+from launch_ros.actions import Node
+from launch_ros.substitutions import FindPackageShare
+from datetime import date
+from datetime import datetime
+
+#alias in ~/.bashrc: bot
+
+def generate_launch_description():
+
+    # # Launching SLAM (also includes driving and all other needed nodes)
+    # slam_launch_path = os.path.join(get_package_share_directory('trailbot_bringup'),'launch','slam_3D.launch.py')
+    # slam_launch = IncludeLaunchDescription(PythonLaunchDescriptionSource([slam_launch_path]))          
+
+    # #the nav configs 
+    # package_name = 'nav'
+
+    # # Nav node
+    # nav_launch_path = os.path.join(get_package_share_directory(package_name),'launch','navigation_launch.py')
+    # nav_params_path = os.path.join(get_package_share_directory(package_name),'config','nav2_params_points.yaml')
+    # nav_node = IncludeLaunchDescription(PythonLaunchDescriptionSource([nav_launch_path]),
+    #                                     launch_arguments={'namespace': '',
+    #                                                     # 'use_sim_time': 'true',
+    #                                                      'autostart': 'true',
+    #                                                     'params_file': nav_params_path,
+    #                                                     # 'use_lifecycle_mgr': 'false',
+    #                                                     #'map_subscribe_transient_local': 'true'
+    #                                                     }
+    #                                                     .items())
+
+    #Camera, ouster, driving Launch File
+    bringup_launch_path = os.path.join(get_package_share_directory('trailbot_bringup'),'launch','trailbot_bringup.launch.py')
+    bringup_launch = IncludeLaunchDescription(PythonLaunchDescriptionSource([bringup_launch_path])) 
+
+    #FSM Launch File
+    fsm_launch_path = os.path.join(get_package_share_directory('fsm'),'launch','fsm_launch.launch.py')
+    fsm_launch = IncludeLaunchDescription(PythonLaunchDescriptionSource([fsm_launch_path]))
+    
+    # Nav3D and SLAM3D Launch File
+    nav_3D_launch_path = os.path.join(get_package_share_directory('trailbot_bringup'),'launch','nav_3D.launch.py')
+    #nav_3D_launch_path = os.path.join(get_package_share_directory('trailbot_bringup'),'launch','nav_2D.launch.py')
+    nav_3D_launch = IncludeLaunchDescription(PythonLaunchDescriptionSource([nav_3D_launch_path])) 
+
+
+
+    # fsm_node = Node(
+    #     package='fsm',
+    #     # executable='trailbot_fsm',
+    #     executable='trailbot_fsm',
+    #     name='fsm',
+    #     output='screen'
+    # )
+
+    # fsm_nav_node = Node(
+    #     package='fsm',
+    #     # executable='navigator_node',
+    #     executable='fsm_test',
+    #     name='test_cmd_vel_node',
+    #     output='screen'
+    # )
+
+    # #Logitech Camera Launch File
+    # camera_launch_path = os.path.join(get_package_share_directory('trailbot_bringup'),'launch','logitech_camera.launch.py')
+    # camera_launch = IncludeLaunchDescription(PythonLaunchDescriptionSource([camera_launch_path]))
+
+
+    # Launch voice_assistant/voice_assistant.launch.py which is voice interaction.
+    launch_voice_assistant = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(PathJoinSubstitution(
+            [FindPackageShare("voice_assistant"), 'launch', 'voice_assistant.launch.py'])))
+
+    # Launch human detection
+    human_detection_node = Node(
+        package='human_detection',
+        executable='human_detection_node'
+    )
+
+    # Launch trail detection
+    trail_detection_node = Node(
+        package='trail_detection_node',
+        executable='trail_detection'
+    )
+
+    # List of topics for bag that can run trail/human detection and navigation 
+    record_topics = ['/camera',
+                    '/camera/compressed',
+                    '/camera_info',
+                    '/diagnostics',
+                    '/dynamic_joint_states',
+                    '/events/read_split',
+                    '/husky_velocity_controller/cmd_vel_unstamped',
+                    '/husky_velocity_controller/transition_event',
+                    '/joint_state_broadcaster/transition_event',
+                    '/joint_states',
+                    '/joy_teleop/cmd_vel',
+                    '/joy_teleop/joy',
+                    '/odom',
+                    '/ouster/imu',
+                    '/ouster/metadata',
+                    '/ouster/os_driver/transition_event',
+                    '/ouster/points',
+                    '/ouster/scan',
+                    '/ouster/signal_image',
+                    '/parameter_events',
+                    '/robot_description',
+                    '/rosout',
+                    '/tf',
+                    '/tf_static']
+
+    # Launch file logging
+    current_date = date.today()
+    current_time = datetime.now().time()
+    formatted_time = current_time.strftime("%H:%M")
+    file_logging = ExecuteProcess(
+        # cmd=['ros2', 'bag', 'record', '--include-hidden-topics', '-o', f'/home/trailbot/bags/{current_date}-{formatted_time}'] + record_topics
+        cmd=['ros2', 'bag', 'record', '-a', '--include-hidden-topics', '-o' f'/home/trailbot/bags/{current_date}-{formatted_time}'])
+    # )
+
+    
+    
+
+    ld = LaunchDescription()
+    # ld.add_action(fsm_node)
+    # ld.add_action(fsm_nav_node)
+    # ld.add_action(camera_launch)
+    # ld.add_action(slam_launch)
+    # ld.add_action(nav_node)
+
+    ld.add_action(bringup_launch)
+    ld.add_action(fsm_launch)
+    ld.add_action(nav_3D_launch)
+    ld.add_action(human_detection_node)
+    ld.add_action(trail_detection_node)
+    ld.add_action(launch_voice_assistant)
+
+    logging = False
+    if logging:
+        ld.add_action(file_logging)
+  
+    return ld
