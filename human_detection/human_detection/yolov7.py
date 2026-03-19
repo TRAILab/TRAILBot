@@ -15,9 +15,9 @@ current_directory = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(current_directory)
 
 from models.experimental import attempt_load
-from utils.datasets import LoadImages
-from utils.general import check_img_size, non_max_suppression, scale_coords, set_logging, increment_path
-from utils.torch_utils import select_device, TracedModel
+from human_detection.utils.datasets import LoadImages
+from human_detection.utils.general import check_img_size, non_max_suppression, scale_coords, set_logging, increment_path
+from human_detection.utils.torch_utils import select_device, TracedModel
 import sort
 import os 
 

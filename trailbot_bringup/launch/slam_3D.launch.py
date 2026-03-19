@@ -5,7 +5,7 @@ from ament_index_python.packages import get_package_share_directory
 
 
 from launch import LaunchDescription
-from launch.actions import IncludeLaunchDescription
+from launch.actions import IncludeLaunchDescription, DeclareLaunchArgument
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch_ros.actions import Node
 from launch.substitutions import LaunchConfiguration
@@ -40,13 +40,25 @@ def generate_launch_description():
 
     # Cartographer node
     # use_sim_time = LaunchConfiguration('use_sim_time', default='false')
-    use_sim_time = LaunchConfiguration('use_sim_time', default='true')
+    use_sim_time = LaunchConfiguration('use_sim_time', default='false')
     trailbot_cartographer_prefix = get_package_share_directory(package_name)
     cartographer_config_dir = LaunchConfiguration('cartographer_config_dir', default=os.path.join(
                                                   trailbot_cartographer_prefix, 'config'))
-    configuration_basename = LaunchConfiguration('configuration_basename', default='trailbot_lds_3d.lua') 
+    configuration_basename = LaunchConfiguration('configuration_basename', default='trailbot_lds_3d.lua')  #trailbot_lds_3d_mahan.lua
     resolution = LaunchConfiguration('resolution', default='0.05')
     publish_period_sec = LaunchConfiguration('publish_period_sec', default='1.0')
+
+            # NEW: pbstream to localize against
+    load_state_filename = LaunchConfiguration(
+        'load_state_filename', 
+        default='/home/trailbot/trail_ws/src/TRAILBot/nav/maps/lab_0120/map.pbstream' # <<< ADD
+    )  
+
+    declare_load_state = DeclareLaunchArgument(  # <<< ADD
+        'load_state_filename',
+        default_value='/home/trailbot/trail_ws/src/TRAILBot/nav/maps/lab_0120/map.pbstream',
+        description='Cartographer .pbstream map to localize against'
+    )
 
     cartographer_node = Node(
         package='cartographer_ros',
@@ -55,12 +67,16 @@ def generate_launch_description():
         output='screen',
         parameters=[{'use_sim_time': use_sim_time}],
         arguments=['-configuration_directory', cartographer_config_dir,
-                   '-configuration_basename', configuration_basename],
+                   '-configuration_basename', configuration_basename,
+                   '-load_state_filename', load_state_filename
+                   ],
         # remappings=[('/husky_velocity_controller/odom', '/odom'),
         #             ('/points2', '/velodyne_points'),
         #             ('/imu', 'imu/data')],
+        #('points2', '/ouster/points')
         remappings=[('/husky_velocity_controller/odom', '/odom'),
-                    ('points2', '/ouster/points'),
+                    #('points2', '/ouster/points'),
+                    ('points2', '/filtered_points'),
                     ('/imu', '/ouster/imu')],
     )
 
@@ -69,6 +85,7 @@ def generate_launch_description():
         launch_arguments={'resolution':resolution,
                           'publish_period_sec': publish_period_sec}.items(),)
 
+    # robot_transform_publisher = Node(
     robot_transform_publisher = Node(
         package='tf_transform',
         executable='tf_transform_node',
@@ -79,12 +96,14 @@ def generate_launch_description():
 
 
     ld = LaunchDescription()
+        
+    ld.add_action(declare_load_state)
     
     # ld.add_action(trailbot_bringup_launch)
     ld.add_action(cartographer_node)
     ld.add_action(occupancy_grid)
     ld.add_action(rviz_node)
     # ld.add_action(IMU_node) 
-    ld.add_action(robot_transform_publisher)
+    # ld.add_action(robot_transform_publisher)
 
     return ld

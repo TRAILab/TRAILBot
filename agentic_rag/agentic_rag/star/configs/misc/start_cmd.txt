@@ -1,0 +1,21 @@
+LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libtiff.so.5 \
+LD_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu:$LD_LIBRARY_PATH \
+/home/trailbot/anaconda3/envs/opennav2/bin/python /home/trailbot/RAG/opennav_mem/star/scripts/OpenNav_issacsim.py
+
+
+LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libtiff.so.5 \
+LD_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu:$LD_LIBRARY_PATH \
+/home/trailbot/anaconda3/envs/opennav2/bin/python /home/trailbot/RAG/opennav_mem/star/scripts/caption_with_nvila.py
+
+
+LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libtiff.so.5 \
+LD_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu:$LD_LIBRARY_PATH \
+/home/trailbot/anaconda3/envs/opennav2/bin/python /home/trailbot/RAG/opennav_mem/star/scripts/run_data_collection_depth.py
+
+LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libtiff.so.5 \
+LD_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu:$LD_LIBRARY_PATH \
+/home/trailbot/anaconda3/envs/opennav2/bin/python /home/trailbot/RAG/opennav_mem/star/scripts/run_data_collection.py
+
+LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libtiff.so.5 \
+LD_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu:$LD_LIBRARY_PATH \
+/home/trailbot/anaconda3/envs/opennav2/bin/python /home/trailbot/RAG/opennav_mem/star/scripts/run_camera_subscriber.py

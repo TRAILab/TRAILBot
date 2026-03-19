@@ -22,7 +22,10 @@ setup(
     maintainer_email='barzanisar93@gmail.com',
     description='Package to launch all other TRAILbot packages',
     license='TODO: License declaration',
-    tests_require=['pytest'],
+    extras_require={
+        'test': ['pytest'],
+    },
+    #tests_require=['pytest'],
     entry_points={
         'console_scripts': [
         ],

@@ -1,0 +1,6 @@
+defaults:
+  - inference: docker
+  - scenegraph: collection_docker_husky
+
+sequence: "1"
+postfix: "OpenMem_LONG_V19"

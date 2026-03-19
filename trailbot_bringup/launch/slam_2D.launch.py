@@ -5,7 +5,7 @@ from ament_index_python.packages import get_package_share_directory
 
 
 from launch import LaunchDescription
-from launch.actions import IncludeLaunchDescription
+from launch.actions import IncludeLaunchDescription, DeclareLaunchArgument
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch_ros.actions import Node
 from launch.substitutions import LaunchConfiguration
@@ -43,6 +43,18 @@ def generate_launch_description():
     resolution = LaunchConfiguration('resolution', default='0.05')
     publish_period_sec = LaunchConfiguration('publish_period_sec', default='1.0')
 
+    # NEW: pbstream to localize against
+    load_state_filename = LaunchConfiguration(
+        'load_state_filename', 
+        default='/home/trailbot/trail_ws/src/TRAILBot/nav/maps/lab_2D/map.pbstream'  # <<< ADD
+    )
+
+    declare_load_state = DeclareLaunchArgument(  # <<< ADD
+        'load_state_filename',
+        default_value='/home/trailbot/trail_ws/src/TRAILBot/nav/maps/lab_2D/map.pbstream',
+        description='Cartographer .pbstream map to localize against'
+    )
+
     cartographer_node = Node(
         package='cartographer_ros',
         executable='cartographer_node',
@@ -50,7 +62,9 @@ def generate_launch_description():
         output='screen',
         parameters=[{'use_sim_time': use_sim_time}],
         arguments=['-configuration_directory', cartographer_config_dir,
-                   '-configuration_basename', configuration_basename],
+                   '-configuration_basename', configuration_basename,
+                   '-load_state_filename', load_state_filename
+                   ], # ADD
         remappings=[('/husky_velocity_controller/odom', '/odom'),
                     ('/scan', '/ouster/scan'),
                     ('/imu', '/ouster/imu')],
@@ -65,6 +79,7 @@ def generate_launch_description():
 
 
     ld = LaunchDescription()
+    ld.add_action(declare_load_state)  
     # ld.add_action(driving_launch)
     ld.add_action(cartographer_node)
     # ld.add_action(velo_launch1)

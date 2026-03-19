@@ -1,0 +1,166 @@
+# Load dataset and sequence info
+basedir: /home/trailbot/RAG/
+sequence: !!str 04
+stride: 10 
+start: 0
+end: -1 # 2000
+start_timestamp: 0.0
+calib_path: /home/trailbot/RAG/object_nav_git/config/calib.txt
+
+# Caption generation related
+projection_depth: !!bool False               # Whether to project depth onto the image
+save_vis: !!bool False                          # Whether to save visualization
+save_cap: !!bool False                          # Whether to save caption data
+save_vis_path: /home/trailbot/RAG/results/${sequence}/vis/
+save_cap_path: /home/trailbot/RAG/results/${sequence}/caption/
+tag2text_path: /home/trailbot/RAG/tag2text_swin_14m.pth
+gd_path: /home/trailbot/RAG/GroundingDINO/groundingdino/config/GroundingDINO_SwinT_OGC.py
+gd_weights: /home/trailbot/RAG/groundingdino_swint_ogc.pth
+tap_path: /home/trailbot/RAG/tap_vit_l_v1_0.pkl
+tap_merge_path: /home/trailbot/RAG/merged_2560.pkl
+sbert_path: /home/trailbot/RAG/all-MiniLM-L6-v2
+save_vis_proj_path: /home/trailbot/RAG/results/${sequence}/project/
+
+# Point cloud map generation related
+filter_dis: !!bool True                        # Whether to filter out distant objects
+max_depth: 15.0                                # Set maximum point cloud distance, do not exceed
+bg_rate: 0.80                                  # Probability of being considered background
+min_points_threshold: 20                       # Instances below this count in a single frame are discarded
+filter_dynamic: !!bool False             # Whether to filter dynamic objects
+mos_path: /home/trailbot/RAG/10_scans.ckpt                               # 4DMOS weights path, 10 corresponds to our stride, must be consistent
+moving_thre: 0.3 # 0.5                               # Threshold for determining dynamic objects
+dbscan_remove_noise: !!bool True               # Whether to remove noise through clustering
+dbscan_eps:  0.11 #0.4                                # Clustering parameter
+dbscan_min_points: 30                        # Clustering parameter
+voxel_size: 0.03                               # Point cloud downsampling value
+vis_all: !!bool True                           # Whether to visualize before final processing
+
+OccMap: !!bool False # True                       # use OccMap
+SemanticMap: !!bool False # True                   # use SemanticMap
+save_SoM: !!bool True                       # save annotated rgb 
+
+save_occ_map: !!bool True                     # True: save OccMap, save to buffer otherwise
+save_semantic_map: !!bool True               # True: save SemanticMap, save to buffer otherwise
+cost_map: !!bool True                         # True: save cost map, save to buffer otherwise
+resolution: 0.1                                   # resolution of the map
+VLT: !!bool False                          # True: use VLT, save to buffer otherwise
+
+sem_map_path: /home/trailbot/RAG/results/${sequence}/seg_map/       # semantic map path
+occ_map_path: /home/trailbot/RAG/results/${sequence}/occ_map/       # occ map path
+annotated_rgb_path: /home/trailbot/RAG/results/${sequence}/annotated_rgb/       # annotated rgb path
+cost_map_path: /home/trailbot/RAG/results/${sequence}/cost_map/       # cost map path
+message_path: /home/trailbot/RAG/results/${sequence}/message/       # message path
+alignment_result_path: /home/trailbot/RAG/results/${sequence}/alignment/       # alignment path
+history_3D: !!bool False                       # True: save 3D history, save to buffer otherwise
+observation_buffer_size: -1 # -1 for all observations, 1 for the latest observation, otherwise set to a positive integer
+publish_path: True
+planed_path: /home/trailbot/RAG/results/${sequence}/planed_path/
+instruction_path: /home/trailbot/RAG/results/${sequence}/instructions/
+label_txt_path: /home/trailbot/RAG/results/${sequence}/labels/
+COT_LOG_PATH: /home/trailbot/RAG/results/${sequence}/cot_log/       # COT log path
+UPDATE_FLAG_PATH: /home/trailbot/RAG/results/${sequence}/update/       # update flag path
+
+# Incremental fusion related
+use_dam: !!bool False
+use_bg: !!bool True                          # Whether to use background as an object
+spatial_weight: 1.0                            # Spatial similarity weight, this is very important
+caption_weight: 0.4 # 0.8                            # Caption similarity weight
+ft_weight: 0.35 # 0.6                                 # Feature similarity weight
+sim_threshold: 0.8                             # Integration similarity score threshold
+llama_ckpt_dir: '/data/dyn/weights/llama_ckpt/llama-2-7b-chat/'               # Llama ckpt path
+llama_tokenizer_path: '/data/dyn/weights/llama_ckpt/tokenizer.model'          # Llama tokenizer path
+llama_max_seq_len: 512                         # Llama maximum input token length
+llama_max_batch_size: 8                        # Llama maximum dialog batch size
+caption_merge_ft: !!bool True                  # Whether to compute features after merging captions
+
+# Map saving and post-processing
+save_pcd: !!bool True                          # Whether to save the final map
+save_pcd_path: /home/trailbot/RAG/results/${sequence}/pcd/     # Path to save the PCD map
+obj_min_points: 50                             # Minimum points for objects in the final point cloud
+obj_min_detections: 1                          # Minimum detections for objects in the final point cloud
+merge_final: !!bool True                       # Whether to merge the final map
+merge_overlap_thresh: 0.1                      # Overlap threshold for merging final point clouds
+merge_ft_thresh: 0.3                           # Feature similarity threshold for merging
+max_caption_num: 4                             # Maximum number of captions to accumulate
+class_methods: chatgpt                             # Method for determining final class labels: sbert, llama, gpt
+gpt_max_num: 10                                # Maximum number of queries for GPT at once
+spacy: !!bool True                             # Whether to use Spacy for extraction when class_methods=sbert
+caption_only: !!bool True                     # Whether to use only pure captions for alignment when spacy=True
+openai_key: your_key               # openai key
+api_base: your_api    # openai api base url
+class_colors_json: /home/trailbot/trail_ws/src/TRAILBot/object_nav/object_nav/class_colors/class_colors.json       # semantickitti类别及颜色json文件
+
+# 可视化相关
+vis_sequence: !!str 04
+result_path: /home/trailbot/RAG/results/${vis_sequence}/pcd/full_pcd.pkl.gz       # Path to the full PCD result
+vis_ft_weight: 0.5                                                            # Feature weight for multimodal retrieval
+vis_caption_weight: 0.5                                                       # Caption weight for multimodal retrieval
+scenegraph_path: /home/trailbot/RAG/results/${vis_sequence}/pcd/object_relations.json       # Path to the object relations result
+scenegraph_vis: !!bool True                                                  # Whether to visualize the scene graph
+save_image_vis_path: /home/trailbot/RAG/results/image_query/vis/                              # Path to save the image retrieval results
+save_image_vis: !!bool True                                                  # Whether to save the retrieved image results
+no_sbert: !!bool False                                                        # Not use sbert for caption similarity
+no_tap: !!bool True                                                          # Not use tap model to obtain caption
+
+# 场景图先关
+save_lane_path: /home/trailbot/RAG/results/${sequence}/graph+road.json                   # Path to save the lane graph
+our_pcd: /home/trailbot/RAG/results/${sequence}/pcd/our_pc.pcd                          # Our semantic map
+
+# TrailBot sensor calibration
+image_width: 1280
+image_height: 720
+camera_transformation_k: |
+    1104.0 0 615.34
+    0 1103.9 310.33
+    0 0 1
+rotation_matrix: |
+    0.99983 0.012464    0.013538
+    0.014029   -0.040245 -0.99909
+    -0.011908  0.99911   -0.040413
+translation_vector: [-0.023072, -0.10742, -0.14859]
+verbose: !!bool False
+
+# NVILA related
+video_captioner: !!bool False
+model_name: NVILA-8B
+model_path: Efficient-Large-Model/NVILA-8B # Efficient-Large-Model/NVILA-Lite-2B # Efficient-Large-Model/NVILA-8B #
+model_base: null
+seq_id: 0
+data_path: ./semantickitty # ./coda_data
+out_path: /home/trailbot/RAG/results/${sequence}
+output_dir: /home/trailbot/RAG/results/${sequence}/caption/       # Path to save the caption
+captioner_name: NVILA-Lite-2B # NVILA-8B # 
+caption_freq: 3
+video_file: null
+num_video_frames: 6
+# university campus
+query: "<video>\n You are a wandering around a warehouse.\
+        Please describe in detail what you see in the few seconds of the video. \
+        Specifically focus on the people, objects, environmental features, events/ectivities, and other interesting details. Think step by step about these details and be very specific."
+conv_mode: auto # llama_3
+sep: ","
+temperature: 0.2
+top_p: null
+num_beams: 1
+max_new_tokens: 512
+
+json_mode: !!bool True
+json_schema: null
+media: null
+# caption_file: captions_nvila_2b # captions_nvila_8b #
+
+# ROS2 topic related
+lidar_topic: '/ouster_lidar/point_cloud'
+rgb_cam_topic: '/front_color_camera/c_rgb/image_raw'
+depth_cam_topic: '/front_pdepth_camera/pd/depth'
+# Extrinsic calibration matrices
+base_to_cam_matrix:
+  - [0, -1, 0, 0.010]  # Flip the X-axis
+  - [0, 0, -1, 0.261]  # Flip the Y-axis
+  - [1, 0, 0, -0.440] # 0.6019407510757446],  # Z-axis remains the same
+  - [0, 0, 0, 1]   # Homogeneous coordinate
+base_to_lidar_matrix:
+  - [1, 0, 0, 0]
+  - [0, 1, 0, 0]
+  - [0, 0, 1, 0]
+  - [0, 0, 0, 1]

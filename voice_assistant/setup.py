@@ -21,7 +21,10 @@ setup(
     maintainer_email='barzanisar93@gmail.com',
     description='Chats with user and handles voice commands',
     license='Apache License 2.0',
-    tests_require=['pytest'],
+    extras_require={
+        'test': ['pytest'],
+    },
+    #tests_require=['pytest'],
     entry_points={
         'console_scripts': [
             'voice_assistant_node = voice_assistant.voice_assistant_node:main',

@@ -25,15 +25,58 @@ def generate_launch_description():
             default_value='false',
             description='Use simulation (Gazebo) clock if true'),
 
+        # Height filter node Mahan
+        Node(
+            package='slam',
+            executable='height_filter_node',
+            name='height_filter_node',
+            output='screen',
+            parameters=[
+                {'input_topic': '/ouster/points'},
+                {'output_topic': '/filtered_points'},
+                {'min_height': -0.8},
+                {'max_height': 0.5}
+            ]
+        ),
+
         Node(
             package='cartographer_ros',
             executable='cartographer_occupancy_grid_node',
             name='occupancy_grid_node',
             output='screen',
-            parameters=[{'use_sim_time': use_sim_time}],
+            #parameters=[{'use_sim_time': use_sim_time}, 'sensor_topics: ["/ouster/points"]'],
+            parameters=[{'use_sim_time': use_sim_time}, 'sensor_topics: ["/filtered_points"]'],
             arguments=['-resolution', resolution, '-publish_period_sec', publish_period_sec],
-            remappings=[('/points2', '/ouster/points')]),
+            #remappings=[('/points2', '/ouster/points')] # modified mahan. it was originally like this for my case.
+            remappings=[('/points2', '/filtered_points')]
+            ),
         
+        # pc2ls_node = Node(
+        #     package='pointcloud_to_laserscan',
+        #     executable='pointcloud_to_laserscan_node',
+        #     name='pc2ls_nav',
+        #     remappings=[('cloud_in', ['/filtered_points']),
+        #                 ('scan',     ['/laser_scan_nav'])],
+        #     parameters=[{
+        #         'target_frame': 'base_link',      # project around the robot
+        #         'transform_tolerance': 0.01,
+        #         'min_height': -0.2,               # same band you mapped with
+        #         'max_height': 1.5,
+        #         'angle_min': -3.14159,
+        #         'angle_max':  3.14159,
+        #         'angle_increment': 0.004363323,   # ~0.25°
+        #         'scan_time': 0.1,
+        #         'range_min': 0.1,
+        #         'range_max': 30.0,
+        #         'use_inf': True,
+        #         'inf_epsilon': 1.0,
+        #         # QoS robust for costmaps:
+        #         'qos_scan.reliability': 'reliable',
+        #         'qos_scan.durability':  'volatile',
+        #         'qos_scan.history':     'keep_last',
+        #         'qos_scan.depth':       5,
+        #     }]
+        # )
         #pointcloud to laserscan conversion node
         # Node(
         #     package='pointcloud_to_laserscan_converter', executable='pointcloud_to_laserscan_node',

@@ -7,6 +7,8 @@
   <maintainer email="barzanisar93@gmail.com">barza</maintainer>
   <license>TODO: License declaration</license>
 
+  <exec_depend>camera_timestamp_shift</exec_depend>
+
   <test_depend>ament_copyright</test_depend>
   <test_depend>ament_flake8</test_depend>
   <test_depend>ament_pep257</test_depend>

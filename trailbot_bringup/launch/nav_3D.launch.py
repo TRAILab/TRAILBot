@@ -23,7 +23,7 @@ def generate_launch_description():
     nav_params_path = os.path.join(get_package_share_directory(package_name),'config','nav2_params_points.yaml')
     nav_node = IncludeLaunchDescription(PythonLaunchDescriptionSource([nav_launch_path]),
                                         launch_arguments={'namespace': '',
-                                                        'use_sim_time': 'true',
+                                                        'use_sim_time': 'false',
                                                          'autostart': 'true',
                                                         'params_file': nav_params_path,
                                                         # 'use_lifecycle_mgr': 'false',

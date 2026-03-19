@@ -17,7 +17,10 @@ setup(
     maintainer_email='tom2352759619@hotmail.com',
     description='TODO: Package description',
     license='TODO: License declaration',
-    tests_require=['pytest'],
+    extras_require={
+        'test': ['pytest'],
+    },
+    #tests_require=['pytest'],
     entry_points={
         'console_scripts': [
             'trail_detection = trail_detection_node.v2_trailDetectionNode:main',

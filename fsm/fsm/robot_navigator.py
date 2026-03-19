@@ -114,7 +114,7 @@ class BasicNavigator(Node):
 
     def goThroughPoses(self, poses, behavior_tree=''):
         """Send a `NavThroughPoses` action request."""
-        self.debug("Waiting for 'NavigateThroughPoses' action server")
+        self.info("Waiting for 'NavigateThroughPoses' action server")
         while not self.nav_through_poses_client.wait_for_server(timeout_sec=1.0):
             self.info("'NavigateThroughPoses' action server not available, waiting...")
 
@@ -137,7 +137,7 @@ class BasicNavigator(Node):
 
     def goToPose(self, pose, behavior_tree=''):
         """Send a `NavToPose` action request."""
-        self.debug("Waiting for 'NavigateToPose' action server")
+        self.info("Waiting for 'NavigateToPose' action server")
         while not self.nav_to_pose_client.wait_for_server(timeout_sec=1.0):
             self.info("'NavigateToPose' action server not available, waiting...")
 
@@ -162,10 +162,10 @@ class BasicNavigator(Node):
 
         self.result_future = self.goal_handle.get_result_async()
         return True
-
+    
     def followWaypoints(self, poses):
         """Send a `FollowWaypoints` action request."""
-        self.debug("Waiting for 'FollowWaypoints' action server")
+        self.info("Waiting for 'FollowWaypoints' action server")
         while not self.follow_waypoints_client.wait_for_server(timeout_sec=1.0):
             self.info("'FollowWaypoints' action server not available, waiting...")
 
@@ -186,7 +186,7 @@ class BasicNavigator(Node):
         return True
 
     def spin(self, spin_dist=1.57, time_allowance=10):
-        self.debug("Waiting for 'Spin' action server")
+        self.info("Waiting for 'Spin' action server")
         while not self.spin_client.wait_for_server(timeout_sec=1.0):
             self.info("'Spin' action server not available, waiting...")
         goal_msg = Spin.Goal()
@@ -206,7 +206,7 @@ class BasicNavigator(Node):
         return True
 
     def backup(self, backup_dist=0.15, backup_speed=0.025, time_allowance=10):
-        self.debug("Waiting for 'Backup' action server")
+        self.info("Waiting for 'Backup' action server")
         while not self.backup_client.wait_for_server(timeout_sec=1.0):
             self.info("'Backup' action server not available, waiting...")
         goal_msg = BackUp.Goal()
@@ -227,7 +227,7 @@ class BasicNavigator(Node):
         return True
 
     def assistedTeleop(self, time_allowance=30):
-        self.debug("Wainting for 'assisted_teleop' action server")
+        self.info("Waiting for 'assisted_teleop' action server")
         while not self.assisted_teleop_client.wait_for_server(timeout_sec=1.0):
             self.info("'assisted_teleop' action server not available, waiting...")
         goal_msg = AssistedTeleop.Goal()
@@ -248,7 +248,7 @@ class BasicNavigator(Node):
 
     def followPath(self, path, controller_id='', goal_checker_id=''):
         """Send a `FollowPath` action request."""
-        self.debug("Waiting for 'FollowPath' action server")
+        self.info("Waiting for 'FollowPath' action server")
         while not self.follow_path_client.wait_for_server(timeout_sec=1.0):
             self.info("'FollowPath' action server not available, waiting...")
 
@@ -282,18 +282,26 @@ class BasicNavigator(Node):
         """Check if the task request of any type is complete yet."""
         if not self.result_future:
             # task was cancelled or completed
+            self.info('task completed')
             return True
-        rclpy.spin_until_future_complete(self, self.result_future, timeout_sec=0.10)
+        rclpy.spin_until_future_complete(self, self.result_future, timeout_sec=0.1)
+        self.info(f"{self.result_future.result()}, {self.result_future.done()}, {self.result_future.cancelled()}")
         if self.result_future.result():
             self.status = self.result_future.result().status
+            self.info(f'STATUS::: {self.result_future.result().status}')
             if self.status != GoalStatus.STATUS_SUCCEEDED:
-                self.debug(f'Task with failed with status code: {self.status}')
+                self.info(f'Task failed with status code: {self.status}')
+                # self.info('task complete with failed, spin')
                 return True
         else:
             # Timed out, still processing, not complete yet
+            # time = self.result_future.feedback(
+            # self.info(f'{time}')
+            # self.info('task not complete, spin')
             return False
 
-        self.debug('Task succeeded!')
+        self.info('Task succeeded!')
+        # print('task complete, debug')
         return True
 
     def getFeedback(self):
@@ -326,7 +334,7 @@ class BasicNavigator(Node):
 
         Internal implementation to get the full result, not just the path.
         """
-        self.debug("Waiting for 'ComputePathToPose' action server")
+        self.info("Waiting for 'ComputePathToPose' action server")
         while not self.compute_path_to_pose_client.wait_for_server(timeout_sec=1.0):
             self.info("'ComputePathToPose' action server not available, waiting...")
 
@@ -365,7 +373,7 @@ class BasicNavigator(Node):
 
     def getPathThroughPoses(self, start, goals, planner_id='', use_start=False):
         """Send a `ComputePathThroughPoses` action request."""
-        self.debug("Waiting for 'ComputePathThroughPoses' action server")
+        self.info("Waiting for 'ComputePathThroughPoses' action server")
         while not self.compute_path_through_poses_client.wait_for_server(timeout_sec=1.0):
             self.info("'ComputePathThroughPoses' action server not available, waiting...")
 
@@ -399,7 +407,7 @@ class BasicNavigator(Node):
 
         Internal implementation to get the full result, not just the path.
         """
-        self.debug("Waiting for 'SmoothPath' action server")
+        self.info("Waiting for 'SmoothPath' action server")
         while not self.smoother_client.wait_for_server(timeout_sec=1.0):
             self.info("'SmoothPath' action server not available, waiting...")
 
@@ -534,7 +542,7 @@ class BasicNavigator(Node):
 
     def _waitForNodeToActivate(self, node_name):
         # Waits for the node within the tester namespace to become active
-        self.debug(f'Waiting for {node_name} to become active..')
+        self.info(f'Waiting for {node_name} to become active..')
         node_service = f'{node_name}/get_state'
         state_client = self.create_client(GetState, node_service)
         while not state_client.wait_for_service(timeout_sec=1.0):
@@ -543,12 +551,12 @@ class BasicNavigator(Node):
         req = GetState.Request()
         state = 'unknown'
         while state != 'active':
-            self.debug(f'Getting {node_name} state...')
+            self.info(f'Getting {node_name} state...')
             future = state_client.call_async(req)
             rclpy.spin_until_future_complete(self, future)
             if future.result() is not None:
                 state = future.result().current_state.label
-                self.debug(f'Result of get_state: {state}')
+                self.info(f'Result of get_state: {state}')
             time.sleep(2)
         return
 

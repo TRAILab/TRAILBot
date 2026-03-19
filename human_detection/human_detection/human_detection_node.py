@@ -24,7 +24,7 @@ import os
 current_directory = os.path.dirname(os.path.abspath(__file__))
 # Add the current directory to the Python path
 sys.path.append(current_directory)
-
+#print(current_directory)
 import yolov7
 from geometry_msgs.msg import PoseStamped
 
@@ -103,6 +103,7 @@ def xyxy_to_centroid(xyxy):
     centroid_x = (x1 + x2) / 2
     centroid_y = (y1 + y2) / 2
     return (centroid_x, centroid_y)
+
 def get_heading_angle(
         centroid,
         fov=90,
@@ -237,7 +238,7 @@ class LidarCameraSubscriber(Node):
             Bool,
             'is_person_topic',
             10)
-        # self.pose_publisher = self.create_publisher(
+        #self.pose_publisher = self.create_publisher( # uncommented the target location mahan
         #     PoseStamped,
         #     'target_location', 
         #     10)
@@ -268,39 +269,9 @@ class LidarCameraSubscriber(Node):
         self.publishing_frequency = -1
 
         #run the publish_message function according to publishing_frequency
-        self.create_timer(2, self.det_out_callback)
+        # self.create_timer(5, self.det_out_callback)
         self.print_and_log('Human Detection ready...')
-        
-        # ascii_numbers = r"""
-        # ____ _ _  _ ____                 
-        # |___ | |  | |___                 
-        # |    |  \/  |___                 
-
-        # ____ ____ _  _ ____              
-        # |___ |  | |  | |__/              
-        # |    |__| |__| |  \              
-
-        # ___ _  _ ____ ____ ____          
-        #  |  |__| |__/ |___ |___          
-        #  |  |  | |  \ |___ |___          
-
-        # ___ _ _ _ ____                   
-        #  |  | | | |  |                   
-        #  |  |_|_| |__|                   
-
-        # ____ _  _ ____                   
-        # |  | |\ | |___                   
-        # |__| | \| |___                   
-
-        # ____ ___ ____ ____ ___ ____ ___  
-        # [__   |  |__| |__/  |  |___ |  \  |
-        # ___]  |  |  | |  \  |  |___ |__/  .
-        # """.strip().split('\n\n')
-
-        # for num in ascii_numbers[-6:]:
-        #     self.print_and_log(f"\n{num}\n")
-        #     time.sleep(1)
-        
+               
         if SHOW_IMAGE_WINDOW:
             cv2.namedWindow("Camera Image", cv2.WINDOW_NORMAL)
             # cv2.setWindowProperty("Camera Image", cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
@@ -313,7 +284,7 @@ class LidarCameraSubscriber(Node):
         # Run model inference
 
         person_array = []
-        bounding_boxes, identities, confidences=self.model.process_frame(image,view_img=False)
+        bounding_boxes, identities, confidences=self.model.process_frame(image, view_img=False)
         if identities is None:
             print("identities is none")
             return []
@@ -329,7 +300,7 @@ class LidarCameraSubscriber(Node):
 
     def visualize_camera(self,show_image_window=True, is_person=False, is_valid=0):
         if show_image_window and self.cv_image is not None:
-            print("CAMERA")
+            # print("CAMERA")
             image_with_dots = self.cv_image.copy()
 
             if is_person:
@@ -354,9 +325,11 @@ class LidarCameraSubscriber(Node):
 
 
     def camera_callback(self, msg):
-        if self.cur_state!="SearchState" and self.cur_state!="ApproachState":
+        if self.cur_state!="SearchState" and self.cur_state!="ApproachState" and self.cur_state!="StandbyState":
+            print('is query?', self.cur_state)
             return 
 
+        print('is not query?', self.cur_state)
         self.cv_image = self.bridge.imgmsg_to_cv2(
             msg, desired_encoding='passthrough')
         self.cv_image = cv2.cvtColor(self.cv_image, cv2.COLOR_BGR2RGB) #Added for colour correction to RGB
@@ -368,7 +341,7 @@ class LidarCameraSubscriber(Node):
 
 
     def lidar_callback(self, msg):
-        if self.cur_state!="SearchState" and self.cur_state!="ApproachState":
+        if self.cur_state!="SearchState" and self.cur_state!="ApproachState" and self.cur_state!="StandbyState":
             self.visualize_camera(SHOW_IMAGE_WINDOW)
             return 
 
@@ -376,34 +349,44 @@ class LidarCameraSubscriber(Node):
             self.visualize_camera(SHOW_IMAGE_WINDOW)
             return
         # Deserialize PointCloud2 data into xyz points
+        t1 = time.time()
         point_gen = pc2.read_points(
             msg, field_names=(
                 "x", "y", "z"), skip_nans=True)
-        # points = np.array(list(point_gen))
-        # points = [[x, y, z, 1] for x, y, z in point_gen]
-        points = [[x, y, z, 1] for x, y, z in point_gen if any([i!=0 for i in [x,y,z]])]
-        points = np.array(points)
+        #points = [[x, y, z, 1] for x, y, z in point_gen if any([i!=0 for i in [x,y,z]])]
+        
+        points = np.array([point_gen['x'], point_gen['y'], point_gen['z']]).T
+        mask = ~np.all(points == 0, axis=1)
+        # Apply the mask to filter out rows with all zero coordinates
+        points = points[mask]
+        #points = np.array(points)
+        # # add the 4th column for matrix multiplication
+        points = np.hstack((points, np.ones((points.shape[0], 1))))
+
         points2d, ids_fov = self.convert_to_camera_frame(points)
         points_fov = points[ids_fov,:]
-
+        #self.get_logger().info(f'Lidar callback time: {time.time()-t1}')
         #update depth for every person
         for person in self.person_array:
             if person.on_screen:
                 print('on screen')
                 person.world_xyz = self.estimate_position(person, points2d, points_fov)
                 if type(person.world_xyz) == list:
+                    #print("person validity")
                     person.is_valid = True
                 # else:
                 #     print(person.world_xyz)
         self.timestamp = msg.header.stamp
+        #print(msg.header.stamp)
         # if this is -1, node will publish constantly (as camera FPS)
         # print('lidar',self.timestamp, self.get_clock().now())
         if not self.publishing_frequency>0:
             self.publish_message()
+        self.det_out_callback()
 
     def publish_message(self):
         """ publish message if human is detected"""
-        if self.cur_state!="SearchState" and self.cur_state!="ApproachState":
+        if self.cur_state!="SearchState" and self.cur_state!="ApproachState" and self.cur_state!="StandbyState":
             self.visualize_camera(SHOW_IMAGE_WINDOW)
             return 
         if not self.is_there_anyone:
@@ -471,15 +454,14 @@ class LidarCameraSubscriber(Node):
         self.curr_msg = msg
 
     def det_out_callback(self):
-        print('det_out')
-        if self.curr_msg.detections:
+        if self.cur_state == "StandbyState":
             trail_pose = PoseStamped()
             trail_pose.header.stamp = self.curr_msg.header.stamp
-            trail_pose.header.frame_id = "os_lidar"
+            trail_pose.header.frame_id = "base_link"
 
-            trail_pose.pose.position = self.curr_msg.detections[0].bbox.center.position
-            x = self.curr_msg.detections[0].bbox.center.position.x
-            y = self.curr_msg.detections[0].bbox.center.position.y
+            trail_pose.pose.position.x = 0.0
+            trail_pose.pose.position.y = 0.0
+            trail_pose.pose.position.z = 0.0
             
             # # position
             # pose.pose.position.x = x
@@ -487,12 +469,35 @@ class LidarCameraSubscriber(Node):
             # pose.pose.position.z = z
 
             # orientation
-            yaw = math.atan2(y, x)
             trail_pose.pose.orientation.x = 0.0  
             trail_pose.pose.orientation.y = 0.0 
-            trail_pose.pose.orientation.z = math.sin(yaw/2)
-            trail_pose.pose.orientation.w = math.cos(yaw / 2)
+            trail_pose.pose.orientation.z = 0.0
+            trail_pose.pose.orientation.w = 0.0
             self.detectionSinglePose_publisher.publish(trail_pose)
+            
+        else:
+            print('det_out')
+            if self.curr_msg.detections:
+                trail_pose = PoseStamped()
+                trail_pose.header.stamp = self.curr_msg.header.stamp
+                trail_pose.header.frame_id = "os_lidar"
+
+                trail_pose.pose.position = self.curr_msg.detections[0].bbox.center.position
+                x = self.curr_msg.detections[0].bbox.center.position.x
+                y = self.curr_msg.detections[0].bbox.center.position.y
+                
+                # # position
+                # pose.pose.position.x = x
+                # pose.pose.position.y = y
+                # pose.pose.position.z = z
+
+                # orientation
+                yaw = math.atan2(y, x)
+                trail_pose.pose.orientation.x = 0.0  
+                trail_pose.pose.orientation.y = 0.0 
+                trail_pose.pose.orientation.z = math.sin(yaw/2)
+                trail_pose.pose.orientation.w = math.cos(yaw/2)
+                self.detectionSinglePose_publisher.publish(trail_pose)
 
     def convert_to_lidar_frame(self,
         uv_coordinate, 
@@ -566,7 +571,7 @@ class LidarCameraSubscriber(Node):
 
     def estimate_position(self, person, points_pix, points_xyz):
         """
-        estimate the position by finding points closest to x,y from thhe 2d array and averaging the points
+        estimate the position by finding points closest to x,y from the 2d array and averaging the points
         """
         # Calculate the distance between each point and the target coordinates (x, y)
         if points_pix.shape[0] < 5:
@@ -629,7 +634,7 @@ def main(args=None, debug_mode=False):
         yolo_sort_tracker=yolov7.Yolo_sort_tracker(save_result=False)
 
     rclpy.init(args=args)
-    subscriber = LidarCameraSubscriber(parser_args,yolo_sort_tracker,configs)
+    subscriber = LidarCameraSubscriber(parser_args, yolo_sort_tracker, configs)
     subscriber.set_parameters([rclpy.parameter.Parameter("use_sim_time", rclpy.Parameter.Type.BOOL, False)])
     rclpy.spin(subscriber)
     subscriber.destroy_node()
@@ -647,7 +652,7 @@ if __name__ == '__main__':
 
     print("\n\nDEBUG MODE ON\n\n")
     command1 = "ros2 run image_transport republish compressed raw --ros-args --remap in/compressed:=/camera/compressed --remap out:=/camera"
-    command2 = "ros2 bag play /home/trailbot/bags/human_tracking/"
+    command2 = "ros2 bag play /home/trailbot/bags/IndoorTest1/aaa"
 
     # Create threads for each shell command and main function
     thread1 = threading.Thread(target=run_shell_command, args=(command1,))

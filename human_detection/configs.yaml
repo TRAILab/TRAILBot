@@ -1,4 +1,4 @@
-people_detection_threshold: 0.4
+people_detection_threshold: 0.4 
 point_detection_threshold: 0.4
 distance_where_lidar_stops_working: 0.4
 image_width: 1280

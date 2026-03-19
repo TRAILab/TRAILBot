@@ -1,0 +1,10 @@
+trailbot_ids_2d.lua
+
+use_odometry = false,
+TRAJECTORY_BUILDER_2D.use_imu_data = false
+TRAJECTORY_BUILDER_2D.motion_filter.max_angle_radians = math.rad(0.1)
+
+
+trailbot_ids_3d.lua
+  use_odometry = false,
+  TRAJECTORY_BUILDER_3D.use_imu_data = false

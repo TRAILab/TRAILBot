@@ -20,7 +20,7 @@ def generate_launch_description():
 
     # Nav node
     nav_launch_path = os.path.join(get_package_share_directory(package_name),'launch','navigation_launch.py')
-    nav_params_path = os.path.join(get_package_share_directory(package_name),'config','nav2_params_points.yaml')
+    nav_params_path = os.path.join(get_package_share_directory(package_name),'config','nav2_params_points_RAG.yaml')
     nav_node = IncludeLaunchDescription(PythonLaunchDescriptionSource([nav_launch_path]),
                                         launch_arguments={'namespace': '',
                                                         # 'use_sim_time': 'true',
@@ -33,7 +33,7 @@ def generate_launch_description():
 
 
     ld = LaunchDescription()
-    # ld.add_action(slam_launch)
+    ld.add_action(slam_launch)
     ld.add_action(nav_node)
 
     return ld

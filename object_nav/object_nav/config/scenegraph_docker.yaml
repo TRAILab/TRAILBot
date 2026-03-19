@@ -1,0 +1,92 @@
+# 加载数据集相关
+basedir: original_documents/data_process_Kitti/
+sequence: !!str 04
+stride: 20   # 图像间隔
+start: 0
+end: 2000
+
+calib_path: /workspace/trail_ws/src/TRAILBot/object_nav/object_nav/config/
+# 生成caption相关
+save_vis: !!bool True                          # 是否保存可视化
+save_cap: !!bool False                          # 是否caption数据
+save_vis_path: original_documents/data_process_Kitti/results/${sequence}/vis/
+save_cap_path: original_documents/data_process_Kitti/results/${sequence}/caption/
+tag2text_path: original_documents/LMs/tag2text_swin_14m.pth
+gd_path: original_documents/third_parties/GroundingDINO/groundingdino/config/GroundingDINO_SwinT_OGC.py
+gd_weights: original_documents/LMs/groundingdino_swint_ogc.pth
+tap_path: original_documents/LMs/tap_vit_l_03f8ec.pkl
+tap_merge_path: original_documents/LMs/merged_2560.pkl
+sbert_path: original_documents/third_parties/all-MiniLM-L6-v2
+
+# 生成点云地图相关
+filter_dis: !!bool True                        # 是否过滤太远的物体
+max_depth: 100                                 # 设置最大点云距离，过大不要
+bg_rate: 0.80                                  # 判断属于背景的概率
+min_points_threshold: 80                       # 单帧低于这个数量的实例直接不要
+filter_dynamic: !!bool False #True             # 是否过滤动态物体
+mos_path: /home/dyn/outdoor/4DMOS/10_scans.ckpt                               # 4DMOS的权重路径，10对应我们的stride，一定一致
+moving_thre: 0.5                               # 判断是否为动态物体的阈值
+dbscan_remove_noise: !!bool True               # 是否通过聚类，移除噪点
+dbscan_eps: 0.5                                # 聚类参数
+dbscan_min_points: 20                          # 聚类参数
+voxel_size: 0.1                                # 点云降采样数值
+vis_all: !!bool True                           # 在构建完地图还没有最后处理之前是否可视化一下
+
+# 增量融合相关
+use_bg: !!bool True                          # 是否使用背景，把背景当做一个物体
+spatial_weight: 1.0                            # 空间相似性的权重，这个很重要
+caption_weight: 0.2                            # caption相似性的权重
+ft_weight: 0.4                                 # 特征相似性的权重
+sim_threshold: 0.6                             # 整合相似性得分的阈值
+llama_ckpt_dir: '/data/dyn/weights/llama_ckpt/llama-2-7b-chat/'               # llama ckpt路径
+llama_tokenizer_path: '/data/dyn/weights/llama_ckpt/tokenizer.model'          # llama 分词器路径
+llama_max_seq_len: 512                         # llama 最大输入token长度
+llama_max_batch_size: 8                        # llama 最大dialog处理数目
+caption_merge_ft: !!bool True                  # 融合完成caption之后是否计算其特征
+
+# 地图保存和后处理
+save_pcd: !!bool True                          # 是否保存最终地图   
+save_pcd_path: original_documents/data_process_Kitti/results/${sequence}/pcd/     # 保存pcd地图的位置
+obj_min_points: 50                             # 最后点云的物体至少这些点，否则不要
+obj_min_detections: 2                          # 最后点云的物体至少被观测这些次，否则不要，很多只有1次观测
+merge_final: !!bool True                       # 是否融合最后的地图
+merge_overlap_thresh: 0.1                      # 最后点云重叠度太大的要准备融合
+merge_ft_thresh: 0.3                           # 最后的融合还要看一下特征相似性
+max_caption_num: 4                             # caption不能累积太多，不然llama处理不了
+class_methods: chatgpt                             # 判断最后class类别名称的方法 sbert llama gpt
+gpt_max_num: 10                                # gpt一次询问的最大数量，太多了后面的容易出错
+spacy: !!bool True                             # class_methods=sbert时 是否先使用spacy进行提取
+caption_only: !!bool True                     # spacy=True时 是否只使用纯caption来对齐class
+openai_key: your_key               # gpt4的key
+api_base: your_api    # openai国内代理地址
+class_colors_json: /workspace/trail_ws/src/TRAILBot/object_nav/object_nav/class_colors/class_colors.json       # semantickitti类别及颜色json文件
+
+# 可视化相关
+vis_sequence: !!str 04
+result_path: original_documents/data_process_Kitti/results/${vis_sequence}/pcd/full_pcd.pkl.gz       # 读取的物体结果地址
+vis_ft_weight: 0.5                                                            # 多模态检索时所用的ft特征权重
+vis_caption_weight: 0.5                                                       # 多模态检索时所用的最终caption权重
+scenegraph_path: original_documents/data_process_Kitti/results/${vis_sequence}/pcd/object_relations.json       # 读取的物体间关系结果地址
+scenegraph_vis: !!bool True                                                  # 是否可视化场景图
+save_image_vis_path: original_documents/data_process_Kitti/results/image_query/vis/                              # 图像检索的目录
+save_image_vis: !!bool True                                                  # 是否保存检索的图像效果
+no_sbert: !!bool False                                                        # 不需要sbert模型来检索
+no_tap: !!bool True                                                          # 不需要tap模型来获取caption
+
+# 场景图先关
+save_lane_path: original_documents/data_process_Kitti/results/${sequence}/graph+road.json                   # 保存路网的地址 
+our_pcd: original_documents/data_process_Kitti/results/${sequence}/pcd/our_pc.pcd                          # 我们的语义地图
+
+# TrailBot sensor calibration
+image_width: 1280
+image_height: 720
+camera_transformation_k: |
+    1104.0 0 615.34
+    0 1103.9 310.33
+    0 0 1
+rotation_matrix: |
+    0.99983 0.012464    0.013538
+    0.014029   -0.040245 -0.99909
+    -0.011908  0.99911   -0.040413
+translation_vector: [-0.023072, -0.10742, -0.14859]
+verbose: !!bool False

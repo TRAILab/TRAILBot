@@ -11,6 +11,7 @@ from launch_ros.actions import Node
 from launch.substitutions import LaunchConfiguration
 
 #alias in ~/.bashrc: bringup
+from launch.actions import ExecuteProcess
 
 def generate_launch_description():   
     # Husky Driving needs launch
@@ -23,9 +24,20 @@ def generate_launch_description():
     # velo_launch_path2 = os.path.join(get_package_share_directory('velodyne_pointcloud'),'launch','velodyne_convert_node-VLP16-launch.py')
     # velo_launch2 = IncludeLaunchDescription(PythonLaunchDescriptionSource([velo_launch_path2]))
       
-    # ouster lidar launch
-    ouster_launch_path = os.path.join(get_package_share_directory('ouster_ros'),'launch','driver.launch.py')
-    ouster_launch = IncludeLaunchDescription(PythonLaunchDescriptionSource([ouster_launch_path]))
+    # ouster lidar launch (Original)
+    # ouster_launch_path = os.path.join(get_package_share_directory('ouster_ros'),'launch','driver.launch.py')
+    # ouster_launch = IncludeLaunchDescription(PythonLaunchDescriptionSource([ouster_launch_path]))
+
+    # Ouster config path
+    ouster_params_file = '/home/trailbot/trail_ws/src/TRAILBot/ouster-config/driver_params.yaml'
+    # Ouster launch
+    ouster_launch_path = os.path.join(
+        get_package_share_directory('ouster_ros'), 'launch', 'driver.launch.py')
+    ouster_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource([ouster_launch_path]),
+        launch_arguments={'params_file': ouster_params_file}.items()
+    )
+
 
     # Logitech Camera Launch File
     camera_launch_path = os.path.join(get_package_share_directory('trailbot_bringup'),'launch','logitech_camera.launch.py')
@@ -46,9 +58,20 @@ def generate_launch_description():
     #     )
     # )
 
+    # Run ptp4l before launching everything else
+    ptp4l_process = ExecuteProcess(
+        cmd=['sudo', '/usr/sbin/ptp4l', '-i', 'enp45s0', '-S', '-m'],
+        shell=True,
+        output='screen'
+    )
+
+
     ld = LaunchDescription()
-    
+    # Add ptp4l first
+    ld.add_action(ptp4l_process)
+
     ld.add_action(driving_launch)
+    # ld.add_action(TimerAction(period=4.0, actions=[ouster_launch]))
     ld.add_action(ouster_launch)
     # ld.add_action(camera_after_timer) #ld.add_action(ouster_launch)
     

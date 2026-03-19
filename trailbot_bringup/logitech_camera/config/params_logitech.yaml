@@ -1,0 +1,23 @@
+/**:
+    ros__parameters:
+      video_device: "/dev/video0"
+      framerate: 30.0
+      io_method: "mmap"
+      frame_id: "camera"
+      pixel_format: "mjpeg2rgb" #"yuyv2rgb" #  # see usb_cam/supported_formats for list of supported formats
+      av_device_format: "YUV422P"
+      image_width: 1280
+      image_height: 720
+      camera_name: "logitech_cam"
+      camera_info_url: "package://trailbot_bringup/logitech_camera/config/camera_info.yaml"
+      brightness: -1
+      contrast: -1
+      saturation: -1
+      sharpness: -1
+      gain: -1
+      auto_white_balance: true
+      white_balance: -1
+      autoexposure: true
+      ##exposure: 200
+      autofocus: false
+      focus: -1

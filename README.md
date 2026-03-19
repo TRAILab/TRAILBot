@@ -9,13 +9,13 @@ Sensor Drivers:
 ```
 cd ~/ros2_ws/src
 git clone https://github.com/TRAILab/TRAILBot.git
-git clone https://github.com/TRAILab/velodyne.git
-git clone https://github.com/TRAILab/ximea-driver.git
-cd ximea-driver
-./tools/install_sdk.sh
+git clone https://github.com/ouster-lidar/ouster-ros.git 
+git clone https://github.com/uleroboticsgroup/yasmin.git
 cd ../..
 ```
-
+**Notes on `ouster-ros`:** 
+1. Modify the Ouster Driver config Files in `~/ros2_ws/src/ouster-ros/config` based on `~/ros2_ws/src/TRAILBot/ouster_config/`. THe `os-azimuth.json` file sets the azimuth window as required (see [ouster-ros issue #227](https://github.com/ouster-lidar/ouster-ros/issues/227))
+2. By default, the ouster-ros launch file launches Rviz2 which may not be required. This can be disabled by setting the default value for `rviz_enable_arg` parameter to `False`. The file is located at`~/ros2_ws/src/ouster-ros/ouster-ros/launch/driver.launch.py`
 
 Seperate Installations and Configurations:
 ============
@@ -66,7 +66,7 @@ ros2 launch trailbot_bringup nav_3D.launch.py
 ```
 3. Full TRAILBOT (snack delivery) mode:
 ```
-ros2 launch trailbot_bringup demo1.launch
+./trailbot_bringup.sh
 ```
 
 

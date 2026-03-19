@@ -25,9 +25,15 @@ setup(
     maintainer_email='koenin1@mcmaster.ca',
     description='Package to launch mapping utilities',
     license='TODO: License declaration',
-    tests_require=['pytest'],
+    extras_require={
+        'test': ['pytest'],
+    },
+    #tests_require=['pytest'],
     entry_points={
         'console_scripts': [
+            'height_filter_node = slam.height_filter_node:main',
+            'odom_plotting = slam.odom_plotting:main',
+            'imu_plotting = slam.imu_plotting:main',
         ],
     },
 )

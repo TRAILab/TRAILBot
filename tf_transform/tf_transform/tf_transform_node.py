@@ -20,6 +20,7 @@ class TFTransformNode(Node):
             
             translation_map = trans_map.transform.translation
             #rotation_map = trans_map.transform.rotation
+            #rotation_map = trans_map.transform.rotation
             
             translation_base = trans_base.transform.translation
             
@@ -29,7 +30,9 @@ class TFTransformNode(Node):
             #The added +0.30 is to allow the pointcloud converter some adjustment room for angles 
             #desired_translation = gm.Vector3(x=translation_map.x, y=translation_map.y, z=(translation_base.z + 0.30))
             desired_translation = gm.Vector3(x=translation_map.x, y=translation_map.y, z= 0.10) #same thing as above 
+            desired_translation = gm.Vector3(x=translation_map.x, y=translation_map.y, z= 0.10) #same thing as above 
 
+            #If you want the translation to be at the original location of the map but follow the velodyne's z height then this is the corresponding translation:
             #If you want the translation to be at the original location of the map but follow the velodyne's z height then this is the corresponding translation:
             #desired_translation = gm.Vector3(x=translation_base.x, y=translation_base.y, z=translation_map)
             
@@ -38,6 +41,7 @@ class TFTransformNode(Node):
             new_trans.header.frame_id = "map"
             new_trans.child_frame_id = "robot_adjusted"
             new_trans.transform.translation = desired_translation
+            #new_trans.transform.rotation = rotation_map
             #new_trans.transform.rotation = rotation_map
             
             self.tf_broadcaster.sendTransform(new_trans)

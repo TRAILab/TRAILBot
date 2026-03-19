@@ -1,0 +1,149 @@
+# Load data related config
+basedir: /media/ssd/Local_data/CODa_dataset/data/ 
+#/media/ssd/Local_data/SemanticKitti/data_odometry_velodyne/dataset/sequences/
+#/media/ssd/Local_data/CODa_dataset/data/ 
+#/media/ssd/Local_data/SemanticKitti/data_odometry_velodyne/dataset/sequences/
+sequence: !!str 22 # isaac_1  #22  # this one
+stride: 10  # For every N images
+start: 0 #400 #80
+end: -1 #-1 #8200 #500
+
+scenario: 'IsaacSim' # IsaacSim, CODa
+calib_path: /home/mfyuan/local_folder/OpenGraph/config/calib_coda.txt
+# 生成caption相关
+save_vis: !!bool False    # this one                      # Visualization saving
+save_cap: !!bool True    # this one                   # Caption data saving
+save_vis_path: /home/mfyuan/local_folder/results/${sequence}/vis/
+projection_save_path: /home/mfyuan/local_folder/results/${sequence}/projection/
+save_cap_path: /home/mfyuan/local_folder/results/${sequence}/caption/
+tag2text_path: /home/mfyuan/local_folder/weights/tag2text_swin_14m.pth
+gd_path: /home/mfyuan/local_folder/GroundingDINO/groundingdino/config/GroundingDINO_SwinT_OGC.py
+gd_weights: /home/mfyuan/local_folder/weights/groundingdino_swint_ogc.pth
+tap_path: /home/mfyuan/local_folder/tokenize_anything/weights/tap_vit_l_v1_0.pkl #tap_vit_l_03f8ec.pkl
+tap_merge_path: /home/mfyuan/local_folder/tokenize_anything/weights/merged_2560.pkl
+sbert_path: /home/mfyuan/local_folder/SBERT/all-MiniLM-L6-v2
+
+#DAM model & SAM model
+use_dam: !!bool False # use DAM model
+dam_model_path: 'nvidia/DAM-3B' # 
+dam_conv_mode: 'v1'
+prompt_mode: 'focal_prompt'
+
+
+# Region proposal related
+use_rpn: !!bool True                        # whether to use region proposal network
+front_axis: 'x'   # For kitty dataset it is 'x'; for trailbot it is 'y'
+filter_dis: !!bool True                       # whether to filter out distant objects
+max_depth: 30                                 # set maximum point cloud distance
+bg_rate: 0.80                                  # probability of being background
+min_points_threshold: 80                      # instances below this count are discarded
+filter_dynamic: !!bool False                    # whether to filter dynamic objects
+mos_path: /home/mfyuan/local_folder/outdoor/4DMOS/10_scans.ckpt                               # 4DMOS weights path, 10 corresponds to our stride, must match
+moving_thre: 0.001                         # threshold for determining dynamic objects
+dbscan_remove_noise: !!bool True               # whether to remove noise through clustering
+dbscan_eps: 0.5                                # clustering parameter
+dbscan_min_points: 20                          # clustering parameter
+voxel_size: 0.1                                # point cloud downsampling value
+vis_all: !!bool False                           # whether to visualize before final processing
+
+# Hao!!!: you can modify the following two parameters to control whether to use OccMap and SemanticMap
+OccMap: !!bool False                       # use OccMap
+SemanticMap: !!bool False                   # use SemanticMap
+save_SoM: !!bool True                       # save annotated rgb 
+
+save_occ_map: !!bool False                     # True: save OccMap, save to buffer otherwise
+save_semantic_map: !!bool False               # True: save SemanticMap, save to buffer otherwise
+cost_map: !!bool False                         # True: save cost map, save to buffer otherwise
+sem_map_path: /home/mfyuan/local_folder/results/${sequence}/seg_map/       # semantic map path
+occ_map_path: /home/mfyuan/local_folder/results/${sequence}/occ_map/       # occ map path
+annotated_rgb_path: /home/mfyuan/local_folder/results/${sequence}/annotated_rgb/       # annotated rgb path
+cost_map_path: /home/mfyuan/local_folder/results/${sequence}/cost_map/       # cost map path
+message_path: /home/mfyuan/local_folder/results/${sequence}/message/       # message path
+alignment_result_path: /home/mfyuan/local_folder/results/${sequence}/alignment/       # alignment path
+history_3D: !!bool False                       # True: save 3D history, save to buffer otherwise
+# Until here
+
+# Incremental fusion related
+use_bg: !!bool True                            # whether to use background as an object
+spatial_weight: 1.1                            # spatial similarity weight, very important
+caption_weight: 0.2                            # caption similarity weight
+ft_weight: 0.5 # 0.4                                 # feature similarity weight
+sim_threshold: 0.51 #0.6                           # threshold for integrating similarity scores
+llama_ckpt_dir: '/home/mfyuan/local_folder/weights/llama_2_7b_chat/'               # llama ckpt path
+llama_tokenizer_path: '/home/mfyuan/local_folder/weights/llama_ckpt/tokenizer.model'          # llama tokenizer path
+llama_max_seq_len: 512                         # llama maximum input token length
+llama_max_batch_size: 16                        # llama maximum dialog processing number
+caption_merge_ft: !!bool False                  # whether to calculate features after merging caption
+
+# Map saving and post-processing
+save_pcd: !!bool True # this one                         # whether to save final map
+save_pcd_path: /home/mfyuan/local_folder/results/${sequence}/pcd/     # path to save pcd map
+
+obj_min_points: 50                             # minimum points for objects in the final point cloud
+obj_min_detections: 1                          # minimum detections for objects in the final point cloud
+merge_final: !!bool True                       # whether to merge the final map
+merge_overlap_thresh: 0.1                      # threshold for merging overlapping point clouds
+merge_ft_thresh: 0.3                           # threshold for merging based on feature similarity
+max_caption_num: 2                             # maximum number of captions to accumulate
+class_methods: ollama #longest #ollama #llama #chatgpt #llama                            
+llm_type: llama3 # 判断最后class类别名称的方法 sbert llama gpt
+num_ctx_llama: 32768
+gpt_max_num: 10                               # gpt一次询问的最大数量，太多了后面的容易出错
+spacy: !!bool True                             # class_methods=sbert时 是否先使用spacy进行提取
+caption_only: !!bool False                     # spacy=True时 是否只使用纯caption来对齐class
+openai_key: your_key               # gpt4的key
+api_base: your_api    # openai国内代理地址
+class_colors_json: /home/mfyuan/local_folder/OpenGraph/class_colors/class_colors.json       # semantickitti类别及颜色json文件
+
+# 可视化相关
+vis_sequence: !!str isaac_1 #0 #_8000
+result_path: /home/mfyuan/local_folder/results/${vis_sequence}/pcd/full_pcd.pkl.gz       # 读取的物体结果地址 pkl_part1.
+vis_ft_weight: 0.5                                                            # 多模态检索时所用的ft特征权重
+vis_caption_weight: 0.5                                                       # 多模态检索时所用的最终caption权重
+scenegraph_path: /home/mfyuan/local_folder/results/${vis_sequence}/pcd/object_relations.json       # 读取的物体间关系结果地址 _part1
+scenegraph_vis: !!bool True                                                  # 是否可视化场景图
+save_image_vis_path: /home/mfyuan/local_folder/results/image_query/vis/                              # 图像检索的目录
+save_image_vis: !!bool False                                                  # 是否保存检索的图像效果
+no_sbert: !!bool False                                                        # 不需要sbert模型来检索
+no_tap: !!bool True                                                          # 不需要tap模型来获取caption
+
+# 场景图先关
+save_lane_path:  /home/mfyuan/local_folder/results/${vis_sequence}/graph+road.json                   # 保存路网的地址 
+our_pcd: /home/mfyuan/local_folder/results/${vis_sequence}/pcd/our_pc.pcd                          # 我们的语义地图
+
+# TrailBot sensor calibration
+image_width: 1280
+image_height: 720
+camera_transformation_k: |
+    1104.0 0 615.34
+    0 1103.9 310.33
+    0 0 1
+rotation_matrix: |
+    0.99983 0.012464    0.013538
+    0.014029   -0.040245 -0.99909
+    -0.011908  0.99911   -0.040413
+translation_vector: [-0.023072, -0.10742, -0.14859]
+verbose: !!bool False
+
+# VILA related
+video_captioner: !!bool True
+model_path: Efficient-Large-Model/Llama-3-VILA1.5-8B
+model_base: null
+seq_id: 0
+data_path: ./coda_data
+out_path: ./data/captions/0/captions
+caption_path: /home/mfyuan/local_folder/results/${sequence}/caption/       # 保存caption的路径
+captioner_name: Llama-3-VILA1.5-8b
+caption_freq: 3
+video_file: null
+num_video_frames: 6
+#university campus
+query: "<video>\n You are a wandering around a warehouse.\
+        Please describe in detail what you see in the few seconds of the video. \
+        Specifically focus on the people, objects, environmental features, events/ectivities, and other interesting details. Think step by step about these details and be very specific."
+conv_mode: llama_3
+sep: ","
+temperature: 0.2
+top_p: null
+num_beams: 1
+max_new_tokens: 512
